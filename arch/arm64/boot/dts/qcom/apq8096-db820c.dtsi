@@ -351,6 +351,10 @@
 			status = "okay";
 		};
 
+		phy@7412000 {
+			status = "okay";
+		};
+
 		phy@7410000 {
 			status = "okay";
 		};

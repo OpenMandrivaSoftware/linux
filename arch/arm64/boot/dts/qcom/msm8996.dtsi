@@ -532,6 +532,11 @@
 				reg = <0x24e 0x2>;
 				bits = <5 4>;
 			};
+
+			qusb2s_hstx_trim: hstx_trim@24f {
+				reg = <0x24f 0x1>;
+				bits = <1 4>;
+			};
 		};
 
 		sdhc2: sdhci@74a4900 {
@@ -756,6 +761,23 @@
 			nvmem-cells = <&qusb2p_hstx_trim>;
 			status = "disabled";
                 };
+
+		hsusb_phy2: phy@7412000 {
+			compatible = "qcom,msm8996-qusb2-phy";
+			reg = <0x7412000 0x180>;
+			#phy-cells = <0>;
+
+			clocks = <&gcc GCC_USB_PHY_CFG_AHB2PHY_CLK>,
+				<&gcc GCC_RX2_USB2_CLKREF_CLK>;
+			clock-names = "cfg_ahb", "ref";
+
+			vdda-pll-supply = <&pm8994_l12>;
+			vdda-phy-dpdm-supply = <&pm8994_l24>;
+
+			resets = <&gcc GCC_QUSB2PHY_SEC_BCR>;
+			nvmem-cells = <&qusb2s_hstx_trim>;
+			status = "disabled";
+		};
 
 		phy@7410000 {
 			compatible = "qcom,msm8996-qmp-usb3-phy";
