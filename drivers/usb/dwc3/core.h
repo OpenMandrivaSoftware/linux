@@ -28,6 +28,7 @@
 #include <linux/mm.h>
 #include <linux/debugfs.h>
 #include <linux/wait.h>
+#include <linux/workqueue.h>
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
@@ -760,6 +761,7 @@ struct dwc3_scratchpad_array {
 /**
  * struct dwc3 - representation of our controller
  * @ctrl_req: usb control request which is used for ep0
+ * @drd_work - workqueue used for role swapping
  * @ep0_trb: trb which is used for the ctrl_req
  * @ep0_bounce: bounce buffer for ep0
  * @zlp_buf: used when request->zero is set
@@ -786,6 +788,7 @@ struct dwc3_scratchpad_array {
  * @revision: revision register contents
  * @dr_mode: requested mode of operation
  * @current_dr_role: current role of operation when in dual-role mode
+ * @desired_dr_role: desired role of operation when in dual-role mode
  * @hsphy_mode: UTMI phy mode, one of following:
  *		- USBPHY_INTERFACE_MODE_UTMI
  *		- USBPHY_INTERFACE_MODE_UTMIW
@@ -861,6 +864,7 @@ struct dwc3_scratchpad_array {
  */
 struct dwc3 {
 	struct usb_ctrlrequest	*ctrl_req;
+	struct work_struct	drd_work;
 	struct dwc3_trb		*ep0_trb;
 	void			*bounce;
 	void			*ep0_bounce;
@@ -903,6 +907,7 @@ struct dwc3 {
 
 	enum usb_dr_mode	dr_mode;
 	u32			current_dr_role;
+	u32			desired_dr_role;
 	enum usb_phy_interface	hsphy_mode;
 
 	u32			fladj;
@@ -1013,7 +1018,7 @@ struct dwc3 {
 	u16			imod_interval;
 };
 
-/* -------------------------------------------------------------------------- */
+#define work_to_dwc(w)		(container_of((w), struct dwc3, drd_work))
 
 /* -------------------------------------------------------------------------- */
 
