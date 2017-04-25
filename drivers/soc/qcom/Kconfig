@@ -74,6 +74,7 @@ config QCOM_WCNSS_CTRL
 	help
 	  Client driver for the WCNSS_CTRL SMD channel, used to download nv
 	  firmware to a newly booted WCNSS chip.
+
 	  Say y here to enable support for the Qualcomm Shared Memory Manager.
 	  The driver provides an interface to items in a heap shared among all
 	  processors in a Qualcomm platform.
@@ -106,3 +107,11 @@ config BUS_TOPOLOGY_ADHOC
 		directionality of connections by explicitly listing device connections
 		thus avoiding illegal routes.
 
+config QCOM_SMD_APR
+	tristate "Qualcomm APR (Asynchronous Packet Router) over SMD"
+	depends on RPMSG_QCOM_SMD
+	help
+          Enable APR IPC protocol support between
+          application processor and QDSP6. APR is
+          used by audio driver to configure QDSP6
+          ASM, ADM and AFE.
