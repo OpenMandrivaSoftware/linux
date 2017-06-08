@@ -361,6 +361,18 @@
 
 		usb@6a00000 {
 			status = "okay";
+
+			dwc3@6a00000 {
+				extcon = <&usb3_id>;
+				dr_mode = "otg";
+			};
+		};
+
+		usb3_id: usb3-id {
+			compatible = "linux,extcon-usb-gpio";
+			id-gpio = <&pm8994_gpios 22 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&usb3_vbus_id_det_gpio>;
 		};
 	};
 

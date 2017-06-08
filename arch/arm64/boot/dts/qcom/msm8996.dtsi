@@ -836,7 +836,6 @@
 				interrupts = <0 131 0>;
 				phys = <&hsusb_phy>, <&ssusb_phy_0>;
 				phy-names = "usb2-phy", "usb3-phy";
-				dr_mode = "host";
 			};
 		};
 
