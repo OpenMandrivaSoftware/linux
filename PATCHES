@@ -1,6 +1,6 @@
 Based on https://git.linaro.org/landing-teams/working/qualcomm/kernel.git branch release/db820c/qcomlt-4.11
 
-Rebased to v4.11.5 tag from git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+Rebased to v4.11.6 tag from git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
 
 Adding patches from https://github.com/vivekgautam1/linux branch linaro/integration-linux-qcomlt-usb-db820c: ("git cherry linaro-qcom-lt/integration-linux-qcomlt")
 + bd9836e246fd257dbada0e9d1aa7ace44920af4d
