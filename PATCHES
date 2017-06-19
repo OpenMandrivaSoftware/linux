@@ -17,3 +17,17 @@ Adding patches from https://github.com/vivekgautam1/linux branch linaro/integrat
 + 5acc2c9c6e5af7db950ab841e5e05fed6be42eeb
 + 8843d9d315298bc96e159e987356fe30c2959a38
 
+Add suitable kernel config
+
+Switch DTS file from db820c to OQ820:
+diff --git a/arch/arm64/boot/dts/qcom/apq8096-db820c.dts b/arch/arm64/boot/dts/qcom/apq8096-db820c.dts
+index 230e9c8484ac..bdec0b509c8b 100644
+--- a/arch/arm64/boot/dts/qcom/apq8096-db820c.dts
++++ b/arch/arm64/boot/dts/qcom/apq8096-db820c.dts
+@@ -17,5 +17,5 @@
+ 
+ / {
+ 	model = "Qualcomm Technologies, Inc. DB820c";
+-	compatible = "arrow,apq8096-db820c", "qcom,apq8096-sbc";
++	compatible = "arrow,apq8096-db820c", "qcom,apq8096-dragonboard";
+ };
