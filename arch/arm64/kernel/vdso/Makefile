@@ -11,7 +11,7 @@ obj-vdso := gettimeofday.o note.o sigreturn.o
 targets := $(obj-vdso) vdso.so vdso.so.dbg
 obj-vdso := $(addprefix $(obj)/, $(obj-vdso))
 
-ccflags-y := -shared -fno-common -fno-builtin
+ccflags-y := -fuse-ld=bfd -shared -fno-common -fno-builtin
 ccflags-y += -nostdlib -Wl,-soname=linux-vdso.so.1 \
 		$(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
 
@@ -20,7 +20,7 @@ GCOV_PROFILE := n
 
 # Workaround for bare-metal (ELF) toolchains that neglect to pass -shared
 # down to collect2, resulting in silent corruption of the vDSO image.
-ccflags-y += -Wl,-shared
+ccflags-y += -fuse-ld=bfd -Wl,-shared
 
 obj-y += vdso.o
 extra-y += vdso.lds vdso-offsets.h

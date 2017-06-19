@@ -1,2 +1,5 @@
 Original kernel taken from linux-4.4.52-armada-17.08 branch of
 https://github.com/MarvellEmbeddedProcessors/linux-marvell
+
+PATCHES:
+- Fix build with gold default linker
