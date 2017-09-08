@@ -935,7 +935,7 @@ void phy_state_machine(struct work_struct *work)
 		 */
 		if (!phydev->link && phydev->state == PHY_RUNNING) {
 			phydev->state = PHY_CHANGELINK;
-			dev_err(&phydev->dev, "no link in PHY_RUNNING\n");
+			dev_err(&phydev->attached_dev, "no link in PHY_RUNNING\n");
 		}
 		break;
 	case PHY_CHANGELINK:
