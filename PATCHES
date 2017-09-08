@@ -1,0 +1,33 @@
+Based on https://git.linaro.org/landing-teams/working/qualcomm/kernel.git branch release/db820c/qcomlt-4.11 (latest commit: 5a922a1867f518423821ad484b4b047a7d9fb270)
+
+Rebased to v4.11.12 tag from git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+Adding patches from https://github.com/vivekgautam1/linux branch linaro/integration-linux-qcomlt-usb-db820c: ("git cherry linaro-qcom-lt/integration-linux-qcomlt")
++ bd9836e246fd257dbada0e9d1aa7ace44920af4d
++ 64196ea22fc9c85c6abde390a8eca8492bae0ca7
++ 98dfdee424b83107c49191600a752ba13cff5ac6
++ 7cc50a6f3401e55f55ecc54a5f286703410b9fff
++ ed8c0103ce1534756cacc4f5b639d097d93c0870
++ fc42b8321d86fbe184c1eef9e2aa0406b4203bfd
++ a89cb429a1f0605e99328dd1699a3319e154597c
++ 5c2de81e7652117b452fde63c9dd63d132ba437f
++ 099929e5815ee4fe2b512fc5527e8bb1d97786b6
++ 39c044390952de52dd2d552c5a89ec4753cc7646
++ 4bb4354b89f9ea3a32137a4f38ead479c8777070
++ 5acc2c9c6e5af7db950ab841e5e05fed6be42eeb
++ 8843d9d315298bc96e159e987356fe30c2959a38
+
+Add suitable kernel config
+
+Switch DTS file from db820c to OQ820:
+diff --git a/arch/arm64/boot/dts/qcom/apq8096-db820c.dts b/arch/arm64/boot/dts/qcom/apq8096-db820c.dts
+index 230e9c8484ac..bdec0b509c8b 100644
+--- a/arch/arm64/boot/dts/qcom/apq8096-db820c.dts
++++ b/arch/arm64/boot/dts/qcom/apq8096-db820c.dts
+@@ -17,5 +17,5 @@
+ 
+ / {
+ 	model = "Qualcomm Technologies, Inc. DB820c";
+-	compatible = "arrow,apq8096-db820c", "qcom,apq8096-sbc";
++	compatible = "arrow,apq8096-db820c", "qcom,apq8096-dragonboard";
+ };
