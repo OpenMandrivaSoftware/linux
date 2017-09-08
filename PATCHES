@@ -2,6 +2,8 @@ Based on https://git.linaro.org/landing-teams/working/qualcomm/kernel.git branch
 
 Rebased to v4.11.12 tag from git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
 
+Make the kernel build if ld == gold (7127175201b7)
+
 Adding patches from https://github.com/vivekgautam1/linux branch linaro/integration-linux-qcomlt-usb-db820c: ("git cherry linaro-qcom-lt/integration-linux-qcomlt")
 + bd9836e246fd257dbada0e9d1aa7ace44920af4d
 + 64196ea22fc9c85c6abde390a8eca8492bae0ca7
