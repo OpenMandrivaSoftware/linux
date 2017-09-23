@@ -48,6 +48,7 @@ struct venus_resources {
 	unsigned int vmem_id;
 	u32 vmem_size;
 	u32 vmem_addr;
+	const char *fwname;
 };
 
 struct venus_format {
@@ -100,7 +101,6 @@ struct venus_core {
 	struct device *dev;
 	struct device *dev_dec;
 	struct device *dev_enc;
-	struct device dev_fw;
 	struct mutex lock;
 	struct list_head instances;
 	atomic_t insts_count;
