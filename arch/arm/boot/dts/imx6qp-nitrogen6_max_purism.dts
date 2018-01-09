@@ -57,3 +57,12 @@
 &sata {
 	status = "okay";
 };
+
+/* LCD and LVDS not connected */
+&lcd_display {
+	status = "disabled";
+};
+
+&ldb {
+	status = "disabled";
+};
