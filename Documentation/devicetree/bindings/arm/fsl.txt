@@ -53,6 +53,10 @@ i.MX6 Quad SABRE Automotive Board
 Required root node properties:
     - compatible = "fsl,imx6q-sabreauto", "fsl,imx6q";
 
+i.MX8MQ Evaluation Kit
+Required root node properties:
+    - compatible = "fsl,imx8mq-evk", "fsl,imx8mq";
+
 Generic i.MX boards
 -------------------
 
