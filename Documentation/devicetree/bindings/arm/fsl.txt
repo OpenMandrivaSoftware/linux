@@ -75,6 +75,10 @@ i.MX6q generic board
 Required root node properties:
     - compatible = "fsl,imx6q";
 
+i.MX8MQ generic board
+Required root node properties:
+    - compatible = "fsl,imx8mq";
+
 Freescale Vybrid Platform Device Tree Bindings
 ----------------------------------------------
 
