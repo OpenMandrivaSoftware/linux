@@ -8,3 +8,15 @@ config IMX7_PM_DOMAINS
 	default y if SOC_IMX7D
 
 endmenu
+
+if ARCH_MXC
+
+if ARM64
+
+config SOC_IMX8MQ
+	bool "i.MX8MQ support"
+	help
+	  This enables support for the i.MX8MQ SoC.
+endif
+
+endif
