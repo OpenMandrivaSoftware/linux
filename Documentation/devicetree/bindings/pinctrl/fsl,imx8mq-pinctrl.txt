@@ -1,0 +1,39 @@
+* Freescale IMX8MQ IOMUX Controller
+
+Please refer to fsl,imx-pinctrl.txt and pinctrl-bindings.txt in this directory
+for common binding part and usage.
+
+=== Pin Controller Node ===
+
+Required properties:
+- compatible: "fsl,imx8mq-iomuxc"
+- reg: Must contain the base physical address and size of the iomuxc registers.
+
+=== Pin Configuration Node ===
+Required properties:
+- pinmux: Array of integersy, representing a group of pins mux setting.
+	The format is pinmux = <PIN_FUNC_ID>, PIN_FUNC_ID is a pin working on
+	a specific function.
+
+	Refer to imx8mq-pinfunc.h in device tree source folder for all available
+	imx8mq PIN_FUNC_ID.
+
+Optional Properties:
+- drive-strength		Integer: controls Drive Strength
+					0: driver disabled
+					1: 255 Ohm
+					2: 105 Ohm
+					3:  75 Ohm
+					4:  85 Ohm
+					5:  65 Ohm
+					6:  45 Ohm
+					7:  40 Ohm
+- slew-rate:			Integer: controls Slew Rate
+					0: Slow
+					1: Medium
+					2: Fast
+					3: Maximum
+- drive-open-drain		Bool: enable Open-drian
+- bias-pull-up			Bool: enable Pull-up
+- input-schmitt-enable		Bool: enable schmitt-trigger
+- input-enable			Bool: enable input, overriding module settings
