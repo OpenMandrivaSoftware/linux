@@ -18,6 +18,10 @@
 #include <linux/pinctrl/pinconf-generic.h>
 #include <linux/pinctrl/pinmux.h>
 
+/* The bits in CONFIG cell defined in binding doc*/
+#define IMX_NO_PAD_CTL	0x80000000	/* no pin config need */
+#define IMX_PAD_SION 0x40000000		/* set SION */
+
 struct platform_device;
 
 extern struct pinmux_ops imx_pmx_ops;

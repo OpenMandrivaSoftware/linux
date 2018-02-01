@@ -31,10 +31,6 @@
 #include "../pinmux.h"
 #include "pinctrl-imx.h"
 
-/* The bits in CONFIG cell defined in binding doc*/
-#define IMX_NO_PAD_CTL	0x80000000	/* no pin config need */
-#define IMX_PAD_SION 0x40000000		/* set SION */
-
 static inline const struct group_desc *imx_pinctrl_find_group_by_name(
 				struct pinctrl_dev *pctldev,
 				const char *name)
@@ -509,18 +505,17 @@ static int imx_pinctrl_parse_groups(struct device_node *np,
 		pin->mux_mode = be32_to_cpu(*list++);
 		pin->input_val = be32_to_cpu(*list++);
 
-		if (info->generic_pinconf) {
+		if (info->generic_pinconf)
 			/* generic pin config decoded */
 			pin->config = config;
-		} else {
+		else
 			/* legacy pin config read from devicetree */
-			config = be32_to_cpu(*list++);
+			pin->config = be32_to_cpu(*list++);
 
-			/* SION bit is in mux register */
-			if (config & IMX_PAD_SION)
-				pin->mux_mode |= IOMUXC_CONFIG_SION;
-			pin->config = config & ~IMX_PAD_SION;
-		}
+		/* SION bit is in mux register */
+		if (pin->config & IMX_PAD_SION)
+			pin->mux_mode |= IOMUXC_CONFIG_SION;
+		pin->config = pin->config & ~IMX_PAD_SION;
 
 		dev_dbg(ipctl->dev, "%s: 0x%x 0x%08lx", info->pins[pin_id].name,
 				pin->mux_mode, pin->config);
