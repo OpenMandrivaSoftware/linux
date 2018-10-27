@@ -2162,14 +2162,17 @@ int scsi_error_handler(void *data)
 	 * We never actually get interrupted because kthread_run
 	 * disables signal delivery for the created thread.
 	 */
-	while (!kthread_should_stop()) {
-		set_current_state(TASK_INTERRUPTIBLE);
+	while (true) {
 		/*
-		 * Do not go to sleep, when there is host_failed when the
-		 * one-PRD per command workaroud is tiggered.
-		 * Because that ata/scsi subsystem maybe hang, when CD_ROM
-		 * and HDD are accessed simultaneously.
+		 * The sequence in kthread_stop() sets the stop flag first
+		 * then wakes the process.  To avoid missed wakeups, the task
+		 * should always be in a non running state before the stop
+		 * flag is checked
 		 */
+		set_current_state(TASK_INTERRUPTIBLE);
+		if (kthread_should_stop())
+			break;
+
 		if ((shost->host_failed == 0 && shost->host_eh_scheduled == 0) ||
 		    ((shost->host_failed != shost->host_busy) &&
 		    (sg_io_buffer_hack == NULL) && (shost->host_failed > 0))) {
