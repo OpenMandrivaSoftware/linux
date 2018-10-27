@@ -67,8 +67,7 @@ struct isl29023_data {
 	struct workqueue_struct *workqueue;
 	char phys[32];
 	u8 reg_cache[ISL29023_NUM_CACHABLE_REGS];
-	u8 mode_before_suspend;
-	u8 mode_before_interrupt;
+	u8 mode;
 	u16 rext;
 };
 
@@ -601,6 +600,7 @@ static ssize_t isl29023_store_mode(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct i2c_client *client = to_i2c_client(dev);
+	struct isl29023_data *data = i2c_get_clientdata(client);
 	unsigned long val;
 	int ret;
 
@@ -613,6 +613,8 @@ static ssize_t isl29023_store_mode(struct device *dev,
 	ret = isl29023_set_mode(client, val);
 	if (ret < 0)
 		return ret;
+
+	data->mode = val;
 
 	return count;
 }
@@ -864,12 +866,13 @@ static void isl29023_work(struct work_struct *work)
 	/* Clear interrupt flag */
 	isl29023_set_int_flag(client, 0);
 
-	data->mode_before_interrupt = isl29023_get_mode(client);
 	lux = isl29023_get_adc_value(client);
+
+	dev_info(&client->dev, "lux=%d\n", lux);
 
 	/* To clear the interrpt status */
 	isl29023_set_power_state(client, ISL29023_PD_MODE);
-	isl29023_set_mode(client, data->mode_before_interrupt);
+	isl29023_set_mode(client, data->mode);
 
 	msleep(100);
 
@@ -1017,7 +1020,8 @@ static int isl29023_suspend(struct i2c_client *client, pm_message_t mesg)
 {
 	struct isl29023_data *data = i2c_get_clientdata(client);
 
-	data->mode_before_suspend = isl29023_get_mode(client);
+	cancel_work_sync(&data->work);
+
 	return isl29023_set_power_state(client, ISL29023_PD_MODE);
 }
 
@@ -1031,7 +1035,7 @@ static int isl29023_resume(struct i2c_client *client)
 		if (i2c_smbus_write_byte_data(client, i, data->reg_cache[i]))
 			return -EIO;
 
-	return isl29023_set_mode(client, data->mode_before_suspend);
+	return isl29023_set_mode(client, ISL29023_ALS_ONCE_MODE);
 }
 
 #else

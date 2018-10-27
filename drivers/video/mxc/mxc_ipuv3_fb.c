@@ -114,6 +114,7 @@ struct mxcfb_info {
 	struct mxc_dispdrv_handle *dispdrv;
 
 	struct fb_var_screeninfo cur_var;
+	ktime_t vsync_nf_timestamp;
 	uint32_t cur_ipu_pfmt;
 	uint32_t cur_fb_pfmt;
 	bool cur_prefetch;
@@ -1364,6 +1365,11 @@ static int mxcfb_set_par(struct fb_info *fbi)
 			ipu_enable_channel(mxc_fbi_fg->ipu, mxc_fbi_fg->ipu_ch);
 	}
 
+	/* Clear activate as not Reconfiguring framebuffer again */
+	if ((fbi->var.activate & FB_ACTIVATE_FORCE) &&
+		(fbi->var.activate & FB_ACTIVATE_MASK) == FB_ACTIVATE_NOW)
+		fbi->var.activate = FB_ACTIVATE_NOW;
+
 	if (!on_the_fly && mxc_fbi->dispdrv && mxc_fbi->dispdrv->drv->enable) {
 		retval = mxc_fbi->dispdrv->drv->enable(mxc_fbi->dispdrv, fbi);
 		if (retval < 0) {
@@ -2072,6 +2078,7 @@ static int mxcfb_ioctl(struct fb_info *fbi, unsigned int cmd, unsigned long arg)
 		}
 	case MXCFB_WAIT_FOR_VSYNC:
 		{
+			unsigned long long timestamp;
 			if (mxc_fbi->ipu_ch == MEM_FG_SYNC) {
 				/* BG should poweron */
 				struct mxcfb_info *bg_mxcfbi = NULL;
@@ -2100,6 +2107,15 @@ static int mxcfb_ioctl(struct fb_info *fbi, unsigned int cmd, unsigned long arg)
 			ipu_enable_irq(mxc_fbi->ipu, mxc_fbi->ipu_ch_nf_irq);
 			retval = wait_for_completion_interruptible_timeout(
 				&mxc_fbi->vsync_complete, 1 * HZ);
+
+			timestamp = ktime_to_ns(mxc_fbi->vsync_nf_timestamp);
+			dev_vdbg(fbi->device, "ts = %llu", timestamp);
+
+			if (copy_to_user((void *)arg, &timestamp, sizeof(timestamp))) {
+			    retval = -EFAULT;
+			    break;
+			}
+
 			if (retval == 0) {
 				dev_err(fbi->device,
 					"MXCFB_WAIT_FOR_VSYNC: timeout %d\n",
@@ -2707,6 +2723,8 @@ static irqreturn_t mxcfb_nf_irq_handler(int irq, void *dev_id)
 	struct fb_info *fbi = dev_id;
 	struct mxcfb_info *mxc_fbi = fbi->par;
 
+	mxc_fbi->vsync_nf_timestamp = ktime_get();
+
 	complete(&mxc_fbi->vsync_complete);
 	return IRQ_HANDLED;
 }
@@ -2731,7 +2749,6 @@ static int mxcfb_suspend(struct platform_device *pdev, pm_message_t state)
 #ifdef CONFIG_FB_MXC_LOW_PWR_DISPLAY
 	void *fbmem;
 #endif
-
 	if (mxc_fbi->ovfbi) {
 		struct mxcfb_info *mxc_fbi_fg =
 			(struct mxcfb_info *)mxc_fbi->ovfbi->par;
@@ -3436,6 +3453,7 @@ static int mxcfb_probe(struct platform_device *pdev)
 	struct ipuv3_fb_platform_data *plat_data;
 	struct fb_info *fbi;
 	struct mxcfb_info *mxcfbi;
+	struct device *disp_dev;
 	struct resource *res;
 	int ret = 0;
 
@@ -3468,6 +3486,13 @@ static int mxcfb_probe(struct platform_device *pdev)
 	ret = mxcfb_option_setup(pdev, fbi);
 	if (ret)
 		goto get_fb_option_failed;
+
+	/*
+	 * Without following line framebuffer console initialized
+	 * as 16 bpp, no matter what configuration is set.
+	 * Fix normal resume of vivante-accelerated X.
+	 */
+	fbi->var.bits_per_pixel = plat_data->default_bpp;
 
 	mxcfbi = (struct mxcfb_info *)fbi->par;
 	mxcfbi->ipu_int_clk = plat_data->int_clk;
@@ -3570,6 +3595,15 @@ static int mxcfb_probe(struct platform_device *pdev)
 	if (ret)
 		dev_err(&pdev->dev, "Error %d on creating file for disp "
 				    " device propety\n", ret);
+
+	disp_dev = mxc_dispdrv_getdev(mxcfbi->dispdrv);
+	if (disp_dev) {
+		ret = sysfs_create_link(&fbi->dev->kobj,
+				&disp_dev->kobj, "disp_dev");
+		if (ret)
+			dev_err(&pdev->dev,
+				"Error %d on creating file\n", ret);
+	}
 
 	return 0;
 

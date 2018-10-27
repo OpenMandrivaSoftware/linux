@@ -109,6 +109,20 @@
 			startup-delay-us = <500>;
 			enable-active-high;
 		};
+		wlreg_on: fixedregulator@100 {
+			compatible = "regulator-fixed";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			regulator-name = "wlreg_on";
+			gpio = <&gpio4 7 0>;
+			startup-delay-us = <100>;
+			enable-active-high;
+		};
+
+		bcmdhd_wlan_1: bcmdhd_wlan@0 {
+			compatible = "android,bcmdhd_wlan";
+			wlreg_on-supply = <&wlreg_on>;
+		};
 	};
 
 	gpio-keys {
@@ -126,14 +140,14 @@
 		volume-up {
 			label = "Volume Up";
 			gpios = <&gpio1 4 1>;
-			gpio-key,wakeup;
+			gpio-key;
 			linux,code = <KEY_VOLUMEUP>;
 		};
 
 		volume-down {
 			label = "Volume Down";
 			gpios = <&gpio1 5 1>;
-			gpio-key,wakeup;
+			gpio-key;
 			linux,code = <KEY_VOLUMEDOWN>;
 		};
 	};
@@ -223,12 +237,94 @@
 		status = "okay";
 	};
 
-	backlight {
-		compatible = "pwm-backlight";
-		pwms = <&pwm1 0 5000000>;
-		brightness-levels = <0 4 8 16 32 64 128 255>;
-		default-brightness-level = <7>;
+	mxcfb4: fb@3 {
+		compatible = "fsl,mxc_sdc_fb";
+		disp_dev = "ldb";
+		interface_pix_fmt = "RGB666";
+		default_bpp = <16>;
+		int_clk = <0>;
+		late_init = <0>;
+		status = "disabled";
+	};
+
+	lcd@0 {
+		compatible = "fsl,lcd";
+		ipu_id = <0>;
+		disp_id = <0>;
+		default_ifmt = "RGB565";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_ipu1>;
 		status = "okay";
+	};
+
+	pwm-backlight {
+		compatible = "pwm-backlight";
+		pwms = <&pwm1 0 50000>;
+		brightness-levels = <
+			0  /*1  2  3  4  5  6*/  7  8  9
+			10 11 12 13 14 15 16 17 18 19
+			20 21 22 23 24 25 26 27 28 29
+			30 31 32 33 34 35 36 37 38 39
+			40 41 42 43 44 45 46 47 48 49
+			50 51 52 53 54 55 56 57 58 59
+			60 61 62 63 64 65 66 67 68 69
+			70 71 72 73 74 75 76 77 78 79
+			80 81 82 83 84 85 86 87 88 89
+			90 91 92 93 94 95 96 97 98 99
+			100
+			>;
+		default-brightness-level = <94>;
+	};
+
+	v4l2_cap_0 {
+		compatible = "fsl,imx6q-v4l2-capture";
+		ipu_id = <0>;
+		csi_id = <0>;
+		mclk_source = <0>;
+		status = "okay";
+	};
+
+	v4l2_cap_1 {
+		compatible = "fsl,imx6q-v4l2-capture";
+		ipu_id = <0>;
+		csi_id = <1>;
+		mclk_source = <0>;
+		status = "okay";
+	};
+
+	v4l2_out {
+		compatible = "fsl,mxc_v4l2_output";
+		status = "okay";
+	};
+
+	mipi_dsi_reset: mipi-dsi-reset {
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio6 11 GPIO_ACTIVE_LOW>;
+		reset-delay-us = <50>;
+		#reset-cells = <0>;
+	};
+
+	minipcie_ctrl {
+		power-on-gpio = <&gpio3 19 0>;
+	};
+
+    bt_rfkill {
+                compatible = "fsl,mxc_bt_rfkill";
+                        bt-power-gpios = <&gpio1 2 0>;
+                                status ="okay";
+    };
+
+	ramoops_device {
+		compatible = "fsl,mxc_ramoops";
+		record_size = <524288>; /*512K*/
+		console_size = <262144>; /*256K*/
+		ftrace_size = <262144>;  /*256K*/
+		dump_oops = <1>;
+		status = "okay";
+	};
+
+	caam_keyblob {
+		compatible = "fsl,sec-v4.0-keyblob";
 	};
 
 	v4l2_cap_0 {
@@ -522,7 +618,7 @@
 	mag3110@0e {
 		compatible = "fsl,mag3110";
 		reg = <0x0e>;
-		position = <2>;
+		position = <1>;
 		vdd-supply = <&reg_sensor>;
 		vddio-supply = <&reg_sensor>;
 		interrupt-parent = <&gpio3>;
@@ -568,6 +664,7 @@
 				MX6QDL_PAD_GPIO_9__GPIO1_IO09 	0x80000000
 				MX6QDL_PAD_EIM_DA9__GPIO3_IO09 0x80000000
 				MX6QDL_PAD_GPIO_1__WDOG2_B 0x80000000
+                MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x1b0b0
 				MX6QDL_PAD_NANDF_CS0__GPIO6_IO11 0x80000000
 				MX6QDL_PAD_NANDF_CS1__GPIO6_IO14 0x80000000
 				MX6QDL_PAD_NANDF_CS2__GPIO6_IO15 0x80000000
@@ -757,10 +854,7 @@
 				MX6QDL_PAD_SD2_DAT1__SD2_DATA1		0x17059
 				MX6QDL_PAD_SD2_DAT2__SD2_DATA2		0x17059
 				MX6QDL_PAD_SD2_DAT3__SD2_DATA3		0x17059
-				MX6QDL_PAD_NANDF_D4__SD2_DATA4		0x17059
-				MX6QDL_PAD_NANDF_D5__SD2_DATA5		0x17059
-				MX6QDL_PAD_NANDF_D6__SD2_DATA6		0x17059
-				MX6QDL_PAD_NANDF_D7__SD2_DATA7		0x17059
+				MX6QDL_PAD_KEY_ROW0__GPIO4_IO07		0x13069	/* WL_REG_ON */
 			>;
 		};
 
@@ -924,6 +1018,13 @@
 	status = "okay";
 };
 
+&uart5 {
+    pinctrl-names = "default";
+    pinctrl-0 = <&pinctrl_uart5_1>;
+    fsl,uart-has-rtscts;
+    status = "okay";
+};
+
 &usbh1 {
 	vbus-supply = <&reg_usb_h1_vbus>;
 	status = "okay";
@@ -943,10 +1044,12 @@
 &usdhc2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usdhc2>;
-	bus-width = <8>;
+	bus-width = <4>;
 	cd-gpios = <&gpio2 2 0>;
 	wp-gpios = <&gpio2 3 0>;
 	no-1-8-v;
+	wifi-host;
+	pm-ignore-notify;
 	keep-power-in-suspend;
 	enable-sdio-wakeup;
 	status = "okay";

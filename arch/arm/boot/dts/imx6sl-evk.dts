@@ -81,13 +81,64 @@
 			regulator-max-microvolt = <4325000>;
 			regulator-boot-on;
 		};
+		wlreg_on: fixedregulator@100 {
+			compatible = "regulator-fixed";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			regulator-name = "wlreg_on";
+			gpio = <&gpio5 16 0>;
+			startup-delay-us = <100>;
+			enable-active-high;
+		};
+
 	};
 
-	backlight {
+	bcmdhd_wlan_1: bcmdhd_wlan@0 {
+	       compatible = "android,bcmdhd_wlan";
+	       wlreg_on-supply = <&wlreg_on>;
+       };
+
+	pwm-backlight {
 		compatible = "pwm-backlight";
 		pwms = <&pwm1 0 5000000>;
-		brightness-levels = <0 4 8 16 32 64 128 255>;
-		default-brightness-level = <6>;
+		brightness-levels = <
+			0  1  2  3  4  5  6  7  8  9
+			10 11 12 13 14 15 16 17 18 19
+			20 21 22 23 24 25 26 27 28 29
+			30 31 32 33 34 35 36 37 38 39
+			40 41 42 43 44 45 46 47 48 49
+			50 51 52 53 54 55 56 57 58 59
+			60 61 62 63 64 65 66 67 68 69
+			70 71 72 73 74 75 76 77 78 79
+			80 81 82 83 84 85 86 87 88 89
+			90 91 92 93 94 95 96 97 98 99
+			100 101 102 103 104 105 106 107 108 109
+			110 111 112 113 114 115 116 117 118 119
+			120 121 122 123 124 125 126 127 128 129
+			130 131 132 133 134 135 136 137 138 139
+			140 141 142 143 144 145 146 147 148 149
+			150 151 152 153 154 155 156 157 158 159
+			160 161 162 163 164 165 166 167 168 169
+			170 171 172 173 174 175 176 177 178 179
+			180 181 182 183 184 185 186 187 188 189
+			190 191 192 193 194 195 196 197 198 199
+			200 201 202 203 204 205 206 207 208 209
+			210 211 212 213 214 215 216 217 218 219
+			220 221 222 223 224 225 226 227 228 229
+			230 231 232 233 234 235 236 237 238 239
+			240 241 242 243 244 245 246 247 248 249
+			250 251 252 253 254 255
+			>;
+		default-brightness-level = <255>;
+	};
+
+	ramoops_device {
+		compatible = "fsl,mxc_ramoops";
+		record_size = <524288>; /*512K*/
+		console_size= <262144>; /*256K*/
+		ftrace_size= <262144>;  /*256K*/
+		dump_oops = <1>;
+		status = "okay";
 	};
 
 	pxp_v4l2_out {
@@ -419,7 +470,7 @@
 		interrupt-parent = <&gpio2>;
 		interrupts = <10 2>;
 		mode_str ="1280x720M@60";
-		bits-per-pixel = <16>;
+		bits-per-pixel = <32>;
 		resets = <&sii902x_reset>;
 		reg = <0x39>;
 	};
@@ -686,10 +737,7 @@
 				MX6SL_PAD_SD1_DAT1__SD1_DATA1		0x17059
 				MX6SL_PAD_SD1_DAT2__SD1_DATA2		0x17059
 				MX6SL_PAD_SD1_DAT3__SD1_DATA3		0x17059
-				MX6SL_PAD_SD1_DAT4__SD1_DATA4		0x17059
-				MX6SL_PAD_SD1_DAT5__SD1_DATA5		0x17059
-				MX6SL_PAD_SD1_DAT6__SD1_DATA6		0x17059
-				MX6SL_PAD_SD1_DAT7__SD1_DATA7		0x17059
+				MX6SL_PAD_SD3_DAT2__GPIO5_IO16		0x13069 /* WL_REG_ON */
 			>;
 		};
 
@@ -761,9 +809,6 @@
 				MX6SL_PAD_SD3_CMD__SD3_CMD		0x17059
 				MX6SL_PAD_SD3_CLK__SD3_CLK		0x10059
 				MX6SL_PAD_SD3_DAT0__SD3_DATA0		0x17059
-				MX6SL_PAD_SD3_DAT1__SD3_DATA1		0x17059
-				MX6SL_PAD_SD3_DAT2__SD3_DATA2		0x17059
-				MX6SL_PAD_SD3_DAT3__SD3_DATA3		0x17059
 			>;
 		};
 
@@ -772,9 +817,6 @@
 				MX6SL_PAD_SD3_CMD__SD3_CMD		0x170b9
 				MX6SL_PAD_SD3_CLK__SD3_CLK		0x100b9
 				MX6SL_PAD_SD3_DAT0__SD3_DATA0		0x170b9
-				MX6SL_PAD_SD3_DAT1__SD3_DATA1		0x170b9
-				MX6SL_PAD_SD3_DAT2__SD3_DATA2		0x170b9
-				MX6SL_PAD_SD3_DAT3__SD3_DATA3		0x170b9
 			>;
 		};
 
@@ -783,9 +825,6 @@
 				MX6SL_PAD_SD3_CMD__SD3_CMD		0x170f9
 				MX6SL_PAD_SD3_CLK__SD3_CLK		0x100f9
 				MX6SL_PAD_SD3_DAT0__SD3_DATA0		0x170f9
-				MX6SL_PAD_SD3_DAT1__SD3_DATA1		0x170f9
-				MX6SL_PAD_SD3_DAT2__SD3_DATA2		0x170f9
-				MX6SL_PAD_SD3_DAT3__SD3_DATA3		0x170f9
 			>;
 		};
 
@@ -820,14 +859,14 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_kpp>;
 	linux,keymap = <
-			MATRIX_KEY(0x0, 0x0, KEY_UP)         /* ROW0, COL0 */
-			MATRIX_KEY(0x0, 0x1, KEY_DOWN)       /* ROW0, COL1 */
-			MATRIX_KEY(0x0, 0x2, KEY_ENTER)      /* ROW0, COL2 */
-			MATRIX_KEY(0x1, 0x0, KEY_HOME)       /* ROW1, COL0 */
-			MATRIX_KEY(0x1, 0x1, KEY_RIGHT)      /* ROW1, COL1 */
-			MATRIX_KEY(0x1, 0x2, KEY_LEFT)       /* ROW1, COL2 */
-			MATRIX_KEY(0x2, 0x0, KEY_VOLUMEDOWN) /* ROW2, COL0 */
-			MATRIX_KEY(0x2, 0x1, KEY_VOLUMEUP)   /* ROW2, COL1 */
+			MATRIX_KEY(0x1, 0x1, KEY_UP)
+			MATRIX_KEY(0x2, 0x1, KEY_DOWN)
+			MATRIX_KEY(0x2, 0x0, KEY_BACK)
+			MATRIX_KEY(0x1, 0x2, KEY_POWER)
+			MATRIX_KEY(0x0, 0x2, KEY_RIGHT)
+			MATRIX_KEY(0x1, 0x0, KEY_LEFT)
+			MATRIX_KEY(0x0, 0x1, KEY_VOLUMEDOWN)
+			MATRIX_KEY(0x0, 0x0, KEY_VOLUMEUP)
 	>;
 	status = "okay";
 };
@@ -915,15 +954,17 @@
 };
 
 &usdhc1 {
-	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usdhc1>;
 	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
 	pinctrl-2 = <&pinctrl_usdhc1_200mhz>;
-	bus-width = <8>;
+	bus-width = <4>;
 	cd-gpios = <&gpio4 7 0>;
 	wp-gpios = <&gpio4 6 0>;
 	keep-power-in-suspend;
 	enable-sdio-wakeup;
+	wifi-host;
+	pm-ignore-notify;
 	status = "okay";
 };
 
@@ -940,12 +981,8 @@
 };
 
 &usdhc3 {
-	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usdhc3>;
-	pinctrl-1 = <&pinctrl_usdhc3_100mhz>;
-	pinctrl-2 = <&pinctrl_usdhc3_200mhz>;
-	cd-gpios = <&gpio3 22 0>;
-	keep-power-in-suspend;
-	enable-sdio-wakeup;
+	bus-width = <1>;
 	status = "okay";
 };

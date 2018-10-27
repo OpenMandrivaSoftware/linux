@@ -77,4 +77,6 @@
 #define SERIO_PS2MULT	0x3c
 #define SERIO_TSC40	0x3d
 
+#define SERIO_DMC	0xfa
+
 #endif /* _UAPI_SERIO_H */

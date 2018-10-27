@@ -127,7 +127,9 @@ obj-y += busfreq-imx.o busfreq_ddr3.o busfreq_lpddr2.o
 
 
 AFLAGS_ddr3_freq_imx6.o :=-Wa,-march=armv7-a
-obj-$(CONFIG_SOC_IMX6Q) += ddr3_freq_imx6.o
+AFLAGS_smp_wfe_imx6.o :=-Wa,-march=armv7-a
+AFLAGS_lpddr2_freq_imx6q.o :=-Wa,-march=armv7-a
+obj-$(CONFIG_SOC_IMX6Q) += ddr3_freq_imx6.o smp_wfe_imx6.o lpddr2_freq_imx6q.o
 
 AFLAGS_imx6sl_lpm_wfi.o :=-Wa,-march=armv7-a
 AFLAGS_lpddr2_freq_imx6.o :=-Wa,-march=armv7-a
@@ -158,5 +160,10 @@ obj-$(CONFIG_SOC_IMX50) += mach-imx50.o
 obj-$(CONFIG_SOC_IMX53) += mach-imx53.o
 
 obj-$(CONFIG_SOC_VF610) += clk-vf610.o mach-vf610.o
+obj-$(CONFIG_MACH_IMX_BLUETOOTH_RFKILL) += mx6_bt_rfkill.o
+obj-$(CONFIG_MX6_RAMOOPS) += mx6_ramoops.o
+
+obj-$(CONFIG_SOC_IMX6Q) += board-pkm01-reg-phy.o
+obj-$(CONFIG_SOC_IMX6Q) += board-pkm01-wl1271-platdata.o
 
 obj-y += devices/

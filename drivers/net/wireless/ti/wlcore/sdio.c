@@ -52,6 +52,7 @@ static bool dump = false;
 struct wl12xx_sdio_glue {
 	struct device *dev;
 	struct platform_device *core;
+	void (*set_power)(bool on);
 };
 
 static const struct sdio_device_id wl1271_devices[] = {
@@ -153,6 +154,9 @@ static int wl12xx_sdio_power_on(struct wl12xx_sdio_glue *glue)
 	struct sdio_func *func = dev_to_sdio_func(glue->dev);
 	struct mmc_card *card = func->card;
 
+	if (glue->set_power)
+		glue->set_power(true);
+
 	ret = pm_runtime_get_sync(&card->dev);
 	if (ret) {
 		/*
@@ -192,6 +196,9 @@ static int wl12xx_sdio_power_off(struct wl12xx_sdio_glue *glue)
 
 	/* Let runtime PM know the card is powered off */
 	pm_runtime_put_sync(&card->dev);
+
+	if (glue->set_power)
+		glue->set_power(false);
 
 out:
 	return ret;
@@ -254,6 +261,8 @@ static int wl1271_probe(struct sdio_func *func,
 		dev_err(glue->dev, "missing wlan platform data: %d\n", ret);
 		goto out_free_glue;
 	}
+
+	glue->set_power = pdev_data->pdata->set_power;
 
 	/* if sdio can keep power while host is suspended, enable wow */
 	mmcflags = sdio_get_host_pm_caps(func);
@@ -398,14 +407,36 @@ static struct sdio_driver wl1271_sdio_driver = {
 #endif
 };
 
+#include <linux/delay.h>
+
 static int __init wl1271_init(void)
 {
+	const struct wl12xx_platform_data *wlan_data;
+
+	/* Enable card function */
+	wlan_data = wl12xx_get_platform_data();
+	if (!IS_ERR(wlan_data) && wlan_data->set_power) {
+		wlan_data->set_power(1);
+		msleep(10);
+	}
+
+
 	return sdio_register_driver(&wl1271_sdio_driver);
 }
 
 static void __exit wl1271_exit(void)
 {
+	const struct wl12xx_platform_data *wlan_data;
+
+	wlan_data = wl12xx_get_platform_data();
+	if (!IS_ERR(wlan_data) && wlan_data->set_power)
+		wlan_data->set_power(1);
+
 	sdio_unregister_driver(&wl1271_sdio_driver);
+
+	/* Disable it back */
+	if (!IS_ERR(wlan_data) && wlan_data->set_power)
+		wlan_data->set_power(0);
 }
 
 module_init(wl1271_init);

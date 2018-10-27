@@ -29,6 +29,8 @@
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
 #include <linux/types.h>
+#include <linux/delay.h>
+#include <linux/regulator/consumer.h>
 #include <video/of_videomode.h>
 #include <video/videomode.h>
 #include "mxc_dispdrv.h"
@@ -105,6 +107,7 @@ struct ldb_data {
 	bool spl_mode;
 	bool dual_mode;
 	bool clk_fixup;
+	struct regulator *vdd;
 	struct clk *di_clk[4];
 	struct clk *ldb_di_clk[2];
 	struct clk *div_3_5_clk[2];
@@ -520,6 +523,14 @@ static int ldb_enable(struct mxc_dispdrv_handle *mddh,
 	struct bus_mux bus_mux;
 	int ret = 0, id = 0, chno, other_chno;
 
+	if (!IS_ERR(ldb->vdd)) {
+		ret = regulator_enable(ldb->vdd);
+		if (ret) {
+			dev_err(dev, "vdd set voltage error\n");
+			return ret;
+		}
+	}
+
 	ret = find_ldb_chno(ldb, fbi, &chno);
 	if (ret < 0)
 		return ret;
@@ -579,6 +590,13 @@ static void ldb_disable(struct mxc_dispdrv_handle *mddh,
 	}
 
 	regmap_write(ldb->regmap, ldb->ctrl_reg, ldb->ctrl);
+
+	if (!IS_ERR(ldb->vdd) && regulator_is_enabled(ldb->vdd)) {
+		ret = regulator_disable(ldb->vdd);
+		if (ret)
+			dev_err(ldb->dev, "vdd set voltage error\n");
+	}
+
 	return;
 }
 
@@ -796,6 +814,10 @@ static int ldb_probe(struct platform_device *pdev)
 		chan->chno = i;
 		chan->ldb = ldb;
 		chan->online = true;
+
+		ldb->vdd = devm_regulator_get(dev, "vddldb");
+		if (IS_ERR(ldb->vdd))
+			dev_warn(dev, "no vdd regulator found\n");
 
 		is_primary = of_property_read_bool(child, "primary");
 

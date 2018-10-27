@@ -397,6 +397,30 @@ config BATTERY_GOLDFISH
 	  Say Y to enable support for the battery and AC power in the
 	  Goldfish emulator.
 
+config IMX6_USB_CHARGER
+	bool "Freescale imx6 USB Charger"
+	depends on SOC_IMX6Q || SOC_IMX6SL || SOC_IMX6SX
+	help
+	  Say Y to enable Freescale imx6 USB Charger Detect.
+
+config BATTERY_BQ27541
+	tristate "bq27541 battery driver"
+	depends on I2C
+	help
+	  Say Y here to enable support for batteries with BQ27541 chip.
+
+config BATTERY_BQ40Z60
+	tristate "BQ40Z60 battery driver"
+	depends on I2C
+	help
+	  Say Y here to enable support for batteries with BQ40Z60 chip.
+
+config BATTERY_BQ40Z60_FIRMWARE_ACCESS
+	bool "BQ40Z60 dataflash support"
+	depends on BATTERY_BQ40Z60
+	help
+	  Say Y here to enable support for BQ40Z60 dataflash.
+
 source "drivers/power/reset/Kconfig"
 
 endif # POWER_SUPPLY

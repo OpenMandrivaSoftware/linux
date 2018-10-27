@@ -22,6 +22,16 @@ config LEDS_CLASS
 	  This option enables the led sysfs class in /sys/class/leds.  You'll
 	  need this to do anything useful with LEDs.  If unsure, say N.
 
+config LEDS_CLASS_FLASH
+	tristate "LED Flash Class Support"
+	depends on LEDS_CLASS
+	help
+	  This option enables the flash led sysfs class in /sys/class/leds.
+	  It wrapps LED Class and adds flash LEDs specific sysfs attributes
+	  and kernel internal API to it. You'll need this to provide support
+	  for the flash related features of a LED device. It can be built
+	  as a module.
+
 comment "LED drivers"
 
 config LEDS_88PM860X
@@ -486,6 +496,24 @@ config LEDS_BLINKM
 	help
 	  This option enables support for the BlinkM RGB LED connected
 	  through I2C. Say Y to enable support for the BlinkM LED.
+
+config LEDS_TPS6105X
+	tristate "LED support for TPS6105x multifunction device"
+	depends on LEDS_CLASS
+	depends on TPS6105X
+	help
+	  This option enables support for the TPS6105x multifunction
+          device. TPS6105x includes Torch and Flash Indicator functions.
+          Say Y to enable support for the TPS6105x torch LED.
+
+config LEDS_TPS6105X_FLASH
+	tristate "LED support for TPS6105x flash LED controller"
+	depends on LEDS_TPS6105X
+	select LEDS_CLASS_FLASH
+	help
+	  This option enables support for the TPS6105x multifunction
+          device. TPS6105x includes Torch and Flash Indicator functions.
+          Say Y to enable support for the TPS6105x flash LED.
 
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"

@@ -41,6 +41,9 @@ struct serport {
 	unsigned long flags;
 };
 
+static int serport_register_serio(struct serport *serport, struct tty_struct *tty);
+static void serport_unregister_serio(struct serport *serport);
+
 /*
  * Callback functions from the serio code.
  */
@@ -112,6 +115,8 @@ static void serport_ldisc_close(struct tty_struct *tty)
 {
 	struct serport *serport = (struct serport *) tty->disc_data;
 
+	serport_unregister_serio(serport);
+
 	kfree(serport);
 }
 
@@ -166,35 +171,17 @@ out:
 static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, unsigned char __user * buf, size_t nr)
 {
 	struct serport *serport = (struct serport*) tty->disc_data;
-	struct serio *serio;
-	char name[64];
+	int err;
 
-	if (test_and_set_bit(SERPORT_BUSY, &serport->flags))
-		return -EBUSY;
+	if (!test_and_set_bit(SERPORT_BUSY, &serport->flags) &&
+			(err = serport_register_serio(serport, tty))) {
+		dev_err(tty->dev, "Unable to register serio\n");
+		return err;
+	}
 
-	serport->serio = serio = kzalloc(sizeof(struct serio), GFP_KERNEL);
-	if (!serio)
-		return -ENOMEM;
-
-	strlcpy(serio->name, "Serial port", sizeof(serio->name));
-	snprintf(serio->phys, sizeof(serio->phys), "%s/serio0", tty_name(tty, name));
-	serio->id = serport->id;
-	serio->id.type = SERIO_RS232;
-	serio->write = serport_serio_write;
-	serio->open = serport_serio_open;
-	serio->close = serport_serio_close;
-	serio->port_data = serport;
-	serio->dev.parent = tty->dev;
-
-	serio_register_port(serport->serio);
-	printk(KERN_INFO "serio: Serial port %s\n", tty_name(tty, name));
-
-	wait_event_interruptible(serport->wait, test_bit(SERPORT_DEAD, &serport->flags));
-	serio_unregister_port(serport->serio);
-	serport->serio = NULL;
-
-	clear_bit(SERPORT_DEAD, &serport->flags);
-	clear_bit(SERPORT_BUSY, &serport->flags);
+	err = wait_event_interruptible(serport->wait, test_bit(SERPORT_DEAD, &serport->flags));
+	if (err && signal_pending(current))
+		return -ERESTARTSYS;
 
 	return 0;
 }
@@ -258,6 +245,36 @@ static void serport_ldisc_write_wakeup(struct tty_struct * tty)
 	if (test_bit(SERPORT_ACTIVE, &serport->flags))
 		serio_drv_write_wakeup(serport->serio);
 	spin_unlock_irqrestore(&serport->lock, flags);
+}
+
+static int serport_register_serio(struct serport *serport, struct tty_struct *tty)
+{
+	struct serio *serio;
+	char name[64];
+
+	serport->serio = serio = kzalloc(sizeof(struct serio), GFP_KERNEL);
+	if (!serio)
+		return -ENOMEM;
+
+	strlcpy(serio->name, "Serial port", sizeof(serio->name));
+	snprintf(serio->phys, sizeof(serio->phys), "%s/serio0", tty_name(tty, name));
+	serio->id = serport->id;
+	serio->id.type = SERIO_RS232;
+	serio->write = serport_serio_write;
+	serio->open = serport_serio_open;
+	serio->close = serport_serio_close;
+	serio->port_data = serport;
+	serio->dev.parent = tty->dev;
+
+	serio_register_port(serport->serio);
+	printk(KERN_INFO "serio: Serial port %s\n", tty_name(tty, name));
+
+	return 0;
+}
+
+static void serport_unregister_serio(struct serport *serport)
+{
+	serio_unregister_port(serport->serio);
 }
 
 /*

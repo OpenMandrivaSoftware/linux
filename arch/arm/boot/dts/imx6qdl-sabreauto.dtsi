@@ -23,11 +23,23 @@
 		reg = <0x10000000 0x80000000>;
 	};
 
-	backlight {
+	pwm-backlight {
 		compatible = "pwm-backlight";
-		pwms = <&pwm3 0 5000000>;
-		brightness-levels = <0 4 8 16 32 64 128 255>;
-		default-brightness-level = <7>;
+		pwms = <&pwm3 0 50000>;
+		brightness-levels = <
+			0  /*1  2  3  4  5  6*/  7  8  9
+			10 11 12 13 14 15 16 17 18 19
+			20 21 22 23 24 25 26 27 28 29
+			30 31 32 33 34 35 36 37 38 39
+			40 41 42 43 44 45 46 47 48 49
+			50 51 52 53 54 55 56 57 58 59
+			60 61 62 63 64 65 66 67 68 69
+			70 71 72 73 74 75 76 77 78 79
+			80 81 82 83 84 85 86 87 88 89
+			90 91 92 93 94 95 96 97 98 99
+			100
+			>;
+		default-brightness-level = <94>;
 	};
 
 	clocks {
@@ -46,35 +58,36 @@
 		home {
 			label = "Home";
 			gpios = <&gpio1 11 1>;
-			gpio-key,wakeup;
+			gpio-key;
 			linux,code = <KEY_HOME>;
 		};
 
 		back {
 			label = "Back";
 			gpios = <&gpio1 12 1>;
-			gpio-key,wakeup;
+			gpio-key;
 			linux,code = <KEY_BACK>;
 		};
 
-		program {
-			label = "Program";
+		/* Reconfig to power key in Android*/
+		power {
+			label = "Power Button";
 			gpios = <&gpio2 12 1>;
+			linux,code = <116>; /* KEY_POWER */
 			gpio-key,wakeup;
-			linux,code = <KEY_PROGRAM>;
 		};
 
 		volume-up {
 			label = "Volume Up";
 			gpios = <&gpio2 15 1>;
-			gpio-key,wakeup;
+			gpio-key;
 			linux,code = <KEY_VOLUMEUP>;
 		};
 
 		volume-down {
 			label = "Volume Down";
 			gpios = <&gpio5 14 1>;
-			gpio-key,wakeup;
+			gpio-key;
 			linux,code = <KEY_VOLUMEDOWN>;
 		};
 	};
@@ -271,6 +284,15 @@
 		compatible = "fsl,mxc_v4l2_output";
 		status = "okay";
 	};
+
+	ramoops_device {
+		compatible = "fsl,mxc_ramoops";
+		record_size = <524288>; /*512K*/
+		console_size= <262144>; /*256K*/
+		ftrace_size= <262144>;  /*256K*/
+		dump_oops = <1>;
+		status = "okay";
+	};
 };
 
 &audmux {
@@ -344,7 +366,6 @@
 		pinctrl-0 = <&pinctrl_egalax_int>;
 		interrupt-parent = <&gpio2>;
 		interrupts = <28 2>;
-		wakeup-gpios = <&gpio2 28 GPIO_ACTIVE_HIGH>;
 	};
 
 	pmic: pfuze100@08 {
@@ -535,7 +556,7 @@
 	mag3110@0e {
 		compatible = "fsl,mag3110";
 		reg = <0x0e>;
-		position = <2>;
+		position = <7>;
 		interrupt-parent = <&gpio2>;
 		interrupts = <29 1>;
 	};

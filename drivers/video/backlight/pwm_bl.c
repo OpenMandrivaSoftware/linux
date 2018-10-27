@@ -41,7 +41,29 @@ struct pwm_bl_data {
 					int brightness);
 	int			(*check_fb)(struct device *, struct fb_info *);
 	void			(*exit)(struct device *);
+	struct			delayed_work dwork;
+	unsigned long		power_on_delay;
 };
+
+static void pwm_backlight_do_power_on(struct pwm_bl_data *pb)
+{
+	if (gpio_is_valid(pb->enable_gpio)) {
+		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
+			gpio_set_value(pb->enable_gpio, 0);
+		else
+			gpio_set_value(pb->enable_gpio, 1);
+	}
+
+	pwm_enable(pb->pwm);
+}
+
+static void pwm_backlight_power_on_work(struct work_struct *work)
+{
+	struct pwm_bl_data *pb = container_of(work, struct pwm_bl_data, dwork.work);
+
+	pwm_backlight_do_power_on(pb);
+}
+
 
 static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness)
 {
@@ -54,14 +76,11 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness)
 	if (err < 0)
 		dev_err(pb->dev, "failed to enable power supply\n");
 
-	if (gpio_is_valid(pb->enable_gpio)) {
-		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
-			gpio_set_value(pb->enable_gpio, 0);
-		else
-			gpio_set_value(pb->enable_gpio, 1);
-	}
+	if(pb->power_on_delay)
+		schedule_delayed_work(&pb->dwork, pb->power_on_delay);
+	else
+		pwm_backlight_do_power_on(pb);
 
-	pwm_enable(pb->pwm);
 	pb->enabled = true;
 }
 
@@ -69,6 +88,8 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
 {
 	if (!pb->enabled)
 		return;
+
+	cancel_delayed_work_sync(&pb->dwork);
 
 	pwm_config(pb->pwm, 0, pb->period);
 	pwm_disable(pb->pwm);
@@ -150,6 +171,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	struct device_node *node = dev->of_node;
 	enum of_gpio_flags flags;
 	struct property *prop;
+	const u32 *prop_ptr;
 	int length;
 	u32 value;
 	int ret;
@@ -196,6 +218,9 @@ static int pwm_backlight_parse_dt(struct device *dev,
 
 	if (gpio_is_valid(data->enable_gpio) && (flags & OF_GPIO_ACTIVE_LOW))
 		data->enable_gpio_flags |= PWM_BACKLIGHT_GPIO_ACTIVE_LOW;
+
+	prop_ptr = of_get_property(node, "power-on-delay-ms", NULL);
+	data->power_on_delay_ms = prop_ptr ? of_read_ulong(prop_ptr, 1) : 0;
 
 	return 0;
 }
@@ -264,6 +289,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	pb->exit = data->exit;
 	pb->dev = &pdev->dev;
 	pb->enabled = false;
+	pb->power_on_delay = msecs_to_jiffies(data->power_on_delay_ms);
 
 	if (gpio_is_valid(pb->enable_gpio)) {
 		unsigned long flags;
@@ -331,6 +357,9 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	}
 
 	bl->props.brightness = data->dft_brightness;
+
+	INIT_DELAYED_WORK(&pb->dwork, pwm_backlight_power_on_work);
+
 	backlight_update_status(bl);
 
 	platform_set_drvdata(pdev, bl);

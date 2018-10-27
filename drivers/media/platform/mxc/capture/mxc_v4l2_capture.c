@@ -349,7 +349,7 @@ static int mxc_v4l2_prepare_bufs(cam_data *cam, struct v4l2_buffer *buf)
 	pr_debug("In MVC:mxc_v4l2_prepare_bufs\n");
 
 	if (buf->index < 0 || buf->index >= FRAME_NUM || buf->length <
-			PAGE_ALIGN(cam->v2f.fmt.pix.sizeimage)) {
+			cam->v2f.fmt.pix.sizeimage) {
 		pr_err("ERROR: v4l2 capture: mxc_v4l2_prepare_bufs buffers "
 			"not allocated,index=%d, length=%d\n", buf->index,
 			buf->length);
@@ -1066,6 +1066,15 @@ static int mxc_v4l2_g_ctrl(cam_data *cam, struct v4l2_control *c)
 			status = -ENODEV;
 		}
 		break;
+	case V4L2_CID_ANALOGUE_GAIN:
+	case V4L2_CID_AUTO_FOCUS_STATUS:
+		if (cam->sensor) {
+			status = vidioc_int_g_ctrl(cam->sensor, c);
+		} else {
+			pr_err("ERROR: v4l2 capture: slave not found!\n");
+			status = -ENODEV;
+		}
+		break;
 	default:
 		pr_err("ERROR: v4l2 capture: unsupported ioctrl!\n");
 	}
@@ -1221,7 +1230,7 @@ static int mxc_v4l2_s_ctrl(cam_data *cam, struct v4l2_control *c)
 			ret = -ENODEV;
 		}
 		break;
-	case V4L2_CID_EXPOSURE:
+	case V4L2_CID_EXPOSURE_AUTO:
 		if (cam->sensor) {
 			cam->ae_mode = c->value;
 			ret = vidioc_int_s_ctrl(cam->sensor, c);
@@ -1234,6 +1243,13 @@ static int mxc_v4l2_s_ctrl(cam_data *cam, struct v4l2_control *c)
 #ifdef CONFIG_MXC_IPU_V1
 		ipu_csi_flash_strobe(true);
 #endif
+		break;
+
+	case V4L2_CID_AUTO_FOCUS_STOP:
+	case V4L2_CID_AUTO_FOCUS_START:
+	case V4L2_CID_FLASH_STROBE:
+	case V4L2_CID_FLASH_STROBE_STOP:
+		ret = vidioc_int_s_ctrl(cam->sensor, c);
 		break;
 	case V4L2_CID_MXC_SWITCH_CAM:
 		if (cam->sensor == cam->all_sensors[c->value])
@@ -2401,6 +2417,9 @@ static long mxc_v4l_do_ioctl(struct file *file,
 		}
 		break;
 	}
+	case VIDIOC_SEND_COMMAND:
+	      retval = vidioc_int_send_command(cam->sensor, arg);
+	      break;
 	case VIDIOC_TRY_FMT:
 	case VIDIOC_QUERYCTRL:
 	case VIDIOC_G_TUNER:

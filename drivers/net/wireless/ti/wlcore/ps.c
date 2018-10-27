@@ -26,7 +26,7 @@
 #include "tx.h"
 #include "debug.h"
 
-#define WL1271_WAKEUP_TIMEOUT 500
+#define WL1271_WAKEUP_TIMEOUT 2500
 
 #define ELP_ENTRY_DELAY  30
 #define ELP_ENTRY_DELAY_FORCE_PS  5

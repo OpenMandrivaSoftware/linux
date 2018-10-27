@@ -244,13 +244,13 @@ static void get_detailed_timing(unsigned char *block,
 	}
 	mode->flag = FB_MODE_IS_DETAILED;
 
-	if ((H_SIZE / 16) == (V_SIZE / 9))
+	if (H_SIZE * 9 / 16 == V_SIZE)
 		mode->vmode |= FB_VMODE_ASPECT_16_9;
-	else if ((H_SIZE / 4) == (V_SIZE / 3))
+	else if (H_SIZE * 3 / 4 == V_SIZE)
 		mode->vmode |= FB_VMODE_ASPECT_4_3;
-	else if ((mode->xres / 16) == (mode->yres / 9))
+	else if (mode->xres * 9 / 16 == mode->yres)
 		mode->vmode |= FB_VMODE_ASPECT_16_9;
-	else if ((mode->xres / 4) == (mode->yres / 3))
+	else if (mode->xres * 3 / 4 == mode->yres)
 		mode->vmode |= FB_VMODE_ASPECT_4_3;
 
 	if (mode->vmode & FB_VMODE_ASPECT_16_9)

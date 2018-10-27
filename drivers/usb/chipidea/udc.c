@@ -1633,9 +1633,14 @@ static int ci_udc_pullup(struct usb_gadget *_gadget, int is_on)
 	if (!ci->vbus_active)
 		return -EOPNOTSUPP;
 
-	if (is_on)
+	if (is_on) {
+		if (ci->fsm.power_up) {
+			ci->fsm.power_up = 0;
+			ci_otg_queue_work(ci);
+			return 0;
+		}
 		hw_write(ci, OP_USBCMD, USBCMD_RS, USBCMD_RS);
-	else
+	} else
 		hw_write(ci, OP_USBCMD, USBCMD_RS, 0);
 
 	return 0;
@@ -1761,10 +1766,16 @@ static int ci_udc_start(struct usb_gadget *gadget,
 			ci_hdrc_otg_fsm_start(ci);
 		return retval;
 	}
-
-	if (ci->vbus_active)
-		ci_hdrc_gadget_connect(&ci->gadget, 1);
-
+	if (ci->vbus_active) {
+		pm_runtime_get_sync(&gadget->dev);
+		hw_device_reset(ci);
+		hw_write(ci, OP_ENDPTLISTADDR, ~0, ci->ep0out->qh.dma);
+		/* interrupt, error, port change, reset, sleep/suspend */
+		hw_write(ci, OP_USBINTR, ~0,
+			USBi_UI|USBi_UEI|USBi_PCI|USBi_URI|USBi_SLI);
+		if (IS_ENABLED(CONFIG_FSL_UTP))
+			hw_write(ci, OP_USBCMD, USBCMD_RS, USBCMD_RS);
+	}
 	return retval;
 }
 

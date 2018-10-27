@@ -967,4 +967,16 @@ config TOUCHSCREEN_ZFORCE
 	  To compile this driver as a module, choose M here: the
 	  module will be called zforce_ts.
 
+config TOUCHSCREEN_DUS1000
+        tristate "DUS1000 touchscreen"
+	select SERIO
+        help
+         Say Y here if you have a DUS1000 touchscreen
+	 controller.
+
+	 If unsure, say N.
+
+	 To compile this driver as a module, choose M here: the
+	 module will be called dus1000-ts.
+
 endif

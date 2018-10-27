@@ -112,10 +112,10 @@ static u32 *irqs_used;
 
 void (*wfe_change_ddr_freq)(u32 cpuid, u32 *ddr_freq_change_done);
 void (*imx7_wfe_change_ddr_freq)(u32 cpuid, u32 ocram_base);
-extern void wfe_ddr3_freq_change(u32 cpuid, u32 *ddr_freq_change_done);
+extern void wfe_smp_freq_change(u32 cpuid, u32 *ddr_freq_change_done);
 extern void imx7_smp_wfe(u32 cpuid, u32 ocram_base);
-extern unsigned long wfe_ddr3_freq_change_start asm("wfe_ddr3_freq_change_start");
-extern unsigned long wfe_ddr3_freq_change_end asm("wfe_ddr3_freq_change_end");
+extern unsigned long wfe_smp_freq_change_start asm("wfe_smp_freq_change_start");
+extern unsigned long wfe_smp_freq_change_end asm("wfe_smp_freq_change_end");
 extern void __iomem *imx_scu_base;
 #endif
 
@@ -133,6 +133,7 @@ unsigned long ddr3_dll_mx6sx[][2] = {
 	{0x1C, 0x05208030},
 	{0x1C, 0x04008040},
 	{0x818, 0x0},
+	{0x18, 0x0},
 };
 
 unsigned long ddr3_calibration_mx6sx[][2] = {
@@ -162,6 +163,7 @@ unsigned long ddr3_dll_mx6q[][2] = {
 	{0x1C, 0x08408030},
 	{0x1C, 0x08408038},
 	{0x818, 0x0},
+	{0x18, 0x0},
 };
 
 unsigned long ddr3_calibration[][2] = {
@@ -183,6 +185,7 @@ unsigned long ddr3_dll_mx6dl[][2] = {
 	{0x1C, 0x07208030},
 	{0x1C, 0x07208038},
 	{0x818, 0x0},
+	{0x18, 0x0},
 };
 
 unsigned long iomux_offsets_mx6q[][2] = {
@@ -663,10 +666,10 @@ int init_mmdc_ddr3_settings_imx6q(struct platform_device *busfreq_pdev)
 	if (wfe_freq_change_iram_base & (FNCPY_ALIGN - 1))
 			wfe_freq_change_iram_base += FNCPY_ALIGN - ((uintptr_t)wfe_freq_change_iram_base % (FNCPY_ALIGN));
 
-	wfe_code_size = (&wfe_ddr3_freq_change_end -&wfe_ddr3_freq_change_start) *4;
+	wfe_code_size = (&wfe_smp_freq_change_end -&wfe_smp_freq_change_start) *4;
 
 	wfe_change_ddr_freq = (void *)fncpy((void *)wfe_freq_change_iram_base,
-		&wfe_ddr3_freq_change, wfe_code_size);
+		&wfe_smp_freq_change, wfe_code_size);
 
 	/* Store the variable used to communicate between cores in a non-cacheable IRAM area */
 	wait_for_ddr_freq_update = (u32 *)&iram_iomux_settings[0][1];

@@ -16,6 +16,7 @@ struct platform_pwm_backlight_data {
 	unsigned int lth_brightness;
 	unsigned int pwm_period_ns;
 	unsigned int *levels;
+	unsigned long power_on_delay_ms;
 	int enable_gpio;
 	unsigned long enable_gpio_flags;
 	int (*init)(struct device *dev);

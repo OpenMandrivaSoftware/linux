@@ -2835,6 +2835,7 @@ fec_enet_open(struct net_device *ndev)
 				platform_get_device_id(fep->pdev);
 	int ret;
 
+	pm_runtime_get_sync(ndev->dev.parent);
 	pinctrl_pm_select_default_state(&fep->pdev->dev);
 	ret = fec_enet_clk_enable(ndev, true);
 	if (ret)
@@ -2860,7 +2861,6 @@ fec_enet_open(struct net_device *ndev)
 	phy_start(fep->phy_dev);
 	netif_tx_start_all_queues(ndev);
 
-	pm_runtime_get_sync(ndev->dev.parent);
 	if ((id_entry->driver_data & FEC_QUIRK_BUG_WAITMODE) &&
 	    !fec_enet_irq_workaround(fep))
 		pm_qos_add_request(&ndev->pm_qos_req,
@@ -2883,6 +2883,7 @@ err_enet_alloc:
 	fep->miibus_up_failed = true;
 	if (!fep->mii_bus_share)
 		pinctrl_pm_select_sleep_state(&fep->pdev->dev);
+	pm_runtime_put_sync_suspend(ndev->dev.parent);
 	return ret;
 }
 
@@ -3345,6 +3346,10 @@ static void fec_enet_of_parse_stop_mode(struct platform_device *pdev)
 	fep->gpr.req_bit = out_val[2];
 }
 
+
+static int fec_power_on(struct net_device *ndev);
+static void fec_power_off(struct net_device *ndev);
+
 static int
 fec_probe(struct platform_device *pdev)
 {
@@ -3471,7 +3476,7 @@ fec_probe(struct platform_device *pdev)
 
 	fep->reg_phy = devm_regulator_get(&pdev->dev, "phy");
 	if (!IS_ERR(fep->reg_phy)) {
-		ret = regulator_enable(fep->reg_phy);
+		ret = fec_power_on(ndev);
 		if (ret) {
 			dev_err(&pdev->dev,
 				"Failed to enable phy regulator: %d\n", ret);
@@ -3534,6 +3539,9 @@ fec_probe(struct platform_device *pdev)
 
 	fep->rx_copybreak = COPYBREAK_DEFAULT;
 	INIT_WORK(&fep->tx_timeout_work, fec_enet_timeout_work);
+
+	fec_power_off(ndev);
+
 	return 0;
 
 failed_register:
@@ -3541,8 +3549,7 @@ failed_register:
 failed_mii_init:
 failed_irq:
 failed_init:
-	if (fep->reg_phy)
-		regulator_disable(fep->reg_phy);
+	fec_power_off(ndev);
 failed_regulator:
 	fec_enet_clk_enable(ndev, false);
 failed_clk:
@@ -3564,6 +3571,7 @@ fec_drv_remove(struct platform_device *pdev)
 	cancel_work_sync(&fep->tx_timeout_work);
 	unregister_netdev(ndev);
 	fec_enet_mii_remove(fep);
+	pm_runtime_put_sync_suspend(pdev->dev.parent);
 	if (fep->reg_phy)
 		regulator_disable(fep->reg_phy);
 	if (fep->ptp_clock)
@@ -3590,6 +3598,7 @@ static int __maybe_unused fec_suspend(struct device *dev)
 		netif_tx_unlock_bh(ndev);
 		fec_stop(ndev);
 		if (!(fep->wol_flag & FEC_WOL_FLAG_ENABLE)) {
+			pm_runtime_put_sync_suspend(dev->parent);
 			pinctrl_pm_select_sleep_state(&fep->pdev->dev);
 		} else {
 			disable_irq(fep->wake_irq);
@@ -3601,9 +3610,6 @@ static int __maybe_unused fec_suspend(struct device *dev)
 		pinctrl_pm_select_sleep_state(&fep->pdev->dev);
 	}
 	rtnl_unlock();
-
-	if (fep->reg_phy && !(fep->wol_flag & FEC_WOL_FLAG_ENABLE))
-		regulator_disable(fep->reg_phy);
 
 	/* SOC supply clock to phy, when clock is disabled, phy link down
 	 * SOC control phy regulator, when regulator is disabled, phy link down
@@ -3621,14 +3627,11 @@ static int __maybe_unused fec_resume(struct device *dev)
 	int ret;
 	int val;
 
-	if (fep->reg_phy && !(fep->wol_flag & FEC_WOL_FLAG_ENABLE)) {
-		ret = regulator_enable(fep->reg_phy);
-		if (ret)
-			return ret;
-	}
-
 	rtnl_lock();
 	if (netif_running(ndev)) {
+		if (!(fep->wol_flag & FEC_WOL_FLAG_ENABLE))
+			pm_runtime_get_sync(dev);
+
 		ret = fec_enet_clk_enable(ndev, true);
 		if (ret) {
 			rtnl_unlock();
@@ -3663,20 +3666,55 @@ static int __maybe_unused fec_resume(struct device *dev)
 	return 0;
 
 failed_clk:
+	if (!(fep->wol_flag & FEC_WOL_FLAG_ENABLE))
+		pm_runtime_put_sync_suspend(dev->parent);
+	return ret;
+}
+
+
+static int fec_power_on(struct net_device *ndev)
+{
+	int ret;
+	struct fec_enet_private *fep = netdev_priv(ndev);
+
+	netdev_info(ndev, "%s\n", __func__);
+
+	if (fep->reg_phy) {
+		ret = regulator_enable(fep->reg_phy);
+		if (ret) {
+			netdev_err(ndev, "power on error\n");
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
+static void fec_power_off(struct net_device *ndev)
+{
+	struct fec_enet_private *fep = netdev_priv(ndev);
+
+	netdev_info(ndev, "%s\n", __func__);
+
 	if (fep->reg_phy)
 		regulator_disable(fep->reg_phy);
-	return ret;
 }
 
 static int fec_runtime_suspend(struct device *dev)
 {
+	struct net_device *ndev = dev_get_drvdata(dev);
+
+	fec_power_off(ndev);
 	release_bus_freq(BUS_FREQ_HIGH);
 	return 0;
 }
 
 static int fec_runtime_resume(struct device *dev)
 {
+	struct net_device *ndev = dev_get_drvdata(dev);
+
 	request_bus_freq(BUS_FREQ_HIGH);
+	fec_power_on(ndev);
 	return 0;
 }
 

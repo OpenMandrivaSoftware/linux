@@ -31,3 +31,7 @@
 &sii902x {
 	status = "disabled";
 };
+
+&lcdif {
+	status = "disabled";
+};
