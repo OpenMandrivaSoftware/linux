@@ -1,0 +1,335 @@
+
+#include "imx6qdl-cpc1001.dtsi"
+
+/ {
+	regulators_evalboard {
+		compatible = "simple-bus";
+		reg_vddldb: vddldb {
+			compatible = "regulator-fixed";
+			regulator-name = "vddldb";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			gpio = <&gpio2 18 GPIO_ACTIVE_HIGH>;
+			startup-delay-us = <30000>;
+			enable-active-high;
+		};
+
+		cam_dvdd_reg: cam_dvdd {
+			compatible = "regulator-fixed";
+			regulator-name = "cam_dvdd";
+			regulator-min-microvolt = <1500000>;
+			regulator-max-microvolt = <1500000>;
+			gpio = <&gpio2 3 GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+			/* vin-supply = <&sw4_reg>; */
+		};
+
+		sound_vdda: vdda-sound-codec {
+			compatible = "regulator-fixed";
+			regulator-name = "codec-1V8-1";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;
+		};
+
+		sound_vddio: vddio-sound-codec {
+			compatible = "regulator-fixed";
+			regulator-name = "codec-1V8-2";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;
+		};
+	};
+
+	backlight {
+		pinctrl-0 = <&pinctrl_lcd_vdd_backlight>;
+		pinctrl-names = "default";
+		compatible = "pwm-backlight";
+		pwms = <&pwm1 0 5000000>;
+		brightness-levels = <0 2 4 8 16 32 48 56 64 80 96 112 128 144 160 176 192 208 224 239 255>;
+		default-brightness-level = <8>;
+		power-on-delay-ms = <200>;
+		enable-gpios = <&gpio2 17 GPIO_ACTIVE_HIGH>;
+	};
+
+	sound {
+		compatible = "fsl,imx6q-sabrelite-sgtl5000",
+			         "fsl,imx-audio-sgtl5000";
+		model = "imx6q-sabrelite-sgtl5000";
+		cpu-dai = <&ssi2>;
+		audio-codec = <&codec>;
+		audio-routing =
+			"MIC_IN", "Mic Jack",
+			"Mic Jack", "Mic Bias",
+			"Headphone Jack", "HP_OUT";
+		mux-int-port = <2>; //ssi1 = 1; ssi2 = 2
+		mux-ext-port = <5>; //ssi1 = 3; ssi2 = 5
+	};
+};
+
+/* Audio */
+
+&audmux {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_audmux_3>;
+	status = "okay";
+};
+
+/* Watchdog */
+
+/* I2C bus */
+
+&i2c1 {
+	status = "okay";
+	at24@57 {
+		compatible = "at,24c32";
+		pagesize = <32>;
+		reg = <0x57>;
+	};
+};
+
+&i2c2 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+	ov5640_mipi: ov5640_mipi@3c {
+		compatible = "ovti,ov564x_mipi";
+		reg = <0x3c>;
+		clocks = <&clks 201>;
+		clock-names = "csi_mclk";
+		/* DOVDD-supply = <&sw4_reg>; */
+		AVDD-supply = <&vgen4_reg>;
+		/*DVDD-supply = <&cam_dvdd_reg>;*/
+		pwn-gpios = <&gpio6 9 GPIO_ACTIVE_HIGH>;
+		rst-gpios = <&gpio2 0 GPIO_ACTIVE_HIGH>;
+		csi_id = <1>;
+		mclk = <24000000>;
+		mclk_source = <0>;
+	};
+};
+
+&i2c3 {
+	status = "okay";
+
+	codec: sgtl5000@0a {
+		compatible = "fsl,sgtl5000";
+		reg = <0x0a>;
+		clocks = <&clks 201>;
+		VDDA-supply = <&sound_vdda>;
+		VDDIO-supply = <&sound_vddio>;
+	};
+};
+
+/* MIPI CSI */
+
+/* PWM */
+
+&pwm1 {
+	status = "okay";
+};
+
+/* UART */
+
+&uart1 {
+	status = "okay";
+};
+
+&uart2 {
+	status = "okay";
+};
+
+&uart3 {
+	status = "okay";
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hog_1>;
+
+	hog {
+		pinctrl_hog_1: hoggrp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_GPIO_19__CCM_CLKO1      0x130b0
+				MX6QDL_PAD_SD1_DAT3__PWM1_OUT	0x1b0b0		/* LCD_BKLT_PWM */
+				MX6QDL_PAD_EIM_A21__GPIO2_IO17	0x1b0b0		/* LCD_BKLT_EN */
+				MX6QDL_PAD_EIM_A20__GPIO2_IO18	0x1b0b0		/* LCD_VDD_EN */
+			>;
+		};
+	};
+
+	backlight {
+		pinctrl_lcd_vdd_backlight: lcd_vdd_backlight {
+			fsl,pins = <
+				MX6QDL_PAD_SD1_DAT3__PWM1_OUT	0x1b0b0
+				MX6QDL_PAD_EIM_A21__GPIO2_IO17	0x1b0b0
+			>;
+		};
+	};
+
+	audmux {
+		pinctrl_audmux_3: audmux-3 {
+			fsl,pins = <
+				MX6QDL_PAD_CSI0_DAT7__AUD3_RXD  0x130b0
+				MX6QDL_PAD_CSI0_DAT4__AUD3_TXC  0x130b0
+				MX6QDL_PAD_CSI0_DAT5__AUD3_TXD  0x110b0
+				MX6QDL_PAD_CSI0_DAT6__AUD3_TXFS 0x130b0
+				MX6QDL_PAD_KEY_ROW1__AUD5_RXD   0x130b0
+				MX6QDL_PAD_KEY_COL0__AUD5_TXC   0x130b0
+				MX6QDL_PAD_KEY_ROW0__AUD5_TXD   0x110b0
+				MX6QDL_PAD_KEY_COL1__AUD5_TXFS  0x130b0
+			>;
+		};
+	};
+};
+
+/* SD/MMC */
+
+&usdhc2 {
+	cd-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+	no-1-8-v;
+	keep-power-in-suspend;
+	status = "okay";
+};
+
+/* SPI */
+
+&ecspi1 {
+	status = "okay";
+	cs-gpios = <&gpio2 30 GPIO_ACTIVE_HIGH>, <>;
+	spidev@1 {
+		compatible = "spidev";
+		reg = <1>;
+		spi-max-frequency = <25000000>;
+	};
+};
+
+/* FEC */
+
+/* CPU */
+
+/* USB */
+
+/* PCIe */
+
+&pcie {
+	status = "okay";
+};
+
+/* HDMI */
+
+&hdmi_audio {
+	status = "okay";
+};
+
+&hdmi_cec {
+	status = "okay";
+};
+
+&hdmi_core {
+	status = "okay";
+};
+
+&hdmi_video {
+	status = "okay";
+};
+
+/* SATA */
+
+&sata {
+	status = "okay";
+};
+
+/* LDB */
+
+&ldb {
+	status = "okay";
+	lvds-channel@0 {
+		reg = <0>;
+		crtc = "ipu2-di0";
+		vddldb-supply = <&reg_vddldb>;
+		fsl,data-mapping = "spwg";
+		fsl,data-width = <24>;
+		primary;
+		status = "okay";
+
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: G084SN05V9 {
+				clock-frequency = <39800000>;
+				hactive = <800>;
+				vactive = <600>;
+				hback-porch = <128>;
+				hfront-porch = <128>;
+				vback-porch = <14>;
+				vfront-porch = <14>;
+				hsync-len = <1>;
+				vsync-len = <1>;
+			};
+		};
+	};
+
+	lvds-channel@1 {
+		crtc = "ipu2-di1";
+		status = "disabled";
+	};
+};
+
+&mxcfb1 {
+	status = "okay";
+};
+
+&mxcfb2 {
+	status = "okay";
+};
+
+&mxcfb3 {
+	status = "disabled";
+};
+
+&mxcfb4 {
+	status = "disabled";
+};
+
+/* CAN */
+
+&flexcan1 {
+	status = "okay";
+};
+
+&flexcan2 {
+	status = "okay";
+};
+
+/* SSI */
+
+&ssi1 {
+	fsl,mode = "i2s-slave";
+	status = "okay";
+};
+
+&ssi2 {
+	fsl,mode = "i2s-slave";
+	status = "okay";
+};
+
+&mxcfb1 {
+	compatible = "fsl,mxc_sdc_fb";
+	disp_dev = "hdmi";
+	interface_pix_fmt = "RGB24";
+	mode_str ="1920x1080M@60";
+	default_bpp = <32>;
+	int_clk = <0>;
+	late_init = <0>;
+	status = "okay";
+};
+
+&mxcfb2 {
+	compatible = "fsl,mxc_sdc_fb";
+	disp_dev = "ldb";
+	interface_pix_fmt = "RGB24";
+	mode_str ="800x600M@60";
+	default_bpp = <32>;
+	int_clk = <0>;
+	late_init = <1>;
+	status = "okay";
+};
