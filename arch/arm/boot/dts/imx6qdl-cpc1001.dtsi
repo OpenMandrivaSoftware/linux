@@ -199,7 +199,7 @@
 	pinctrl-0 = <&pinctrl_i2c2_2>;
 	status = "okay";
 
-	hdmi: edid@50 {
+	cpc1001_hdmi: edid@50 {
 		compatible = "fsl,imx6-hdmi-i2c";
 		reg = <0x50>;
 	};
@@ -779,14 +779,14 @@
 
 /* CAN */
 
-&flexcan1 {
+&can1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_flexcan1_3>;
 	trx-nerr-gpio = <&gpio2 4 GPIO_ACTIVE_HIGH>;
 	status = "disabled";
 };
 
-&flexcan2 {
+&can2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_flexcan2_1>;
 	trx-nerr-gpio = <&gpio2 5 GPIO_ACTIVE_HIGH>;
