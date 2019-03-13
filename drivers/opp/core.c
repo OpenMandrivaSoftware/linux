@@ -637,8 +637,10 @@ static int _set_opp_voltage(struct device *dev, struct regulator *reg,
 		return 0;
 	}
 
+#if 0
 	dev_dbg(dev, "%s: voltages (mV): %lu %lu %lu\n", __func__,
 		supply->u_volt_min, supply->u_volt, supply->u_volt_max);
+#endif
 
 	ret = regulator_set_voltage_triplet(reg, supply->u_volt_min,
 					    supply->u_volt, supply->u_volt_max);
@@ -971,8 +973,10 @@ int dev_pm_opp_set_rate(struct device *dev, unsigned long target_freq)
 		goto put_old_opp;
 	}
 
+#if 0
 	dev_dbg(dev, "%s: switching OPP: %lu Hz --> %lu Hz\n", __func__,
 		old_freq, freq);
+#endif
 
 	/* Scaling up? Configure required OPPs before frequency */
 	if (freq >= old_freq) {
