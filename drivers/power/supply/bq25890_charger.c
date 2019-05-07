@@ -82,6 +82,8 @@ struct bq25890_init_data {
 	u8 boosti;	/* boost current limit		*/
 	u8 boostf;	/* boost frequency		*/
 	u8 ilim_en;	/* enable ILIM pin		*/
+	u8 force_vindpm;/* force vinmin threshold       */
+	u8 vindpm;	/* vinmin threshold             */
 	u8 treg;	/* thermal regulation threshold */
 	u8 rbatcomp;	/* IBAT sense resistor value    */
 	u8 vclamp;	/* IBAT compensation voltage limit */
@@ -262,6 +264,8 @@ enum bq25890_table_ids {
 	TBL_SYSVMIN,
 	TBL_VBATCOMP,
 	TBL_RBATCOMP,
+	TBL_FORCE_VINDPM,
+	TBL_VINDPM,
 
 	/* lookup tables */
 	TBL_TREG,
@@ -305,6 +309,8 @@ static const union {
 	[TBL_SYSVMIN] = { .rt = {3000000, 3700000, 100000} },	 /* uV */
 	[TBL_VBATCOMP] ={ .rt = {0,        224000, 32000} },	 /* uV */
 	[TBL_RBATCOMP] ={ .rt = {0,        140000, 20000} },	 /* uOhm */
+	[TBL_FORCE_VINDPM] = { .rt = {0,	1,	1} },	 /* on/off */
+	[TBL_VINDPM] =	{ .rt = {2600000, 15300000, 100000} },	 /* uV */
 
 	/* lookup tables */
 	[TBL_TREG] =	{ .lt = {bq25890_treg_tbl, BQ25890_TREG_TBL_SIZE} },
@@ -657,6 +663,8 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 		{F_TREG,	 bq->init_data.treg},
 		{F_BATCMP,	 bq->init_data.rbatcomp},
 		{F_VCLAMP,	 bq->init_data.vclamp},
+		{F_FORCE_VINDPM, bq->init_data.force_vindpm},
+		{F_VINDPM,	 bq->init_data.vindpm},
 	};
 
 	ret = bq25890_chip_reset(bq);
@@ -870,6 +878,8 @@ static int bq25890_fw_read_u32_props(struct bq25890_device *bq)
 		{"ti,thermal-regulation-threshold", true, TBL_TREG, &init->treg},
 		{"ti,ibatcomp-micro-ohms", true, TBL_RBATCOMP, &init->rbatcomp},
 		{"ti,ibatcomp-clamp-microvolt", true, TBL_VBATCOMP, &init->vclamp},
+		{"ti,use-vinmin-threshold", true, TBL_FORCE_VINDPM, &init->force_vindpm},
+		{"ti,vinmin-threshold", true, TBL_VINDPM, &init->vindpm},
 	};
 
 	/* initialize data for optional properties */
