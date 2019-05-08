@@ -497,6 +497,8 @@
 		ti,boost-voltage = <5000000>; /* 5V */
 		ti,boost-max-current = <50000>; /* 50mA */
 		monitored-battery = <&bat>;
+		ti,use-vinmin-threshold = <1>; /* enable VINDPM */
+		ti,vinmin-threshold = <3900000>; /* 3.9V */
 	};
 };
 
