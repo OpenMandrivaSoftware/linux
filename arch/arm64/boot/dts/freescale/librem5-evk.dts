@@ -1,0 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+
+ *
+ * Copyright 2018-2019 Purism SPC
+ */
+
+/dts-v1/;
+
+#include "imx8mq-librem5-devkit.dts"
