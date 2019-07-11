@@ -26,6 +26,22 @@
 		power-supply = <&reg_22v4_p>;
 	};
 
+	bat: battery {
+		compatible = "simple-battery";
+		voltage-min-design-microvolt = <3000000>;
+		voltage-max-design-microvolt = <4192000>;
+		energy-full-design-microwatt-hours = <11700000>;
+		charge-full-design-microamp-hours = <3250000>;
+		precharge-current-microamp = <130000>;
+		charge-term-current-microamp = <66000>;
+		constant-charge-current-max-microamp = <1600000>;
+		constant-charge-voltage-max-microvolt = <4200000>;
+		factory-internal-resistance-micro-ohms = <250000>;
+		ocv-capacity-celsius = <25>;
+		ocv-capacity-table-0 = <4192000 100>, <3750000 85>, <3650000 68>,
+			<3500000 51>, <3400000 34>, <3250000 17>, <3000000 0>;
+	};
+
 	chosen {
 		stdout-path = &uart1;
 	};
@@ -480,6 +496,7 @@
 		ti,minimum-sys-voltage = <3000000>; /* 3V */
 		ti,boost-voltage = <5000000>; /* 5V */
 		ti,boost-max-current = <50000>; /* 50mA */
+		monitored-battery = <&bat>;
 	};
 };
 
