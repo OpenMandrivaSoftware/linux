@@ -780,11 +780,11 @@
 };
 
 &pgc_gpu {
-	power-supply = <&buck3_reg>;
+	//power-supply = <&buck3_reg>;
 };
 
 &pgc_vpu {
-	power-supply = <&buck4_reg>;
+	//power-supply = <&buck4_reg>;
 };
 
 &pwm1 {
