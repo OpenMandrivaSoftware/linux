@@ -23,7 +23,6 @@
 		/* Default brightness level (index into the array defined by */
 		/* the "brightness-levels" property) */
 		default-brightness-level = <0>;
-		power-supply = <&reg_22v4_p>;
 	};
 
 	bat: battery {
