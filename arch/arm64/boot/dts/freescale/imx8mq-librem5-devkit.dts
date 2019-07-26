@@ -407,6 +407,15 @@
 		ti,boost-voltage = <5000000>; /* 5V */
 		ti,boost-max-current = <50000>; /* 50mA */
 	};
+
+	prox@60 {
+		compatible = "vishay,vcnl4040", "vishay,vcnl4200";
+		reg = <0x60>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_prox>;
+		interrupt-parent = <&gpio1>;
+		interrupts = <12 IRQ_TYPE_LEVEL_LOW>;
+	};
 };
 
 &i2c3 {
@@ -547,6 +556,12 @@
 	pinctrl_pmic: pmicgrp {
 		fsl,pins = <
 			MX8MQ_IOMUXC_GPIO1_IO03_GPIO1_IO3	0x80  /* PMIC intr */
+		>;
+	};
+
+	pinctrl_prox: proxgrp {
+		fsl,pins = <
+			MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12      0x80 /* PROX_INT */
 		>;
 	};
 
