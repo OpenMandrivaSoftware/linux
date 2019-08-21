@@ -32,6 +32,8 @@ struct mxsfb_drm_private {
 	struct drm_panel		*panel;
 	struct drm_bridge		*bridge;
 
+	u32				max_bw;
+
 	struct icc_path 		*icc_path;
 	s32				icc_path_bw;
 };
