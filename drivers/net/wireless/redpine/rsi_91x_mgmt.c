@@ -651,7 +651,7 @@ static void rsi_set_default_parameters(struct rsi_common *common)
 
 void init_bgscan_params(struct rsi_common *common)
 {
-	common->bgscan_info.bgscan_threshold = 0;
+	common->bgscan_info.bgscan_threshold = 10;
 	common->bgscan_info.roam_threshold = 10;
 	common->bgscan_info.bgscan_periodicity = 30;
 	common->bgscan_info.num_bg_channels = 0;
@@ -2147,6 +2147,7 @@ void rsi_validate_bgscan_channels(struct rsi_hw *adapter,
 
 	int ch_num, i;
 	int num_valid_chs = 0, cnt;
+	struct rsi_common *common = adapter->priv;
 
 	/* If user passes 0 for num of bgscan channels, take all channels */
 	if (params->num_user_channels == 0) {
@@ -2190,16 +2191,23 @@ void rsi_validate_bgscan_channels(struct rsi_hw *adapter,
 		if (ch->flags & IEEE80211_CHAN_DISABLED)
 			continue;
 
-		params->channels2scan[num_valid_chs] = ch_num;
-		rsi_dbg(INFO_ZONE, "%d ", ch_num);
-		if ((ch->flags & IEEE80211_CHAN_NO_IR) ||
-		    (ch->flags & IEEE80211_CHAN_RADAR)) {
-			if((ch->flags & IEEE80211_CHAN_RADAR))
-				rsi_dbg(INFO_ZONE, "[DFS]");
-			params->channels2scan[num_valid_chs] |=
-				(cpu_to_le16(BIT(15))); /* DFS indication */
+		if (common->band == NL80211_BAND_2GHZ && ch_num <= 14) {
+			params->channels2scan[num_valid_chs] = ch_num;
+			rsi_dbg(INFO_ZONE, "%d ", ch_num);
+			num_valid_chs++;
+		} else if (common->band == NL80211_BAND_5GHZ && ch_num > 14) {
+			params->channels2scan[num_valid_chs] = ch_num;
+			rsi_dbg(ERR_ZONE, "%d ", ch_num);
+			if ((ch->flags & IEEE80211_CHAN_NO_IR) ||
+				(ch->flags & IEEE80211_CHAN_RADAR)) {
+				if ((ch->flags & IEEE80211_CHAN_RADAR)) {
+					rsi_dbg(INFO_ZONE, "[DFS]");
+				}
+				params->channels2scan[num_valid_chs] |=
+					(cpu_to_le16(BIT(15)));
+			}
+			num_valid_chs++;
 		}
-		num_valid_chs++;
 	}
 
 	params->num_bg_channels = num_valid_chs;
@@ -3546,17 +3554,16 @@ static int rsi_handle_ta_confirm(struct rsi_common *common, u8 *msg)
 
 	case BG_SCAN_PROBE_REQ:
 		rsi_dbg(INFO_ZONE, "BG scan complete event\n");
-		if (common->bgscan_en) {
-			if (!rsi_send_bgscan_params(common, 0))
-				common->bgscan_en = 0;
-		}
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
+		if (common->hwscan_en) {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-		info.aborted = false;
-		ieee80211_scan_completed(adapter->hw, &info);
+			info.aborted = false;
+			ieee80211_scan_completed(adapter->hw, &info);
 #else	
-		ieee80211_scan_completed(adapter->hw, false);
+			ieee80211_scan_completed(adapter->hw, false);
 #endif
+			common->hwscan_en = false;
+		}
 		if (common->hw_scan_cancel)
 			rsi_set_event(&common->cancel_hw_scan_event);
 #endif
@@ -3764,6 +3771,18 @@ int rsi_mgmt_pkt_recv(struct rsi_common *common, u8 *msg)
 #endif
 	case RX_DOT11_MGMT:
 		return rsi_mgmt_pkt_to_core(common, msg, msg_len);
+
+	case FW_ERROR_STATE_IND:
+		if (msg[15] == RSI_MAX_BGSCAN_CHANNEL_SUPPORTED) {
+			rsi_dbg(ERR_ZONE,
+				"*** Bgscan Channel's  greater than 24 Not Supported ***\n");
+				return -1;
+		} else if (msg[15] == RSI_MAX_BGSCAN_PROBE_REQ_LEN) {
+			rsi_dbg(ERR_ZONE,
+				"*** Bgscan Probe Request Length is greater than Max Size ***\n");
+				return -1;
+		}
+		break;
 
 	default:
 		rsi_dbg(INFO_ZONE, "Cmd Frame Type: %d\n", msg_type);

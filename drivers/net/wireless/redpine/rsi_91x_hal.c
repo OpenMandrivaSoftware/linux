@@ -142,7 +142,7 @@ int rsi_prepare_data_desc(struct rsi_common *common, struct sk_buff *skb)
 	wh = (struct ieee80211_hdr *)&skb->data[header_size];
 	seq_num = le16_to_cpu(IEEE80211_SEQ_TO_SN(wh->seq_ctrl));
 	vif = rsi_get_vif(adapter, wh->addr2);
-	if(!vif) {
+	if (!vif) {
 		status = -ENOSPC;
 		goto err;
 	}
