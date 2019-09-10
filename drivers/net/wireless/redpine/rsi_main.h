@@ -72,6 +72,9 @@ struct rsi_hw;
 #define ACS_TIMEOUT_TYPE	15
 #define ACS_TIMEOUT_TIME	150
 
+/* Antenna Diversity */
+#define MAX_SCAN_PER_ANTENNA		2
+
 extern u16 rsi_zone_enabled;
 extern __printf(2, 3) void rsi_dbg(u32 zone, const char *fmt, ...);
 void rsi_hex_dump(u32 zone, char *msg_str, const u8 *msg, u32 len);
@@ -521,6 +524,7 @@ struct rsi_common {
 	u8 bt_rf_tx_power_mode;
 	u8 bt_rf_rx_power_mode;
 	u8 load_image_no;
+	u8 rsi_scan_count;
 };
 
 enum host_intf {
