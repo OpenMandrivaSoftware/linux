@@ -2979,7 +2979,7 @@ int rsi_send_probe_request(struct rsi_common *common,
 	struct skb_info *tx_params;
 	struct sk_buff *skb = NULL;
 	struct ieee80211_hdr *hdr = NULL;
-	u8 *pos;
+	u8 *pos = NULL;
 	u32 len = 0;
 	u8 ie_ssid_len;
 	u8 q_num;
@@ -2993,15 +2993,17 @@ int rsi_send_probe_request(struct rsi_common *common,
 		       ssid_info->ssid_len + 2 : 0;
 
 	len = (MIN_802_11_HDR_LEN + scan_req->ie_len + ie_ssid_len);
+
+	skb = dev_alloc_skb(len + 64); /* 64 for dword alignment */
+	if (!skb) {
+		rsi_dbg(ERR_ZONE, "Failed to alloc probe req\n");
+		return -ENOMEM;
+	}
+	skb_put(skb, len + 64);
+	memset(skb->data, 0, skb->len);
+	skb_reserve(skb, 64);
+
 	if (scan_type == 0) {
-		skb = dev_alloc_skb(len + 64); /* 64 for dword alignment */
-		if (!skb) {
-			rsi_dbg(ERR_ZONE, "Failed to alloc probe req\n");
-			return -ENOMEM;
-		}
-		skb_put(skb, len + 64);
-		memset(skb->data, 0, skb->len);
-		skb_reserve(skb, 64);
 		pos = skb->data;
 	
 		/*
@@ -3061,7 +3063,7 @@ int rsi_send_probe_request(struct rsi_common *common,
 			}
 		}
 		common->bgscan_probe_req_len = len;	
-		return 0;
+		goto out;
 	}
 
 	if ((common->iface_down == true) || (!common->scan_in_prog))
@@ -3070,9 +3072,7 @@ int rsi_send_probe_request(struct rsi_common *common,
 	info = IEEE80211_SKB_CB(skb);
 	tx_params = (struct skb_info *)info->driver_data;
 	tx_params->internal_hdr_size = skb_headroom(skb);
-#ifndef CONFIG_REDPINE_P2P
-	info->control.vif = common->priv->vifs[0];
-#else
+#ifdef CONFIG_REDPINE_P2P
 	info->control.vif = common->priv->vifs[1];
 	if (!info->control.vif)
 		return 0;
