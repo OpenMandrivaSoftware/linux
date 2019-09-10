@@ -50,7 +50,7 @@ int rsi_sdio_master_access_msword(struct rsi_hw *adapter,
 
 	byte = (u8)(ms_word & 0x00FF);
 
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"%s: MASTER_ACCESS_MSBYTE:0x%x\n", __func__, byte);
 
 	status = rsi_sdio_write_register(adapter,
@@ -58,7 +58,7 @@ int rsi_sdio_master_access_msword(struct rsi_hw *adapter,
 					 SDIO_MASTER_ACCESS_MSBYTE,
 					 &byte);
 	if (status) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: fail to access MASTER_ACCESS_MSBYTE\n",
 			__func__);
 		return -1;
@@ -66,7 +66,7 @@ int rsi_sdio_master_access_msword(struct rsi_hw *adapter,
 
 	byte = (u8)(ms_word >> 8);
 
-	rsi_dbg(INFO_ZONE, "%s:MASTER_ACCESS_LSBYTE:0x%x\n", __func__, byte);
+	redpine_dbg(INFO_ZONE, "%s:MASTER_ACCESS_LSBYTE:0x%x\n", __func__, byte);
 	status = rsi_sdio_write_register(adapter,
 					 function,
 					 SDIO_MASTER_ACCESS_LSBYTE,
@@ -95,9 +95,9 @@ void rsi_sdio_rx_thread(struct rsi_common *common)
 			skb = skb_dequeue(&sdev->rx_q.head);
 			if (!skb)
 				break;
-			status = rsi_read_pkt(common, skb->data, skb->len);
+			status = redpine_read_pkt(common, skb->data, skb->len);
 			if (status) {
-				rsi_dbg(ERR_ZONE, "Failed to read the packet\n");
+				redpine_dbg(ERR_ZONE, "Failed to read the packet\n");
 				dev_kfree_skb(skb);
 				return;
 			}
@@ -115,7 +115,7 @@ void rsi_sdio_rx_thread(struct rsi_common *common)
 			break;
 	} while (1);
 
-	rsi_dbg(INFO_ZONE, "%s: Terminated SDIO RX thread\n", __func__);
+	redpine_dbg(INFO_ZONE, "%s: Terminated SDIO RX thread\n", __func__);
 	skb_queue_purge(&sdev->rx_q.head);
 	atomic_inc(&sdev->rx_thread.thread_done);
 	complete_and_exit(&sdev->rx_thread.completion, 0);
@@ -155,7 +155,7 @@ static int rsi_process_pkt(struct rsi_common *common)
 						SDIO_RX_NUM_BLOCKS_REG,
 						&value);
 		if (status) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Failed to read pkt length from the card:\n",
 				__func__);
 			return status;
@@ -182,7 +182,7 @@ static int rsi_process_pkt(struct rsi_common *common)
 	
 	skb = dev_alloc_skb(rcv_pkt_len);
 	if (!skb) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to allocate rx packet\n",
+		redpine_dbg(ERR_ZONE, "%s: Failed to allocate rx packet\n",
 			__func__);
 		return -ENOMEM;
 	}
@@ -190,7 +190,7 @@ static int rsi_process_pkt(struct rsi_common *common)
 
 	status = rsi_sdio_host_intf_read_pkt(adapter, skb->data, skb->len);
 	if (status) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to read packet from card\n",
+		redpine_dbg(ERR_ZONE, "%s: Failed to read packet from card\n",
 			__func__);
 		dev_kfree_skb(skb);
 		return status;
@@ -224,7 +224,7 @@ int rsi_init_sdio_slave_regs(struct rsi_hw *adapter)
 						 SDIO_NXT_RD_DELAY2,
 						 &byte);
 		if (status) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Failed to write SDIO_NXT_RD_DELAY2\n",
 				__func__);
 			return -1;
@@ -232,7 +232,7 @@ int rsi_init_sdio_slave_regs(struct rsi_hw *adapter)
 	}
 
 	if (dev->sdio_high_speed_enable) {
-		rsi_dbg(INIT_ZONE, "%s: Enabling SDIO High speed\n", __func__);
+		redpine_dbg(INIT_ZONE, "%s: Enabling SDIO High speed\n", __func__);
 		byte = 0x3;
 
 		status = rsi_sdio_write_register(adapter,
@@ -240,7 +240,7 @@ int rsi_init_sdio_slave_regs(struct rsi_hw *adapter)
 						 SDIO_REG_HIGH_SPEED,
 						 &byte);
 		if (status) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Failed to enable SDIO high speed\n",
 				__func__);
 			return -1;
@@ -248,7 +248,7 @@ int rsi_init_sdio_slave_regs(struct rsi_hw *adapter)
 	}
 
 	/* This tells SDIO FIFO when to start read to host */
-	rsi_dbg(INIT_ZONE, "%s: Initialzing SDIO read start level\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Initialzing SDIO read start level\n", __func__);
 	byte = 0x24;
 
 	status = rsi_sdio_write_register(adapter,
@@ -256,12 +256,12 @@ int rsi_init_sdio_slave_regs(struct rsi_hw *adapter)
 					 SDIO_READ_START_LVL,
 					 &byte);
 	if (status) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to write SDIO_READ_START_LVL\n", __func__);
 		return -1;
 	}
 
-	rsi_dbg(INIT_ZONE, "%s: Initialzing FIFO ctrl registers\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Initialzing FIFO ctrl registers\n", __func__);
 	byte = (128 - 32);
 
 	status = rsi_sdio_write_register(adapter,
@@ -269,7 +269,7 @@ int rsi_init_sdio_slave_regs(struct rsi_hw *adapter)
 					 SDIO_READ_FIFO_CTL,
 					 &byte);
 	if (status) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to write SDIO_READ_FIFO_CTL\n", __func__);
 		return -1;
 	}
@@ -280,7 +280,7 @@ int rsi_init_sdio_slave_regs(struct rsi_hw *adapter)
 					 SDIO_WRITE_FIFO_CTL,
 					 &byte);
 	if (status) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to write SDIO_WRITE_FIFO_CTL\n", __func__);
 		return -1;
 	}
@@ -328,7 +328,7 @@ void rsi_interrupt_handler(struct rsi_hw *adapter)
 						RSI_FN1_INT_REGISTER,
 						&isr_status);
 		if (status) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Failed to Read Intr Status Register\n",
 				__func__);
 			mutex_unlock(&common->rx_lock);
@@ -348,7 +348,7 @@ void rsi_interrupt_handler(struct rsi_hw *adapter)
 //		adapter->interrupt_status = isr_status;
 //		isr_status &= 0xE;
 
-		rsi_dbg(ISR_ZONE, "%s: Intr_status = %x %d %d\n",
+		redpine_dbg(ISR_ZONE, "%s: Intr_status = %x %d %d\n",
 			__func__, isr_status, (1 << MSDU_PKT_PENDING),
 			(1 << FW_ASSERT_IND));
 
@@ -359,32 +359,32 @@ void rsi_interrupt_handler(struct rsi_hw *adapter)
 			case BUFFER_AVAILABLE:
 				status = rsi_sdio_check_buffer_status(adapter, 0);
 				if (status < 0)
-					rsi_dbg(ERR_ZONE,
+					redpine_dbg(ERR_ZONE,
 						"%s: Failed to check buffer status\n",
 						__func__);
 				rsi_sdio_ack_intr(common->priv,
 						  (1 << PKT_BUFF_AVAILABLE));
 				rsi_set_event(&common->tx_thread.event);
 
-				rsi_dbg(ISR_ZONE,
+				redpine_dbg(ISR_ZONE,
 					"%s: Buffer full/available\n",
 					__func__);
 				dev->buff_status_updated = 1;
 				break;
 
 			case FIRMWARE_ASSERT_IND:
-				rsi_dbg(ERR_ZONE,
+				redpine_dbg(ERR_ZONE,
 					"%s: ==> FIRMWARE Assert <==\n",
 					__func__);
 				status = rsi_sdio_read_register(common->priv,
 								SDIO_FW_STATUS_REG,
 								&fw_status);
 				if (status) {
-					rsi_dbg(ERR_ZONE,
+					redpine_dbg(ERR_ZONE,
 						"%s: Failed to read f/w reg\n",
 						__func__);
 				} else {
-					rsi_dbg(ERR_ZONE,
+					redpine_dbg(ERR_ZONE,
 						"%s: Firmware Status is 0x%x\n",
 						__func__, fw_status);
 					rsi_sdio_ack_intr(common->priv,
@@ -395,12 +395,12 @@ void rsi_interrupt_handler(struct rsi_hw *adapter)
 				break;
 
 			case MSDU_PACKET_PENDING:
-				rsi_dbg(ISR_ZONE, "Pkt pending interrupt\n");
+				redpine_dbg(ISR_ZONE, "Pkt pending interrupt\n");
 				dev->rx_info.total_sdio_msdu_pending_intr++;
 
 				status = rsi_process_pkt(common);
 				if (status) {
-					rsi_dbg(ERR_ZONE,
+					redpine_dbg(ERR_ZONE,
 						"%s: Failed to read pkt\n",
 						__func__);
 					mutex_unlock(&common->rx_lock);
@@ -411,7 +411,7 @@ void rsi_interrupt_handler(struct rsi_hw *adapter)
 				rsi_sdio_ack_intr(common->priv, isr_status);
 				dev->rx_info.total_sdio_unknown_intr++;
 				isr_status = 0;
-				rsi_dbg(ISR_ZONE,
+				redpine_dbg(ISR_ZONE,
 					"Unknown Interrupt %x\n",
 					isr_status);
 				break;
@@ -451,7 +451,7 @@ int rsi_sdio_check_buffer_status(struct rsi_hw *adapter, u8 q_num)
 					RSI_DEVICE_BUFFER_STATUS_REGISTER,
 					&buf_status);
 	if (status) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to read status register\n", __func__);
 		return -1;
 	}

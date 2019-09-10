@@ -166,7 +166,7 @@ static u8 rsi_core_determine_hal_queue(struct rsi_common *common)
 	}
 
 	if (common->hw_data_qs_blocked) {
-		rsi_dbg(INFO_ZONE, "%s: data queue blocked\n", __func__);
+		redpine_dbg(INFO_ZONE, "%s: data queue blocked\n", __func__);
 		return q_num;
 	}
 
@@ -237,7 +237,7 @@ static void rsi_core_queue_pkt(struct rsi_common *common,
 	u8 q_num = skb->priority;
 
 	if (q_num >= NUM_SOFT_QUEUES) {
-		rsi_dbg(ERR_ZONE, "%s: Invalid Queue Number: q_num = %d\n",
+		redpine_dbg(ERR_ZONE, "%s: Invalid Queue Number: q_num = %d\n",
 			__func__, q_num);
 		dev_kfree_skb(skb);
 		return;
@@ -258,7 +258,7 @@ static struct sk_buff *rsi_core_dequeue_pkt(struct rsi_common *common,
 					    u8 q_num)
 {
 	if (q_num >= NUM_SOFT_QUEUES) {
-		rsi_dbg(ERR_ZONE, "%s: Invalid Queue Number: q_num = %d\n",
+		redpine_dbg(ERR_ZONE, "%s: Invalid Queue Number: q_num = %d\n",
 			__func__, q_num);
 		return NULL;
 	}
@@ -286,7 +286,7 @@ void rsi_core_qos_processor(struct rsi_common *common)
 	tstamp_1 = jiffies;
 	while (1) {
 		q_num = rsi_core_determine_hal_queue(common);
-		rsi_dbg(DATA_TX_ZONE,
+		redpine_dbg(DATA_TX_ZONE,
 			"%s: Queue number = %d\n", __func__, q_num);
 
 		if (q_num == INVALID_QUEUE)
@@ -322,14 +322,14 @@ void rsi_core_qos_processor(struct rsi_common *common)
 
 		skb = rsi_core_dequeue_pkt(common, q_num);
 		if (!skb) {
-			rsi_dbg(ERR_ZONE, "skb null\n");
+			redpine_dbg(ERR_ZONE, "skb null\n");
 			mutex_unlock(&common->tx_lock);
 			break;
 		}
 		if ((adapter->peer_notify) &&
 		    (skb->data[2] == PEER_NOTIFY)) {
 			adapter->peer_notify = false;
-			rsi_dbg(INFO_ZONE, "%s RESET PEER_NOTIFY\n", __func__);
+			redpine_dbg(INFO_ZONE, "%s RESET PEER_NOTIFY\n", __func__);
 		}
 
 		if (!IS_ALIGNED((unsigned long)skb->data, RSI_DMA_ALIGN))
@@ -441,20 +441,20 @@ void rsi_core_xmit(struct rsi_common *common, struct sk_buff *skb)
 	u8 q_num, tid = 0;
 
 	if ((!skb) || (!skb->len)) {
-		rsi_dbg(ERR_ZONE, "%s: Null skb/zero Length packet\n",
+		redpine_dbg(ERR_ZONE, "%s: Null skb/zero Length packet\n",
 			__func__);
 		goto xmit_fail;
 	}
 #ifdef CONFIG_REDPINE_WOW
 	if (common->wow_flags & RSI_WOW_ENABLED) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Blocking Tx_packets when WOWLAN is enabled\n",
 			__func__);
 		goto xmit_fail;
 	}
 #endif
 	if (common->fsm_state != FSM_MAC_INIT_DONE) {
-		rsi_dbg(ERR_ZONE, "%s: FSM state not open\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: FSM state not open\n", __func__);
 		goto xmit_fail;
 	}
 
@@ -484,13 +484,13 @@ void rsi_core_xmit(struct rsi_common *common, struct sk_buff *skb)
 #ifdef CONFIG_REDPINE_WOW          
 		if ((ieee80211_is_deauth(wlh->frame_control)) &&
 		    (common->wow_flags & RSI_WOW_ENABLED)) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Discarding Deauth when WOWLAN is enabled\n",
 				__func__);
 			goto xmit_fail; 
 		}
 #endif
-		rsi_dbg(MGMT_TX_ZONE, "Core: TX Dot11 Mgmt Pkt Type: %s\n",
+		redpine_dbg(MGMT_TX_ZONE, "Core: TX Dot11 Mgmt Pkt Type: %s\n",
 			dot11_pkt_type(wlh->frame_control));
 #ifndef CONFIG_REDPINE_HW_SCAN_OFFLOAD
 		if (ieee80211_is_probe_req(wlh->frame_control)) {
@@ -504,13 +504,13 @@ void rsi_core_xmit(struct rsi_common *common, struct sk_buff *skb)
 		}
 #endif
 		if (rsi_prepare_mgmt_desc(common, skb)) {
-			rsi_dbg(ERR_ZONE, "Failed to prepeare desc\n");
+			redpine_dbg(ERR_ZONE, "Failed to prepeare desc\n");
 			goto xmit_fail;
 		}
 	} else {
 		struct rsi_sta *sta = NULL;
 
-		rsi_dbg(INFO_ZONE, "Core: TX Data Packet\n");
+		redpine_dbg(INFO_ZONE, "Core: TX Data Packet\n");
 		rsi_hex_dump(DATA_TX_ZONE, "TX Data Packet",
 			     skb->data, skb->len);
 
@@ -592,7 +592,7 @@ void rsi_core_xmit(struct rsi_common *common, struct sk_buff *skb)
 			skb->priority = q_num;
 		}
 		if (rsi_prepare_data_desc(common, skb)) {
-			rsi_dbg(ERR_ZONE, "Failed to prepare data desc\n");
+			redpine_dbg(ERR_ZONE, "Failed to prepare data desc\n");
 			goto xmit_fail;
 		}
 	}
@@ -616,7 +616,7 @@ void rsi_core_xmit(struct rsi_common *common, struct sk_buff *skb)
 		}
 		if ((skb_queue_len(&common->tx_queue[q_num]) + 1) >= 
 	   	    water_mark) {
-			rsi_dbg(ERR_ZONE, "%s: queue %d is full\n",
+			redpine_dbg(ERR_ZONE, "%s: queue %d is full\n",
 				__func__, q_num);
 			if (!ieee80211_queue_stopped(adapter->hw, WME_AC(q_num)))
 				ieee80211_stop_queue(adapter->hw, WME_AC(q_num));
@@ -626,13 +626,13 @@ void rsi_core_xmit(struct rsi_common *common, struct sk_buff *skb)
 	}
 
 	rsi_core_queue_pkt(common, skb);
-	rsi_dbg(DATA_TX_ZONE, "%s: ===> Scheduling TX thead <===\n", __func__);
+	redpine_dbg(DATA_TX_ZONE, "%s: ===> Scheduling TX thead <===\n", __func__);
 	rsi_set_event(&common->tx_thread.event);
 
 	return;
 
 xmit_fail:
-	rsi_dbg(ERR_ZONE, "%s: Failed to queue packet\n", __func__);
+	redpine_dbg(ERR_ZONE, "%s: Failed to queue packet\n", __func__);
 
 	/* Dropping pkt here */
 	ieee80211_free_txskb(common->priv->hw, skb);

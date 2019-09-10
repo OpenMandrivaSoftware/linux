@@ -71,7 +71,7 @@ char *str_psstate(enum ps_state state)
 static inline void rsi_modify_ps_state(struct rsi_hw *adapter,
 				       enum ps_state nstate)
 {
-	rsi_dbg(INFO_ZONE, "PS state changed %s => %s\n",
+	redpine_dbg(INFO_ZONE, "PS state changed %s => %s\n",
 		str_psstate(adapter->ps_state),
 		str_psstate(nstate));
 
@@ -114,7 +114,7 @@ EXPORT_SYMBOL_GPL(rsi_default_ps_params);
 void rsi_enable_ps(struct rsi_hw *adapter)
 {
 	if (rsi_send_ps_request(adapter, true)) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to send PS request to device\n",
 			__func__);
 		return;
@@ -133,7 +133,7 @@ void rsi_enable_ps(struct rsi_hw *adapter)
 void rsi_disable_ps(struct rsi_hw *adapter)
 {
 	if (rsi_send_ps_request(adapter, false)) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to send PS request to device\n",
 			__func__);
 		return;
@@ -155,14 +155,14 @@ void rsi_conf_uapsd(struct rsi_hw *adapter)
 		return;
 
 	if (rsi_send_ps_request(adapter, false)) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to send PS request to device\n",
 			__func__);
 		return;
 	}
 
 	if (rsi_send_ps_request(adapter, true)) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to send PS request to device\n",
 			__func__);
 	}
@@ -192,7 +192,7 @@ int rsi_handle_ps_confirm(struct rsi_hw *adapter, u8 *msg)
 			rsi_modify_ps_state(adapter, PS_NONE);
 		break;
 	default:
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Invalid PS confirm type %x in state %s\n",
 			cfm_type, str_psstate(adapter->ps_state));
 		return -1;
