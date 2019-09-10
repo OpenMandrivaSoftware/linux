@@ -2543,9 +2543,11 @@ int rsi_send_ps_request(struct rsi_hw *adapter, bool enable)
 				       (RSI_WIFI_MGMT_Q << 12));
 	ps->desc_word[1] = cpu_to_le16(WAKEUP_SLEEP_REQUEST);
 	if (enable) {
+		printk("<=====Sending PS Enable request ======>\n");
 		ps->ps_sleep.enable = 1;
 		ps->desc_word[6] = SLEEP_REQUEST;
 	} else {
+		printk("<=====Sending PS Disable request ======>\n");
 		ps->ps_sleep.enable = 0;
 		ps->desc_word[0] |= BIT(15);
 		ps->desc_word[6] = WAKEUP_REQUEST;
@@ -2553,13 +2555,17 @@ int rsi_send_ps_request(struct rsi_hw *adapter, bool enable)
 
 	if (common->uapsd_bitmap) {
 //		ps->ps_mimic_support = 1;
+		printk("<===== UAPSD Power Save ====>\n");
 		ps->ps_uapsd_acs = common->uapsd_bitmap;
 		ps->ps_uapsd_acs = (adapter->hw->uapsd_max_sp_len <<
 				    IEEE80211_WMM_IE_STA_QOSINFO_SP_SHIFT) |
 				    IEEE80211_WMM_IE_STA_QOSINFO_AC_MASK;
 		ps->ps_uapsd_wakeup_period = RSI_UAPSD_WAKEUP_PERIOD;
+	} else {
+		printk("<===== Mimic-UAPSD Power Save ====>\n");
+		ps->ps_mimic_support = 1;
+		ps->ps_uapsd_wakeup_period = RSI_UAPSD_WAKEUP_PERIOD;
 	}
-
 	ps->ps_sleep.sleep_type = ps_info->sleep_type;
 	ps->ps_sleep.num_bcns_per_lis_int =
 		cpu_to_le16(ps_info->num_bcns_per_lis_int);
@@ -2587,6 +2593,8 @@ int rsi_send_ps_request(struct rsi_hw *adapter, bool enable)
 		ps->ps_listen_interval = 0;
 
 	skb_put(skb, frame_len);
+	rsi_hex_dump(ERR_ZONE, "ps-request",
+		     skb->data, skb->len);
 
 	return rsi_send_internal_mgmt_frame(common, skb);
 }
