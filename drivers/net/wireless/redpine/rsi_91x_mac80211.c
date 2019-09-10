@@ -399,6 +399,26 @@ static void rsi_set_min_rate(struct ieee80211_hw *hw,
 	rsi_dbg(INFO_ZONE, "Min Rate = %d\n", common->min_rate);
 }
 
+static void rsi_trigger_antenna_change(struct rsi_common *common)
+{
+	common->rsi_scan_count++;
+	if (common->rsi_scan_count > MAX_SCAN_PER_ANTENNA) {
+		common->rsi_scan_count = 0;
+		if (common->ant_in_use == ANTENNA_SEL_INT)
+			common->obm_ant_sel_val = ANTENNA_SEL_UFL;
+		else
+			common->obm_ant_sel_val = ANTENNA_SEL_INT;
+		if (rsi_set_antenna(common, common->obm_ant_sel_val)) {
+			rsi_dbg(ERR_ZONE, "Failed to change antenna to %d\n",
+				common->obm_ant_sel_val);
+		} else {
+			rsi_dbg(ERR_ZONE, "Antenna is changed to %d\n",
+				common->obm_ant_sel_val);
+			common->ant_in_use = common->obm_ant_sel_val;
+		}
+	}
+	return;
+}
 
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
 #define MAX_HW_SCAN_SSID 1
@@ -433,11 +453,17 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 	mutex_lock(&common->mutex);
 
 	if (!bss->assoc) {
+		if (common->antenna_diversity)
+			rsi_trigger_antenna_change(common);
+
 		common->scan_request = scan_req;
 		common->scan_vif = vif;
 		common->scan_in_prog = false;
 		queue_work(common->scan_workqueue, &common->scan_work);
 	} else {
+		/* Upon connection, make scan count to 0 */
+		common->rsi_scan_count = 0;
+
 		/* Wait for EAPOL4 completion before starting bg scan */
 		if ((bss->assoc_capability & BIT(4))) {	
 			if (!common->start_bgscan) {
@@ -2318,9 +2344,14 @@ static void rsi_mac80211_sw_scan_start(struct ieee80211_hw *hw,
 
 	if (common->p2p_enabled)
 		return;
-	if (!bss->assoc)
+	if (!bss->assoc) {
+		if (common->antenna_diversity)
+			rsi_trigger_antenna_change(common);
 		return;
+	}
 
+	/* Upon connection, make scan count to 0 */
+	common->rsi_scan_count = 0;
 	mutex_lock(&common->mutex);
 
 	if (!rsi_send_bgscan_params(common, 1)) {

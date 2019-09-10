@@ -75,12 +75,14 @@ bool host_intf_on_demand;
  * Default sleep clock derivation source is RC clock.
  */
 bool crystal_as_sleep_clk;
+bool antenna_diversity;
 u16 feature_bitmap_9116;
 u8 bt_rf_type = 0x01;
 u8 ble_tx_pwr_inx =  0x1E;
 u8 ble_pwr_save_options = 0x02;
 u8 bt_rf_tx_power_mode;
 u8 bt_rf_rx_power_mode;
+u8 antenna_sel = ANTENNA_SEL_UFL;
 
 module_param(bt_rf_type, byte, 0);
 module_param(ble_tx_pwr_inx, byte, 0);
@@ -124,6 +126,14 @@ Feature\n");
 module_param(crystal_as_sleep_clk, bool, 0);
 MODULE_PARM_DESC(crystal_as_sleep_clk, "\nSleep clock selection (0) RC clock \
 as sleep clock (1) 32KHz crystal as sleep clock\n");
+
+module_param(antenna_diversity, bool, 0);
+MODULE_PARM_DESC(antenna_diversity, "\n Anetanna diversity selection(Only for \
+STA mode).\n '0' for disable and '1' for enable\n");
+
+module_param(antenna_sel, byte, 0);
+MODULE_PARM_DESC(antenna_sel, "\n Antenna selection. '2' for  intenal antenna \
+and '3' for External antenna\n");
 
 module_param(feature_bitmap_9116, ushort, 0);
 MODULE_PARM_DESC(feature_bitmap_9116, "\n9116 Feature Bitmap BIT(0) 0: AGC_PD \
@@ -599,6 +609,8 @@ struct rsi_hw *rsi_91x_init(void)
 	common->feature_bitmap_9116 = feature_bitmap_9116;
 	common->host_intf_on_demand = host_intf_on_demand;
 	common->bt_rf_type = bt_rf_type;
+	common->obm_ant_sel_val = antenna_sel;
+	common->antenna_diversity = antenna_diversity;
 	common->ble_tx_pwr_inx = ble_tx_pwr_inx;
 	common->ble_pwr_save_options = ble_pwr_save_options;
 	common->bt_rf_tx_power_mode = bt_rf_tx_power_mode;
@@ -622,6 +634,7 @@ struct rsi_hw *rsi_91x_init(void)
 	rsi_default_ps_params(adapter);
 	spin_lock_init(&adapter->ps_lock);
 	common->uapsd_bitmap = 0;
+	common->rsi_scan_count = 0;
 
 	/* BGScan related */
 	init_bgscan_params(common);
