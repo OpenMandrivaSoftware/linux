@@ -120,14 +120,14 @@ int rsi_prepare_data_desc(struct rsi_common *common, struct sk_buff *skb)
 
 	header_size = FRAME_DESC_SZ + sizeof(struct xtended_desc);
 	if (header_size > skb_headroom(skb)) {
-		rsi_dbg(ERR_ZONE, "%s: Not enough headroom\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Not enough headroom\n", __func__);
 		status = -ENOSPC;
 		goto err;
 	}
 	skb_push(skb, header_size);
 	dword_align_bytes = ((unsigned long)skb->data & 0x3f);
 	if (header_size > skb_headroom(skb)) {
-		rsi_dbg(ERR_ZONE, "%s: Not enough headroom\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Not enough headroom\n", __func__);
 		status = -ENOSPC;
 		goto err;
 	}
@@ -186,7 +186,7 @@ int rsi_prepare_data_desc(struct rsi_common *common, struct sk_buff *skb)
 	}
 
 	if (skb->protocol == cpu_to_be16(ETH_P_PAE)) {
-		rsi_dbg(INFO_ZONE, "*** Tx EAPOL ***\n");
+		redpine_dbg(INFO_ZONE, "*** Tx EAPOL ***\n");
 		
 		frame_desc[3] = cpu_to_le16(RATE_INFO_ENABLE);
 		if (common->band == NL80211_BAND_5GHZ)
@@ -206,7 +206,7 @@ int rsi_prepare_data_desc(struct rsi_common *common, struct sk_buff *skb)
 		}
 			if (((skb->len - header_size) == 133) ||
 			    ((skb->len - header_size) == 131)) {
-				rsi_dbg(INFO_ZONE, "*** Tx EAPOL 4*****\n");
+				redpine_dbg(INFO_ZONE, "*** Tx EAPOL 4*****\n");
 				frame_desc[1] |=
 					cpu_to_le16(RSI_DESC_REQUIRE_CFM_TO_HOST);
 				xtend_desc->confirm_frame_type = EAPOL4_CONFIRM;
@@ -283,7 +283,7 @@ int rsi_prepare_mgmt_desc(struct rsi_common *common,struct sk_buff *skb)
 	/* Update header size */
 	header_size = FRAME_DESC_SZ + sizeof(struct xtended_desc);
 	if (header_size > skb_headroom(skb)) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to add extended descriptor\n",
 			__func__);
 		status = -ENOSPC;
@@ -292,7 +292,7 @@ int rsi_prepare_mgmt_desc(struct rsi_common *common,struct sk_buff *skb)
 	skb_push(skb, header_size);
 	dword_align_bytes = ((unsigned long)skb->data & 0x3f);
 	if (dword_align_bytes > skb_headroom(skb)) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to add dword align\n", __func__);
 		status = -ENOSPC;
 		goto err;
@@ -306,7 +306,7 @@ int rsi_prepare_mgmt_desc(struct rsi_common *common,struct sk_buff *skb)
 	wh = (struct ieee80211_hdr *)&skb->data[header_size];
 	vif = rsi_get_vif(adapter, wh->addr2);
 	if(!vif) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to get vif\n", __func__);
 		status = -ENOSPC;
 		goto err;
@@ -318,7 +318,7 @@ int rsi_prepare_mgmt_desc(struct rsi_common *common,struct sk_buff *skb)
 	xtend_desc = (struct xtended_desc *)&skb->data[FRAME_DESC_SZ];
 
 	if (skb->len > MAX_MGMT_PKT_SIZE) {
-		rsi_dbg(INFO_ZONE, "%s: Dropping mgmt pkt > 512\n", __func__);
+		redpine_dbg(INFO_ZONE, "%s: Dropping mgmt pkt > 512\n", __func__);
 		goto err;
 	}
 
@@ -415,12 +415,12 @@ int rsi_send_data_pkt(struct rsi_common *common, struct sk_buff *skb)
 			goto err;
 	}
 
-	rsi_dbg(INFO_ZONE, "hal: Sending data pkt");
+	redpine_dbg(INFO_ZONE, "hal: Sending data pkt");
 	rsi_hex_dump(DATA_TX_ZONE, "TX data pkt", skb->data, skb->len);
 
 	status = rsi_send_pkt(common, skb);
 	if (status)
-		rsi_dbg(ERR_ZONE, "%s: Failed to write data pkt\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed to write data pkt\n", __func__);
 
 err:
 	++common->tx_stats.total_tx_pkt_freed[skb->priority];
@@ -464,7 +464,7 @@ int rsi_send_mgmt_pkt(struct rsi_common *common, struct sk_buff *skb)
 
 		status = rsi_send_pkt(common, skb);
 		if (status) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Failed to write the packet\n",
 				__func__);
 		}
@@ -485,12 +485,12 @@ int rsi_send_mgmt_pkt(struct rsi_common *common, struct sk_buff *skb)
 	/* Indicate to firmware to give cfm */
 	if (ieee80211_is_probe_req(wh->frame_control)) {
 		if (!bss->assoc) {
-			rsi_dbg(INFO_ZONE,
+			redpine_dbg(INFO_ZONE,
 				"%s: blocking mgmt queue\n", __func__);
 			desc[1] |= cpu_to_le16(RSI_DESC_REQUIRE_CFM_TO_HOST);
 			xtend_desc->confirm_frame_type = PROBEREQ_CONFIRM;
 			common->mgmt_q_block = true;
-			rsi_dbg(INFO_ZONE, "Mgmt queue blocked\n");
+			redpine_dbg(INFO_ZONE, "Mgmt queue blocked\n");
 		} else if (common->bgscan_en) {
 			if (common->mac80211_cur_channel !=
 			    rsi_get_connected_channel(adapter)) { 
@@ -505,7 +505,7 @@ int rsi_send_mgmt_pkt(struct rsi_common *common, struct sk_buff *skb)
 		}
 	}
 	
-	rsi_dbg(MGMT_TX_ZONE,
+	redpine_dbg(MGMT_TX_ZONE,
 		"Sending Packet : %s =====>\n",
 		dot11_pkt_type(wh->frame_control));
 
@@ -513,7 +513,7 @@ int rsi_send_mgmt_pkt(struct rsi_common *common, struct sk_buff *skb)
 	status = rsi_send_pkt(common, skb);
 
 	if (status) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to write the packet\n",
 			__func__);
 	}
@@ -536,14 +536,14 @@ int rsi_send_bt_pkt(struct rsi_common *common, struct sk_buff *skb)
 
 		status = rsi_send_pkt(common, skb);
 		if (status)
-			rsi_dbg(ERR_ZONE, "%s: Failed to write bt mgmt pkt\n",
+			redpine_dbg(ERR_ZONE, "%s: Failed to write bt mgmt pkt\n",
 				__func__);
 		goto out;
 	}
 
 	header_size = FRAME_DESC_SZ;
 	if (header_size > skb_headroom(skb)) {
-		rsi_dbg(ERR_ZONE, "%s: Not enough headroom\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Not enough headroom\n", __func__);
 		status = -ENOSPC;
 		goto out;
 	}
@@ -559,7 +559,7 @@ int rsi_send_bt_pkt(struct rsi_common *common, struct sk_buff *skb)
 	rsi_hex_dump(DATA_TX_ZONE, "TX BT pkt", skb->data, skb->len);
 	status = rsi_send_pkt(common, skb);
 	if (status)
-		rsi_dbg(ERR_ZONE, "%s: Failed to write bt pkt\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed to write bt pkt\n", __func__);
 
 out:
 	dev_kfree_skb(skb);
@@ -571,14 +571,14 @@ int rsi_send_zb_pkt(struct rsi_common *common, struct sk_buff *skb)
 	int status;
 
 	if (!skb) {
-		rsi_dbg(ERR_ZONE, "%s: Null skb\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Null skb\n", __func__);
 		return -EINVAL;
 	}
 	skb->data[1] |= BIT(7);  /* Set immediate wake up */
 	
 	status = rsi_send_pkt(common, skb);
 	if (status)
-		rsi_dbg(ERR_ZONE, "%s: Failed to send ZigB packet\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed to send ZigB packet\n", __func__);
 	dev_kfree_skb(skb);
 
 	return status;
@@ -599,7 +599,7 @@ int rsi_prepare_beacon(struct rsi_common *common, struct sk_buff *skb)
 					   adapter->vifs[adapter->sc_nvifs - 1],
 					   &tim_offset, NULL);
 	if (!mac_bcn) {
-		rsi_dbg(ERR_ZONE, "Failed to get beacon from mac80211\n");
+		redpine_dbg(ERR_ZONE, "Failed to get beacon from mac80211\n");
 		return -EINVAL;
 	}
 
@@ -728,7 +728,7 @@ static int bl_write_cmd(struct rsi_hw *adapter, u8 cmd, u8 exp_resp, u16 *cmd_re
 					     SWBL_REGIN,
 					     &regin_val,
 					     2) < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Command %0x REGIN reading failed..\n",
 				__func__, cmd);
 			goto fail;
@@ -738,13 +738,13 @@ static int bl_write_cmd(struct rsi_hw *adapter, u8 cmd, u8 exp_resp, u16 *cmd_re
 			break;
 	}
 	if (adapter->blcmd_timer_expired) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Command %0x REGIN reading timed out..\n",
 			__func__, cmd);
 		goto fail;
 	}
 
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"Issuing write to Regin val:%0x sending cmd:%0x\n",
 		regin_val, (cmd | regin_input << 8));
 	if ((hif_ops->master_reg_write(adapter,
@@ -768,7 +768,7 @@ static int bl_write_cmd(struct rsi_hw *adapter, u8 cmd, u8 exp_resp, u16 *cmd_re
 					     SWBL_REGOUT,
 					     &regout_val,
 					     2) < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Command %0x REGOUT reading failed..\n",
 				__func__, cmd);
 			goto fail;
@@ -778,7 +778,7 @@ static int bl_write_cmd(struct rsi_hw *adapter, u8 cmd, u8 exp_resp, u16 *cmd_re
 			break;
 	}
 	if (adapter->blcmd_timer_expired) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Command %0x REGOUT reading timed out..\n",
 			__func__, cmd);
 		goto fail;
@@ -792,7 +792,7 @@ static int bl_write_cmd(struct rsi_hw *adapter, u8 cmd, u8 exp_resp, u16 *cmd_re
 				       SWBL_REGOUT,
 				       (cmd | REGOUT_INVALID << 8),
 				       2)) < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Command %0x REGOUT writing failed..\n",
 			__func__, cmd);
 		goto fail;
@@ -800,11 +800,11 @@ static int bl_write_cmd(struct rsi_hw *adapter, u8 cmd, u8 exp_resp, u16 *cmd_re
 	mdelay(1);
 
 	if (output == exp_resp) {
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"%s: received expected response 0x%0X for cmd 0x%0X\n",
 			__func__, output, cmd);
 	} else {
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"%s: received response 0x%0X for cmd 0x%0X\n",
 			__func__, output, cmd);
 		goto fail;
@@ -836,7 +836,7 @@ static int bl_cmd(struct rsi_hw *adapter, u8 cmd, u8 exp_resp, char *str)
 
 	bl_start_cmd_timer(adapter, timeout);
 	if (bl_write_cmd(adapter, cmd, exp_resp, &regout_val) < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Command %s (%0x) writing failed..\n",
 			__func__, str, cmd);
 		bl_stop_cmd_timer(adapter);
@@ -887,7 +887,7 @@ static int bl_write_header(struct rsi_hw *adapter,
 						 write_addr,
 						 (u8 *)bl_hdr,
 						 write_len)) < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Failed to load Version/CRC structure\n",
 				__func__);
 			goto fail;
@@ -895,7 +895,7 @@ static int bl_write_header(struct rsi_hw *adapter,
 	} else {
 		write_addr = PING_BUFFER_ADDRESS >> 16;
 		if ((hif_ops->master_access_msword(adapter, write_addr)) < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Unable to set ms word to common reg\n",
 				__func__);
 			goto fail;
@@ -906,7 +906,7 @@ static int bl_write_header(struct rsi_hw *adapter,
 						 write_addr,
 						 (u8 *)bl_hdr,
 						 write_len)) < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Failed to load Version/CRC structure\n",
 				__func__);
 			goto fail;
@@ -933,12 +933,12 @@ static u32 read_flash_capacity(struct rsi_hw *adapter)
 	if ((adapter->host_intf_ops->master_reg_read(adapter,
 						     FLASH_SIZE_ADDR,
 						     &flash_sz, 2)) < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Flash size reading failed..\n",
 			__func__);
 		return 0;
 	}
-	rsi_dbg(INIT_ZONE, "Flash capacity: %d KiloBytes\n", flash_sz);
+	redpine_dbg(INIT_ZONE, "Flash capacity: %d KiloBytes\n", flash_sz);
 
 	return (flash_sz * 1024); /* Return size in kbytes */
 }
@@ -983,7 +983,7 @@ static int ping_pong_write(struct rsi_hw *adapter, u8 cmd, u8 *addr, u32 size)
 					    size,
 					    block_size,
 					    addr)) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to write blk at addr %0x\n",
+		redpine_dbg(ERR_ZONE, "%s: Unable to write blk at addr %0x\n",
 			__func__, *addr);
 		goto fail;
 	}
@@ -1019,7 +1019,7 @@ static int auto_fw_upgrade(struct rsi_hw *adapter,
 	temp_flash_content = flash_content;
 
 	if (content_size > MAX_FLASH_FILE_SIZE) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Flash Content size is more than 400K %u\n",
 			__func__, MAX_FLASH_FILE_SIZE);
 		goto fail;
@@ -1027,24 +1027,24 @@ static int auto_fw_upgrade(struct rsi_hw *adapter,
 
 	flash_start_address = cpu_to_le32(
 				*(u32 *)&flash_content[FLASHING_START_ADDRESS]);
-	rsi_dbg(INFO_ZONE, "flash start address: %08x\n", flash_start_address);
+	redpine_dbg(INFO_ZONE, "flash start address: %08x\n", flash_start_address);
 
 	if (flash_start_address < FW_IMAGE_MIN_ADDRESS) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Fw image Flash Start Address is less than 64K\n",
 			__func__);
 		goto fail;
 	}
 
 	if (flash_start_address % FLASH_SECTOR_SIZE) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Flash Start Address is not multiple of 4K\n",
 			__func__);
 		goto fail;
 	}
 	if ((flash_start_address + content_size) >
 	     adapter->flash_capacity) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Flash Content will cross max flash size\n",
 			__func__);
 		goto fail;
@@ -1053,24 +1053,24 @@ static int auto_fw_upgrade(struct rsi_hw *adapter,
 	temp_content_size  = content_size;
 	num_flash = content_size / FLASH_WRITE_CHUNK_SIZE;
 
-	rsi_dbg(INFO_ZONE, "content_size: %d\n", content_size);
-	rsi_dbg(INFO_ZONE, "num_flash: %d\n", num_flash);
+	redpine_dbg(INFO_ZONE, "content_size: %d\n", content_size);
+	redpine_dbg(INFO_ZONE, "num_flash: %d\n", num_flash);
 
 	for (index = 0; index <= num_flash; index++) {
-		rsi_dbg(INFO_ZONE, "flash index: %d\n", index);
+		redpine_dbg(INFO_ZONE, "flash index: %d\n", index);
 		if (index != num_flash) {
 			content_size = FLASH_WRITE_CHUNK_SIZE;
-			rsi_dbg(INFO_ZONE,
+			redpine_dbg(INFO_ZONE,
 				"QSPI content_size:%d\n",
 				content_size);
 		} else {
 			content_size =
 				temp_content_size % FLASH_WRITE_CHUNK_SIZE;
-			rsi_dbg(INFO_ZONE,
+			redpine_dbg(INFO_ZONE,
 				"Writing last sector content_size:%d\n",
 				content_size);
 			if (!content_size) {
-				rsi_dbg(INFO_ZONE, "INSTRUCTION SIZE ZERO\n");
+				redpine_dbg(INFO_ZONE, "INSTRUCTION SIZE ZERO\n");
 				break;
 			}
 		}
@@ -1084,13 +1084,13 @@ static int auto_fw_upgrade(struct rsi_hw *adapter,
 				    cmd,
 				    flash_content,
 				    content_size)) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Unable to load %d block\n",
 				__func__, index);
 			goto fail;
 		}
 
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"%s: Successfully loaded %d instructions\n",
 			__func__, index);
 		flash_content += content_size;
@@ -1101,7 +1101,7 @@ static int auto_fw_upgrade(struct rsi_hw *adapter,
 		bl_stop_cmd_timer(adapter);
 		goto fail;
 	}
-	rsi_dbg(INFO_ZONE, "FW loading is done and FW is running..\n");
+	redpine_dbg(INFO_ZONE, "FW loading is done and FW is running..\n");
 	return 0;
 
 fail:
@@ -1122,29 +1122,29 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 	u32 base_address;
 	u32 block_size;
 
-	rsi_dbg(INIT_ZONE, "***** Load 9116 TA Instructions *****\n");
+	redpine_dbg(INIT_ZONE, "***** Load 9116 TA Instructions *****\n");
 
 	if ((hif_ops->master_reg_write(adapter, MEM_ACCESS_CTRL_FROM_HOST,
 				       RAM_384K_ACCESS_FROM_TA , 4)) < 0) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to access full RAM memory\n",
+		redpine_dbg(ERR_ZONE, "%s: Unable to access full RAM memory\n",
 			__func__);
 		return -EIO;
 	}
 
 	metadata_p = &metadata[adapter->priv->coex_mode];
 
-	rsi_dbg(INIT_ZONE, "%s: loading file %s\n", __func__, metadata_p->name);
+	redpine_dbg(INIT_ZONE, "%s: loading file %s\n", __func__, metadata_p->name);
 	adapter->fw_file_name = metadata_p->name;
 
 	if ((request_firmware(&fw_entry, metadata_p->name,
 			      adapter->device)) < 0) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to open file %s\n",
+		redpine_dbg(ERR_ZONE, "%s: Failed to open file %s\n",
 			__func__, metadata_p->name);
 		return -EINVAL;
 	}
 	firmware_ptr = (u8 *)fw_entry->data;
 	instructions_sz = fw_entry->size;
-	rsi_dbg(INFO_ZONE, "FW Length = %d bytes\n", instructions_sz);
+	redpine_dbg(INFO_ZONE, "FW Length = %d bytes\n", instructions_sz);
 
 	if (!strncmp(metadata_p->name, "pmemdata", strlen("pmemdata"))) {
 		common->lmac_ver.major =
@@ -1163,7 +1163,7 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 	if (instructions_sz % 4)
 		instructions_sz += (4 - (instructions_sz % 4));
 
-	rsi_dbg(INFO_ZONE, "instructions_sz : %d\n", instructions_sz);
+	redpine_dbg(INFO_ZONE, "instructions_sz : %d\n", instructions_sz);
 
 	base_address = metadata_p->address;
 
@@ -1181,15 +1181,15 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 		ii = 0;
 
 		do {
-			rsi_dbg(ERR_ZONE, "%s: Loading chunk %d\n",
+			redpine_dbg(ERR_ZONE, "%s: Loading chunk %d\n",
 				__func__, ii);
 
-			rsi_dbg(ERR_ZONE, "length %d: destination %x\n",
+			redpine_dbg(ERR_ZONE, "length %d: destination %x\n",
 				(bootload_ds.bl_entry[ii].control &
 				RSI_BL_CTRL_LEN_MASK),
 				bootload_ds.bl_entry[ii].dst_addr);
 
-			rsi_dbg(ERR_ZONE, "FW start %x\n",
+			redpine_dbg(ERR_ZONE, "FW start %x\n",
 				*(u32 *)firmware_ptr);
 			status = hif_ops->load_data_master_write(adapter,
 					bootload_ds.bl_entry[ii].dst_addr,
@@ -1212,18 +1212,18 @@ static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 							 (u8 *)fw_entry->data);
 	}
 	if (status) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Unable to load %s blk\n",
 			__func__, metadata_p->name);
 		goto fail_free_fw;
 	}
 
-	rsi_dbg(INIT_ZONE, "%s: Successfully loaded %s instructions\n",
+	redpine_dbg(INIT_ZONE, "%s: Successfully loaded %s instructions\n",
 		__func__, metadata_p->name);
 
 	if (adapter->rsi_host_intf == RSI_HOST_INTF_SDIO) {
 		if (adapter->host_intf_ops->ta_reset_ops(adapter))
-			rsi_dbg(ERR_ZONE, "Unable to put ta in reset\n");
+			redpine_dbg(ERR_ZONE, "Unable to put ta in reset\n");
 	}
 
 fail_free_fw:
@@ -1242,20 +1242,20 @@ static int rsi_load_9116_flash_fw(struct rsi_hw *adapter)
 {
 	 struct rsi_host_intf_ops *hif_ops = adapter->host_intf_ops;
 
-	rsi_dbg(ERR_ZONE, "***** Loading Firmware from Flash *****\n");
+	redpine_dbg(ERR_ZONE, "***** Loading Firmware from Flash *****\n");
 	if ((hif_ops->master_reg_write(adapter, MEM_ACCESS_CTRL_FROM_HOST,
 					RAM_384K_ACCESS_FROM_TA, 4)) < 0) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to access full RAM memory\n",
+		redpine_dbg(ERR_ZONE, "%s: Unable to access full RAM memory\n",
 			__func__);
 		return -EIO;
 	}
 	if ((bl_cmd(adapter, LOAD_HOSTED_FW, LOADING_INITIATED,
 		    "LOAD_HOSTED_FW")) < 0){
-		rsi_dbg(ERR_ZONE, "%s: FW_LOAD_BL_CMD failed\n",
+		redpine_dbg(ERR_ZONE, "%s: FW_LOAD_BL_CMD failed\n",
 			__func__);
 		return -EIO;
 	}
-	rsi_dbg(ERR_ZONE, "***** Loaded Firmware to RAM - Waiting for Card Ready *****\n");
+	redpine_dbg(ERR_ZONE, "***** Loaded Firmware to RAM - Waiting for Card Ready *****\n");
 	return 0;
 }
 #endif
@@ -1290,7 +1290,7 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 						RSI_FLASH_READ_COEX_IMAGE,
 						&flash_data_start,
 						2)) < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: RSI_FLASH_READ failed\n", __func__);
 			goto bl_cmd_fail;
 		}
@@ -1300,7 +1300,7 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 						&flash_data_start,
 						2)) < 0) {
 
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: RSI_FLASH_READ failed\n", __func__);
 			goto bl_cmd_fail;
 		}
@@ -1311,7 +1311,7 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 					      SWBL_REGOUT,
 					      &regout_val,
 					      2)) < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: REGOUT read failed\n", __func__);
 			goto bl_cmd_fail;
 		}
@@ -1320,21 +1320,21 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 			break;
 	}
 	if (adapter->blcmd_timer_expired) {
-		rsi_dbg(ERR_ZONE, "%s: REGOUT read timedout\n", __func__);
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE, "%s: REGOUT read timedout\n", __func__);
+		redpine_dbg(ERR_ZONE,
 			"%s: Soft boot loader not present\n", __func__);
 		goto bl_cmd_fail;
 	}
 	bl_stop_cmd_timer(adapter);
 
-	rsi_dbg(INFO_ZONE, "Received Board Version Number: %x\n",
+	redpine_dbg(INFO_ZONE, "Received Board Version Number: %x\n",
 		(regout_val & 0xff));
 
 	if ((hif_ops->master_reg_write(adapter,
 				       SWBL_REGOUT,
 				       (REGOUT_INVALID | REGOUT_INVALID << 8),
 				       2)) < 0) {
-		rsi_dbg(ERR_ZONE, "%s: REGOUT writing failed..\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: REGOUT writing failed..\n", __func__);
 		goto fail;
 	}
 	mdelay(1);
@@ -1358,7 +1358,7 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 			}
 			return status;
 		} else {
-			rsi_dbg(ERR_ZONE, "%s: *** Flash is Empty ***\n",
+			redpine_dbg(ERR_ZONE, "%s: *** Flash is Empty ***\n",
 				__func__);
 			return -EINVAL;
 		}
@@ -1367,10 +1367,10 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 		if (adapter->rsi_host_intf == RSI_HOST_INTF_USB) {
 			if (bl_cmd(adapter, JUMP_TO_ZERO_PC,
 				   CMD_PASS, "JUMP_TO_ZERO") < 0)
-				rsi_dbg(INFO_ZONE,
+				redpine_dbg(INFO_ZONE,
 					"Jump to zero command failed\n");
 			else
-				rsi_dbg(INFO_ZONE,
+				redpine_dbg(INFO_ZONE,
 					"Jump to zero command successful\n");
 		}
 		return status;
@@ -1381,7 +1381,7 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 
 		adapter->flash_capacity = read_flash_capacity(adapter);
 		if (adapter->flash_capacity <= 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Unable to read flash size from EEPROM\n",
 				__func__);
 			goto fail;
@@ -1389,17 +1389,17 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 	
 		metadata_p = &metadata_flash_content[adapter->priv->coex_mode];
 	
-		rsi_dbg(INIT_ZONE, "%s: Loading file %s\n", __func__, metadata_p->name);
+		redpine_dbg(INIT_ZONE, "%s: Loading file %s\n", __func__, metadata_p->name);
 		adapter->fw_file_name = metadata_p->name;
 	
 		if ((request_firmware(&fw_entry, metadata_p->name,
 				      adapter->device)) < 0) {
-			rsi_dbg(ERR_ZONE, "%s: Failed to open file %s\n",
+			redpine_dbg(ERR_ZONE, "%s: Failed to open file %s\n",
 				__func__, metadata_p->name);
 			goto fail;
 		}
 		content_size = fw_entry->size;
-		rsi_dbg(INFO_ZONE, "FW Length = %d bytes\n", content_size);
+		redpine_dbg(INFO_ZONE, "FW Length = %d bytes\n", content_size);
 	
 		/* Get the firmware version */
 		common->lmac_ver.ver.info.fw_ver[0] =
@@ -1417,7 +1417,7 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 	
 		if (bl_write_header(adapter,
 				   (u8 *)fw_entry->data, content_size)) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: RPS Image header loading failed\n",
 				__func__);
 			goto fail;
@@ -1426,11 +1426,11 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 		bl_start_cmd_timer(adapter, BL_CMD_TIMEOUT);
 		if (bl_write_cmd(adapter, CHECK_CRC, CMD_PASS, &tmp_regout_val) < 0) {
 			bl_stop_cmd_timer(adapter);
-			rsi_dbg(INFO_ZONE,
+			redpine_dbg(INFO_ZONE,
 				"%s: CHECK_CRC Command writing failed..\n",
 				__func__);
 			if ((tmp_regout_val & 0xff) == CMD_FAIL) {
-				rsi_dbg(ERR_ZONE,
+				redpine_dbg(ERR_ZONE,
 					"device firmware doesnt match %s, proceed to upgrade ...\n", 
 					 metadata_p->name);
 				goto fw_upgrade;
@@ -1447,21 +1447,21 @@ load_image_cmd:
 			    LOADING_INITIATED,
 			    "LOAD_HOSTED_FW")) < 0)
 			goto fail;
-		rsi_dbg(INFO_ZONE, "Load Image command passed..\n");
+		redpine_dbg(INFO_ZONE, "Load Image command passed..\n");
 		goto success;
 	
 fw_upgrade:
 		if (bl_cmd(adapter, BURN_HOSTED_FW, SEND_RPS_FILE, "FW_UPGRADE") < 0)
 			goto fail;
 	
-		rsi_dbg(INFO_ZONE, "Burn Command Pass.. Upgrading the firmware\n");
+		redpine_dbg(INFO_ZONE, "Burn Command Pass.. Upgrading the firmware\n");
 	
 		if (auto_fw_upgrade(adapter,
 				   (u8 *)fw_entry->data, content_size) == 0) {
-			rsi_dbg(ERR_ZONE, "Firmware upgradation Done\n");
+			redpine_dbg(ERR_ZONE, "Firmware upgradation Done\n");
 			goto load_image_cmd;
 		}
-		rsi_dbg(ERR_ZONE, "Firmware upgrade failed\n");
+		redpine_dbg(ERR_ZONE, "Firmware upgrade failed\n");
 	
 		if (bl_cmd(adapter, CONFIG_AUTO_READ_MODE,
 			   CMD_PASS, "AUTO_READ_MODE") < 0)
@@ -1469,7 +1469,7 @@ fw_upgrade:
 	}
 
 success:
-	rsi_dbg(ERR_ZONE, "***** Firmware Loading successful *****\n");
+	redpine_dbg(ERR_ZONE, "***** Firmware Loading successful *****\n");
 	release_firmware(fw_entry);
 	return 0;
 
@@ -1478,7 +1478,7 @@ bl_cmd_fail:
 	return -EINVAL;
 
 fail:
-	rsi_dbg(ERR_ZONE, "##### Firmware loading failed #####\n");
+	redpine_dbg(ERR_ZONE, "##### Firmware loading failed #####\n");
 	release_firmware(fw_entry);
 	return -EINVAL;
 }
@@ -1488,14 +1488,14 @@ int rsi_validate_oper_mode(u16 oper_mode)
 	switch (oper_mode) {
 	case 1:
 #if defined(CONFIG_REDPINE_PURISM)
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Operating mode %d is not supported, "
 			"it should be either 13 or 14\n",
 			oper_mode);
 		return -EINVAL;
 #endif
 #if defined(CONFIG_REDPINE_BT_ALONE)
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Operating mode %d not supported with"
 			"build flag 'CONFIG_REDPINE_BT_ALONE enabled'\n",
 			oper_mode);
@@ -1506,14 +1506,14 @@ int rsi_validate_oper_mode(u16 oper_mode)
 	case 4:
 	case 8:
 #if defined(CONFIG_REDPINE_PURISM)
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Operating mode %d is not supported, "
 			"it should be either 13 or 14\n",
 			oper_mode);
 		return -EINVAL;
 #endif
 #if !defined(CONFIG_REDPINE_BT_ALONE)
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Operating mode %d not supported with"
 			"build flag 'CONFIG_REDPINE_BT_ALONE enabled'\n",
 			oper_mode);
@@ -1526,7 +1526,7 @@ int rsi_validate_oper_mode(u16 oper_mode)
 	case 9:
 	case 12:
 #ifdef CONFIG_REDPINE_PURISM
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Operating mode %d is not supported, "
 			"it should be either 13 or 14\n",
 			oper_mode);
@@ -1538,7 +1538,7 @@ int rsi_validate_oper_mode(u16 oper_mode)
 	case 13:
 	case 14:
 #if !defined(CONFIG_REDPINE_COEX_MODE)
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Operating mode %d not supported without"
 			" build flag 'CONFIG_REDPINE_COEX_MODE enabled'\n",
 			oper_mode);
@@ -1551,14 +1551,14 @@ int rsi_validate_oper_mode(u16 oper_mode)
 	case 32:
 	case 48:
 #if defined(CONFIG_REDPINE_PURISM)
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Operating mode %d is not supported, "
 			"it should be either 13 or 14\n",
 			oper_mode);
 		return -EINVAL;
 #endif
 #if !defined(CONFIG_REDPINE_COEX_MODE) || !defined(CONFIG_REDPINE_ZIGB)
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Operating mode %d not supported without"
 			" build flags 'CONFIG_REDPINE_COEX_MODE and"
 			" CONFIG_REDPINE_ZIGB are enabled'\n",
@@ -1586,7 +1586,7 @@ int rsi_opermode_instances(struct rsi_hw *adapter)
 	int err, i, count = opermodes[0];
 
 	if (count > MAX_INSTANCES) {
-		rsi_dbg(ERR_ZONE, "%s: unable to handle %d instances\n",
+		redpine_dbg(ERR_ZONE, "%s: unable to handle %d instances\n",
 			   __func__, count);
 		return -EINVAL;
 	}
@@ -1607,7 +1607,7 @@ int rsi_opermode_instances(struct rsi_hw *adapter)
 		DRV_INSTANCE_SET(i, opermodes[i]);
 		adapter->priv->oper_mode = opermodes[i];
 		adapter->drv_instance_index = i;
-		rsi_dbg(INFO_ZONE, "%s: drv instance index %d opermode %d\n",
+		redpine_dbg(INFO_ZONE, "%s: drv instance index %d opermode %d\n",
 				__func__, i, opermodes[i]);
 		return 0;
 	}
@@ -1617,12 +1617,12 @@ EXPORT_SYMBOL_GPL(rsi_opermode_instances);
 #endif
 
 /**
- * rsi_hal_device_init() - This function initializes the Device
+ * redpine_hal_device_init() - This function initializes the Device
  * @adapter: Pointer to the hardware structure
  *
  * Return: status: 0 on success, -1 on failure.
  */
-int rsi_hal_device_init(struct rsi_hw *adapter)
+int redpine_hal_device_init(struct rsi_hw *adapter)
 {
 	struct rsi_common *common = adapter->priv;
 #if defined (CONFIG_REDPINE_COEX_MODE) || defined(CONFIG_REDPINE_BT_ALONE) || defined(CONFIG_REDPINE_ZIGB)
@@ -1669,7 +1669,7 @@ int rsi_hal_device_init(struct rsi_hw *adapter)
 	common->coex_mode = 1;
 #endif
 
-	rsi_dbg(ERR_ZONE, "%s: oper_mode = %d, coex_mode = %d\n",
+	redpine_dbg(ERR_ZONE, "%s: oper_mode = %d, coex_mode = %d\n",
 		__func__, common->oper_mode, common->coex_mode);
 
 #ifdef CONFIG_REDPINE_PURISM
@@ -1683,7 +1683,7 @@ int rsi_hal_device_init(struct rsi_hw *adapter)
 	case RSI_DEV_9113:
 	case RSI_DEV_9116:
 		if (rsi_load_firmware(adapter)) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Failed to load TA instructions\n",
 				__func__);
 			return -EINVAL;
@@ -1706,5 +1706,5 @@ int rsi_hal_device_init(struct rsi_hw *adapter)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(rsi_hal_device_init);
+EXPORT_SYMBOL_GPL(redpine_hal_device_init);
 

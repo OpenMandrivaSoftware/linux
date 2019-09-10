@@ -42,10 +42,10 @@
  */
 static int rsi_hci_open(struct hci_dev *hdev)
 {
-	rsi_dbg(ERR_ZONE, "RSI HCI DEVICE \"%s\" open\n", hdev->name);
+	redpine_dbg(ERR_ZONE, "RSI HCI DEVICE \"%s\" open\n", hdev->name);
 
 	if (test_and_set_bit(HCI_RUNNING, &hdev->flags))
-		rsi_dbg(ERR_ZONE, "%s: device `%s' already running\n", 
+		redpine_dbg(ERR_ZONE, "%s: device `%s' already running\n", 
 				__func__, hdev->name);
 
 	return 0;
@@ -60,10 +60,10 @@ static int rsi_hci_open(struct hci_dev *hdev)
  */
 static int rsi_hci_close(struct hci_dev *hdev)
 {
-	rsi_dbg(ERR_ZONE, "RSI HCI DEVICE \"%s\" closed\n", hdev->name);
+	redpine_dbg(ERR_ZONE, "RSI HCI DEVICE \"%s\" closed\n", hdev->name);
 
 	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
-		rsi_dbg(ERR_ZONE, "%s: device `%s' not running\n",
+		redpine_dbg(ERR_ZONE, "%s: device `%s' not running\n",
 				 __func__, hdev->name);
 
 	return 0;
@@ -83,7 +83,7 @@ static int rsi_hci_flush(struct hci_dev *hdev)
 	if (!(h_adapter = hci_get_drvdata(hdev)))
 		return -EFAULT;
 
-	rsi_dbg(ERR_ZONE, "RSI `%s' flush\n", hdev->name);
+	redpine_dbg(ERR_ZONE, "RSI `%s' flush\n", hdev->name);
 
 	return 0;
 }
@@ -111,7 +111,7 @@ static int rsi_hci_send_pkt(struct hci_dev *hdev, struct sk_buff *skb)
 	int status = 0;
 
 	if (skb->len <= 0) {
-		rsi_dbg(ERR_ZONE, "Zero length packet\n");
+		redpine_dbg(ERR_ZONE, "Zero length packet\n");
 		//hdev->sta.err_tx++;
 		status = -EINVAL;
 		goto fail;
@@ -126,14 +126,14 @@ static int rsi_hci_send_pkt(struct hci_dev *hdev, struct sk_buff *skb)
 #ifdef CONFIG_REDPINE_WOW
 	/* Stop here when in suspend */
 	if (h_adapter->priv->wow_flags & RSI_WOW_ENABLED) {
-		rsi_dbg(INFO_ZONE, "In suspend: Dropping the pkt\n");
+		redpine_dbg(INFO_ZONE, "In suspend: Dropping the pkt\n");
 		status = -ENETDOWN;
 		goto fail;
 	}
 #endif
 
 	if (h_adapter->priv->bt_fsm_state != BT_DEVICE_READY) {
-		rsi_dbg(ERR_ZONE, "BT Device not ready\n");
+		redpine_dbg(ERR_ZONE, "BT Device not ready\n");
 		status = -ENODEV;
 		goto fail;
 	}
@@ -199,7 +199,7 @@ int rsi_send_rfmode_frame(struct rsi_common *common)
 	struct rsi_bt_rfmode_frame *cmd_frame;
 	int status;
 
-	rsi_dbg(MGMT_TX_ZONE, "%s: Sending BT RF mode frame\n", __func__);
+	redpine_dbg(MGMT_TX_ZONE, "%s: Sending BT RF mode frame\n", __func__);
 
 	skb = dev_alloc_skb(sizeof(struct rsi_bt_rfmode_frame));
 	if (!skb)
@@ -230,7 +230,7 @@ int rsi_deregister_bt(struct rsi_common *common)
 	struct rsi_bt_cmd_frame *cmd_frame;
 	int status;
 
-	rsi_dbg(MGMT_TX_ZONE, "%s: Sending BT register frame\n", __func__);
+	redpine_dbg(MGMT_TX_ZONE, "%s: Sending BT register frame\n", __func__);
 
 	skb = dev_alloc_skb(sizeof(struct rsi_bt_cmd_frame));
 	if (!skb)
@@ -265,23 +265,23 @@ int rsi_hci_recv_pkt(struct rsi_common *common, u8 *pkt)
 
 	if ((common->bt_fsm_state == BT_DEVICE_NOT_READY) &&
 	    (pkt[14] == BT_CARD_READY_IND)) {
-		rsi_dbg(INIT_ZONE, "%s: ===> BT Card Ready Received <===\n",
+		redpine_dbg(INIT_ZONE, "%s: ===> BT Card Ready Received <===\n",
 			__func__);
 
 		if (common->suspend_in_prog) {
-			rsi_dbg(INFO_ZONE,
+			redpine_dbg(INFO_ZONE,
 				"Suspend is in prog; Do not process\n");
 			return 0;
 		}
 		if (rsi_send_bt_reg_params(common)) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"%s: Failed to write BT reg params\n",
 				__func__);
 		}
-		rsi_dbg(INFO_ZONE, "Attaching HCI module\n");
+		redpine_dbg(INFO_ZONE, "Attaching HCI module\n");
 
 		if (rsi_hci_attach(common)) {
-			rsi_dbg(ERR_ZONE, "Failed to attach HCI module\n");
+			redpine_dbg(ERR_ZONE, "Failed to attach HCI module\n");
 			return 0;
 		}
 
@@ -289,7 +289,7 @@ int rsi_hci_recv_pkt(struct rsi_common *common, u8 *pkt)
 	}
 
 	if (common->bt_fsm_state != BT_DEVICE_READY) {
-		rsi_dbg(INFO_ZONE, "BT Device not ready\n");
+		redpine_dbg(INFO_ZONE, "BT Device not ready\n");
 		return 0;
 	}
 	if (queue_no == RSI_BT_MGMT_Q) {
@@ -297,13 +297,13 @@ int rsi_hci_recv_pkt(struct rsi_common *common, u8 *pkt)
 	
 		switch (msg_type) {
 		case RESULT_CONFIRM:
-			rsi_dbg(MGMT_RX_ZONE, "BT Result Confirm\n");
+			redpine_dbg(MGMT_RX_ZONE, "BT Result Confirm\n");
 			return 0;
 		case BT_BER:
-			rsi_dbg(MGMT_RX_ZONE, "BT Ber\n");
+			redpine_dbg(MGMT_RX_ZONE, "BT Ber\n");
 			return 0;
 		case BT_CW:
-			rsi_dbg(MGMT_RX_ZONE, "BT CW\n");
+			redpine_dbg(MGMT_RX_ZONE, "BT CW\n");
 			return 0;
 		default:
 			break;
@@ -311,7 +311,7 @@ int rsi_hci_recv_pkt(struct rsi_common *common, u8 *pkt)
 	}
 	skb = dev_alloc_skb(pkt_len);
 	if (!skb) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to alloc skb\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed to alloc skb\n", __func__);
 		return -ENOMEM;
 	}
         hdev = h_adapter->hdev;
@@ -347,7 +347,7 @@ int rsi_hci_attach(struct rsi_common *common)
 	/* TODO: Check GFP_ATOMIC */
 	h_adapter = kzalloc(sizeof (*h_adapter), GFP_KERNEL);
 	if (!h_adapter) {
-		rsi_dbg (ERR_ZONE, "Failed to alloc HCI adapter\n");
+		redpine_dbg (ERR_ZONE, "Failed to alloc HCI adapter\n");
 		return -ENOMEM;
 	}
 	h_adapter->priv = common;
@@ -355,7 +355,7 @@ int rsi_hci_attach(struct rsi_common *common)
 	/* Create HCI Interface */
 	hdev = hci_alloc_dev();
 	if (!hdev) {
-		rsi_dbg (ERR_ZONE, "Failed to alloc HCI device\n");
+		redpine_dbg (ERR_ZONE, "Failed to alloc HCI device\n");
 		goto err;
 	}
 	h_adapter->hdev = hdev;
@@ -387,15 +387,15 @@ int rsi_hci_attach(struct rsi_common *common)
 	
 	status = hci_register_dev(hdev);
 	if (status < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: HCI registration failed with errcode %d\n",
 			__func__, status);
 		goto err;
 	}
-	rsi_dbg(INIT_ZONE, "HCI Interface Created with name \'%s\'\n",
+	redpine_dbg(INIT_ZONE, "HCI Interface Created with name \'%s\'\n",
 		hdev->name);
 	common->bt_fsm_state = BT_DEVICE_READY;
-	rsi_dbg(ERR_ZONE, " HCI module init done...\n");
+	redpine_dbg(ERR_ZONE, " HCI module init done...\n");
 
 	return 0;
 
@@ -424,7 +424,7 @@ void rsi_hci_detach(struct rsi_common *common)
 		(struct rsi_hci_adapter *)common->hci_adapter;
 	struct hci_dev *hdev;
 
-	rsi_dbg(INFO_ZONE, "Detaching HCI...\n");
+	redpine_dbg(INFO_ZONE, "Detaching HCI...\n");
 
 	if (!h_adapter)
 		return;

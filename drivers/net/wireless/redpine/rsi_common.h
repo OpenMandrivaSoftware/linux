@@ -107,11 +107,11 @@ static inline struct sk_buff *rsi_get_aligned_skb(struct sk_buff *skb) {
 	return skb;
 }
 
-void rsi_mac80211_detach(struct rsi_hw *hw);
+void redpine_mac80211_detach(struct rsi_hw *hw);
 u16 rsi_get_connected_channel(struct rsi_hw *adapter);
-struct rsi_hw *rsi_91x_init(void);
-void rsi_91x_deinit(struct rsi_hw *adapter);
-int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len);
+struct rsi_hw *redpine_91x_init(void);
+void redpine_91x_deinit(struct rsi_hw *adapter);
+int redpine_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len);
 void rsi_indicate_bcnmiss(struct rsi_common *common);
 void rsi_resume_conn_channel(struct rsi_hw *adapter, struct ieee80211_vif *vif);
 char *dot11_pkt_type(__le16 frame_control);
@@ -133,6 +133,6 @@ void rsi_mac80211_hw_scan_cancel(struct ieee80211_hw *hw,
 				 struct ieee80211_vif *vif);
 #endif
 #ifdef CONFIG_REDPINE_WOW
-int rsi_config_wowlan(struct rsi_hw *adapter, struct cfg80211_wowlan *wowlan);
+int redpine_config_wowlan(struct rsi_hw *adapter, struct cfg80211_wowlan *wowlan);
 #endif
 #endif

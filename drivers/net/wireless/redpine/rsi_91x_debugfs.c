@@ -216,7 +216,7 @@ static int rsi_stats_open(struct inode *inode,
  */
 static int rsi_debug_zone_read(struct seq_file *seq, void *data)
 {
-	rsi_dbg(FSM_ZONE, "%x: rsi_enabled zone", rsi_zone_enabled);
+	redpine_dbg(FSM_ZONE, "%x: rsi_enabled zone", rsi_zone_enabled);
 	seq_printf(seq, "The zones available are %#x\n",
 		   rsi_zone_enabled);
 	return 0;
@@ -281,11 +281,11 @@ static int rsi_bgscan_int_read(struct seq_file *file, void *data)
 	int cnt;
 
 	if (!common) {
-		rsi_dbg(ERR_ZONE, "No Interface\n");
+		redpine_dbg(ERR_ZONE, "No Interface\n");
 		return -ENODEV;
 	}
 	if (common->iface_down) {
-		rsi_dbg(ERR_ZONE, "Interface Down\n");
+		redpine_dbg(ERR_ZONE, "Interface Down\n");
 		return -ENODEV;
 	}
 	params = &common->bgscan_info;
@@ -343,11 +343,11 @@ static ssize_t rsi_bgscan_write(struct file *file,
 	int ret;
 
 	if (!common) {
-		rsi_dbg(ERR_ZONE, "No Interface\n");
+		redpine_dbg(ERR_ZONE, "No Interface\n");
 		return -ENODEV;
 	}
 	if (common->iface_down) {
-		rsi_dbg(ERR_ZONE, "Interface Down\n");
+		redpine_dbg(ERR_ZONE, "Interface Down\n");
 		return -ENODEV;
 	}
 	adapter = common->priv;
@@ -371,7 +371,7 @@ static ssize_t rsi_bgscan_write(struct file *file,
 		/* return here if bgscan is already disabled */
 		if (!common->bgscan_en) {
 #ifdef PLATFORM_X86
-			rsi_dbg(ERR_ZONE, "bgscan already disabled\n");
+			redpine_dbg(ERR_ZONE, "bgscan already disabled\n");
 #endif
 			return total_bytes;
 		}
@@ -379,7 +379,7 @@ static ssize_t rsi_bgscan_write(struct file *file,
 		mutex_lock(&common->mutex);
 		if (bss->assoc && !rsi_send_bgscan_params(common, 0)) {
 #ifdef PLATFORM_X86
-			rsi_dbg(ERR_ZONE, "*** bgscan disabled ***\n");
+			redpine_dbg(ERR_ZONE, "*** bgscan disabled ***\n");
 #endif
 			common->bgscan_en = 0;
 		}
@@ -422,17 +422,17 @@ static ssize_t rsi_bgscan_write(struct file *file,
 		common->bgscan_info.user_channels[cnt] = bgscan_vals[7 + cnt];
 
 #ifdef PLATFORM_X86
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"bgscan_count = %d, roam_count = %d, periodicity = %d\n",
 		common->bgscan_info.bgscan_threshold,
 		common->bgscan_info.roam_threshold,
 		common->bgscan_info.bgscan_periodicity);
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"active_scan_dur = %d, passive_scan_dur = %d, two_probe = %d\n",
 		common->bgscan_info.active_scan_duration,
 		common->bgscan_info.passive_scan_duration,
 		common->bgscan_info.two_probe);
-	rsi_dbg(INFO_ZONE, "Number of scan channels = %d\n",
+	redpine_dbg(INFO_ZONE, "Number of scan channels = %d\n",
 		common->bgscan_info.num_user_channels);
 	rsi_hex_dump(INFO_ZONE, "bgscan channels",
 		     (u8 *)common->bgscan_info.user_channels,
@@ -442,7 +442,7 @@ static ssize_t rsi_bgscan_write(struct file *file,
 	/* If connection is not done don't send bgscan params */
 	if (!bss->assoc) {
 #ifdef PLATFORM_X86
-		rsi_dbg(INFO_ZONE, "Station not connected; skip now\n");
+		redpine_dbg(INFO_ZONE, "Station not connected; skip now\n");
 #endif
 		return total_bytes;
 	}
@@ -480,7 +480,7 @@ static ssize_t rsi_write_chload_meas_req(struct file *file,
 		&adapter->vifs[adapter->sc_nvifs - 1]->bss_conf;
 
 	if (!bss->assoc) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"unable to send channelload in non connected state\n");
 		return -EINVAL;
 	}
@@ -510,9 +510,9 @@ static ssize_t rsi_write_chload_meas_req(struct file *file,
 	common->rrm_chload_params.meas_type = chan_load_vals[11];
 
 	if (!rsi_rrm_send_channel_load_req(common))
-		rsi_dbg(ERR_ZONE, "Sent channel load measurement request\n");
+		redpine_dbg(ERR_ZONE, "Sent channel load measurement request\n");
 	else
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Failed sending channel load measurement req\n");
 
 	return total_bytes;
@@ -553,7 +553,7 @@ static ssize_t rsi_write_frame_meas_req(struct file *file,
 		&adapter->vifs[adapter->sc_nvifs - 1]->bss_conf;
 
 	if (!bss->assoc) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"unable to send frame req in non connected state\n");
 		return -EINVAL;
 	}
@@ -590,9 +590,9 @@ static ssize_t rsi_write_frame_meas_req(struct file *file,
 		common->rrm_frame_params.macid[i] = frame_load_vals[13 + i];
 
 	if (!rsi_rrm_send_frame_req(common))
-		rsi_dbg(ERR_ZONE, "Sent frame measurement request\n");
+		redpine_dbg(ERR_ZONE, "Sent frame measurement request\n");
 	else
-		rsi_dbg(ERR_ZONE, "Failed sending frame measurement req\n");
+		redpine_dbg(ERR_ZONE, "Failed sending frame measurement req\n");
 
 	return total_bytes;
 }
@@ -638,7 +638,7 @@ static ssize_t rsi_write_beacon_meas_req(struct file *file,
 		&adapter->vifs[adapter->sc_nvifs - 1]->bss_conf;
 
 	if (!bss->assoc) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"unable to send beacon req in non connected state\n");
 		return -EINVAL;
 	}
@@ -684,27 +684,27 @@ static ssize_t rsi_write_beacon_meas_req(struct file *file,
 	memset(common->rrm_beacon_params.str, 0, 32);
 	memcpy(common->rrm_beacon_params.str, str, strlen(str));
 
-	rsi_dbg(INFO_ZONE, "regulatory class %d\n",
+	redpine_dbg(INFO_ZONE, "regulatory class %d\n",
 		common->rrm_beacon_params.regulatory_class);
-	rsi_dbg(INFO_ZONE, "channel num %d\n",
+	redpine_dbg(INFO_ZONE, "channel num %d\n",
 		common->rrm_beacon_params.channel_num);
-	rsi_dbg(INFO_ZONE, "rand_interval %d\n",
+	redpine_dbg(INFO_ZONE, "rand_interval %d\n",
 		common->rrm_beacon_params.rand_interval);
-	rsi_dbg(INFO_ZONE, "meas_duration %d\n",
+	redpine_dbg(INFO_ZONE, "meas_duration %d\n",
 		common->rrm_beacon_params.meas_duration);
-	rsi_dbg(INFO_ZONE, "meas_req_mode %d\n",
+	redpine_dbg(INFO_ZONE, "meas_req_mode %d\n",
 		common->rrm_beacon_params.meas_req_mode);
-	rsi_dbg(INFO_ZONE, "meas_type %d\n",
+	redpine_dbg(INFO_ZONE, "meas_type %d\n",
 		common->rrm_beacon_params.meas_type);
-	rsi_dbg(INFO_ZONE, "meas_mode %d\n",
+	redpine_dbg(INFO_ZONE, "meas_mode %d\n",
 		common->rrm_beacon_params.meas_mode);
-	rsi_dbg(INFO_ZONE, "ssid %s\n",
+	redpine_dbg(INFO_ZONE, "ssid %s\n",
 		common->rrm_beacon_params.str);
 
 	if (!rsi_rrm_send_beacon_req(common))
-		rsi_dbg(ERR_ZONE, "Sent Beacon measurement request\n");
+		redpine_dbg(ERR_ZONE, "Sent Beacon measurement request\n");
 	else
-		rsi_dbg(ERR_ZONE, "Failed sending beacon measurement req\n");
+		redpine_dbg(ERR_ZONE, "Failed sending beacon measurement req\n");
 
 	return total_bytes;
 }
@@ -736,7 +736,7 @@ static int rsi_read_beacon_meas_req(struct inode *inode, struct file *file)
 }
 #endif
 
-static const struct rsi_dbg_files dev_debugfs_files[] = {
+static const struct redpine_dbg_files dev_debugfs_files[] = {
 	{"version", 0644, FOPS(rsi_version_open),},
 	{"stats", 0644, FOPS(rsi_stats_open),},
 	{"debug_zone", 0666, FOPS_RW(rsi_debug_read, rsi_debug_zone_write),},
@@ -753,18 +753,18 @@ static const struct rsi_dbg_files dev_debugfs_files[] = {
 };
 
 /**
- * rsi_init_dbgfs() - This function initializes the dbgfs entry.
+ * redpine_init_dbgfs() - This function initializes the dbgfs entry.
  * @adapter: Pointer to the adapter structure.
  *
  * Return: 0 on success, -1 on failure.
  */
-int rsi_init_dbgfs(struct rsi_hw *adapter)
+int redpine_init_dbgfs(struct rsi_hw *adapter)
 {
 	struct rsi_common *common = adapter->priv;
 	struct rsi_debugfs *dev_dbgfs;
 	char devdir[6];
 	int ii;
-	const struct rsi_dbg_files *files;
+	const struct redpine_dbg_files *files;
 
 	dev_dbgfs = kzalloc(sizeof(*dev_dbgfs), GFP_KERNEL);
 	if (!dev_dbgfs)
@@ -793,16 +793,16 @@ int rsi_init_dbgfs(struct rsi_hw *adapter)
 	}
 	return 0;
 }
-EXPORT_SYMBOL_GPL(rsi_init_dbgfs);
+EXPORT_SYMBOL_GPL(redpine_init_dbgfs);
 
 /**
- * rsi_remove_dbgfs() - Removes the previously created dbgfs file entries
+ * redpine_remove_dbgfs() - Removes the previously created dbgfs file entries
  *			in the reverse order of creation.
  * @adapter: Pointer to the adapter structure.
  *
  * Return: None.
  */
-void rsi_remove_dbgfs(struct rsi_hw *adapter)
+void redpine_remove_dbgfs(struct rsi_hw *adapter)
 {
 	struct rsi_debugfs *dev_dbgfs = adapter->dfsentry;
 
@@ -811,4 +811,4 @@ void rsi_remove_dbgfs(struct rsi_hw *adapter)
 
 	debugfs_remove_recursive(dev_dbgfs->subdir);
 }
-EXPORT_SYMBOL_GPL(rsi_remove_dbgfs);
+EXPORT_SYMBOL_GPL(redpine_remove_dbgfs);

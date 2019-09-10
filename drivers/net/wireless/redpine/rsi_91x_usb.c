@@ -81,12 +81,12 @@ static int rsi_usb_card_write(struct rsi_hw *adapter,
 			      &transfer,
 			      TIMEOUT);
 	if (status < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Card write failed with error code :%d\n", status);
 		dev->write_fail = 1;
 		goto fail;
 	}
-	rsi_dbg(MGMT_TX_ZONE, "%s: Sent Message successfully\n", __func__);
+	redpine_dbg(MGMT_TX_ZONE, "%s: Sent Message successfully\n", __func__);
 
 fail:
 	return status;
@@ -111,7 +111,7 @@ static int rsi_write_multiple(struct rsi_hw *adapter,
 		(struct rsi_91x_usbdev *)adapter->rsi_dev;
 
 	if (!adapter || addr == 0) {
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"%s: Unable to write to card\n", __func__);
 		return -1;
 	}
@@ -161,7 +161,7 @@ static int rsi_usb_reg_read(struct usb_device *usbdev,
 
 	*value = (buf[0] | (buf[1] << 8));
 	if (status < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Reg read failed with error code :%d\n",
 			__func__, status);
 	}
@@ -209,7 +209,7 @@ static int rsi_usb_reg_write(struct usb_device *usbdev,
 				 len,
 				 USB_CTRL_SET_TIMEOUT);
 	if (status < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Reg write failed with error code :%d\n",
 			__func__, status);
 	}
@@ -260,7 +260,7 @@ int rsi_usb_read_register_multiple(struct rsi_hw *adapter,
 					 transfer,
 					 USB_CTRL_GET_TIMEOUT);
 		if (status < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"Reg read failed with error code :%d\n",
 				 status);
 			kfree(buf);
@@ -318,7 +318,7 @@ int rsi_usb_write_register_multiple(struct rsi_hw *adapter,
 					 transfer,
 					 USB_CTRL_SET_TIMEOUT);
 		if (status < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"Reg write failed with error code :%d\n",
 				status);
 			kfree(buf);
@@ -351,7 +351,7 @@ static void rsi_rx_done_handler(struct urb *urb)
 	}
 
 	if (urb->actual_length <= 0 || urb->actual_length > rx_cb->rx_skb->len) {
-		rsi_dbg(INFO_ZONE, "%s: Invalid packet length = %d\n", __func__, urb->actual_length);
+		redpine_dbg(INFO_ZONE, "%s: Invalid packet length = %d\n", __func__, urb->actual_length);
 		return;
 	}
 	
@@ -361,7 +361,7 @@ static void rsi_rx_done_handler(struct urb *urb)
 	rsi_set_event(&dev->rx_thread.event);
 
 	if (rsi_rx_urb_submit(dev->priv, rx_cb->ep_num))
-		rsi_dbg(ERR_ZONE, "%s: Failed in urb submission", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed in urb submission", __func__);
 
 }
 
@@ -403,7 +403,7 @@ int rsi_rx_urb_submit(struct rsi_hw *adapter, u8 ep_num)
 
 	status = usb_submit_urb(urb, GFP_KERNEL);
 	if (status)
-		rsi_dbg(ERR_ZONE, "%s: Failed in urb submission\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed in urb submission\n", __func__);
 
 	return status;
 }
@@ -424,7 +424,7 @@ int rsi_usb_host_intf_write_pkt(struct rsi_hw *adapter,
 	u32 queueno = ((pkt[1] >> 4) & 0x7);
 	u8 endpoint;
 
-	rsi_dbg(DATA_TX_ZONE, "%s: queueno=%d\n", __func__, queueno);
+	redpine_dbg(DATA_TX_ZONE, "%s: queueno=%d\n", __func__, queueno);
 	if (adapter->device_model == RSI_DEV_9116 && queueno == RSI_ZIGB_Q) {
 		endpoint = ZIGB_EP;
 	} else {
@@ -473,7 +473,7 @@ int rsi_usb_load_data_master_write(struct rsi_hw *adapter,
 	u8 temp_buf[256];
 
 	num_blocks = instructions_sz / block_size;
-	rsi_dbg(INFO_ZONE, "num_blocks: %d\n", num_blocks);
+	redpine_dbg(INFO_ZONE, "num_blocks: %d\n", num_blocks);
 
 	for (cur_indx = 0, ii = 0;
 	     ii < num_blocks;
@@ -486,7 +486,7 @@ int rsi_usb_load_data_master_write(struct rsi_hw *adapter,
 						     block_size)) < 0)
 			return -EIO;
 
-		rsi_dbg(INFO_ZONE, "%s: loading block: %d\n", __func__, ii);
+		redpine_dbg(INFO_ZONE, "%s: loading block: %d\n", __func__, ii);
 		base_address += block_size;
 	}
 
@@ -499,7 +499,7 @@ int rsi_usb_load_data_master_write(struct rsi_hw *adapter,
 					     (u8 *)temp_buf,
 					     instructions_sz % block_size)) < 0)
 			return -EIO;
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"Written Last Block in Address 0x%x Successfully\n",
 			cur_indx);
 	}
@@ -568,7 +568,7 @@ static void rsi_deinit_usb_interface(struct rsi_hw *adapter)
 {
 	struct rsi_91x_usbdev *dev = (struct rsi_91x_usbdev *)adapter->rsi_dev;
 
-	rsi_dbg(INFO_ZONE, "Deinitializing USB interface...\n");
+	redpine_dbg(INFO_ZONE, "Deinitializing USB interface...\n");
 
 	rsi_kill_thread(&dev->rx_thread);
 	//kfree(dev->rx_cb[0].rx_buffer);
@@ -653,7 +653,7 @@ static int rsi_usb_init_rx(struct rsi_hw *adapter)
 
 		rx_cb->rx_urb = usb_alloc_urb(0, GFP_KERNEL);
 		if (!rx_cb->rx_urb) {
-			rsi_dbg(ERR_ZONE, "Failed alloc rx urb[%d]\n", idx);
+			redpine_dbg(ERR_ZONE, "Failed alloc rx urb[%d]\n", idx);
 			goto err;
 		}
 		rx_cb->ep_num = idx + 1;
@@ -711,7 +711,7 @@ static int rsi_init_usb_interface(struct rsi_hw *adapter,
 
 	/* Initialize RX handle */
 	if (rsi_usb_init_rx(adapter)) {
-		rsi_dbg(ERR_ZONE, "Failed to init RX handle\n");
+		redpine_dbg(ERR_ZONE, "Failed to init RX handle\n");
 		goto fail_1;
 	}
 
@@ -728,7 +728,7 @@ static int rsi_init_usb_interface(struct rsi_hw *adapter,
 	status = rsi_create_kthread(common, &rsi_dev->rx_thread,
 				    rsi_usb_rx_thread, "USB-RX-Thread");
 	if (status) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to init rx thrd\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Unable to init rx thrd\n", __func__);
 		goto fail_2;
 	}
 
@@ -738,7 +738,7 @@ static int rsi_init_usb_interface(struct rsi_hw *adapter,
 	adapter->num_debugfs_entries = MAX_DEBUGFS_ENTRIES - 1;
 #endif
 
-	rsi_dbg(INIT_ZONE, "%s: Enabled the interface\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Enabled the interface\n", __func__);
 	return 0;
 
 fail_2:
@@ -806,11 +806,11 @@ static int rsi_reset_card(struct rsi_hw *adapter)
 {
 	u16 temp[4] = {0};
 
-	rsi_dbg(INFO_ZONE, "Resetting Card...\n");
+	redpine_dbg(INFO_ZONE, "Resetting Card...\n");
 
 	if (rsi_usb_master_reg_write(adapter, SWBL_REGOUT,
 				     FW_WDT_DISABLE_REQ, 2) < 0) {
-		rsi_dbg(ERR_ZONE, "%s: FW WDT Disable failed...\n",
+		redpine_dbg(ERR_ZONE, "%s: FW WDT Disable failed...\n",
 			__func__);
 		goto fail;
 	}
@@ -872,11 +872,11 @@ static int rsi_reset_card(struct rsi_hw *adapter)
 		}
 	}
 
-	rsi_dbg(INFO_ZONE, "***** Card Reset Done *****\n");
+	redpine_dbg(INFO_ZONE, "***** Card Reset Done *****\n");
 	return 0;
 
 fail:
-	rsi_dbg(ERR_ZONE, "Reset card Failed\n");
+	redpine_dbg(ERR_ZONE, "Reset card Failed\n");
 	return -1;
 }
 
@@ -898,11 +898,11 @@ static int rsi_probe(struct usb_interface *pfunction,
 	u32 fw_status = 0;
 	int status = 0;
 
-	rsi_dbg(INIT_ZONE, "%s: Init function called\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Init function called\n", __func__);
 
-	adapter = rsi_91x_init();
+	adapter = redpine_91x_init();
 	if (!adapter) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to init os intf ops\n",
+		redpine_dbg(ERR_ZONE, "%s: Failed to init os intf ops\n",
 			__func__);
 		return -ENOMEM;
 	}
@@ -911,14 +911,14 @@ static int rsi_probe(struct usb_interface *pfunction,
 	adapter->rsi_host_intf = RSI_HOST_INTF_USB;
 #ifdef CONFIG_REDPINE_MULTI_MODE
 	if (rsi_opermode_instances(adapter)) {
-		rsi_dbg(ERR_ZONE, "%s: Invalid operating modes\n",
+		redpine_dbg(ERR_ZONE, "%s: Invalid operating modes\n",
 			__func__);
 		goto err;
 	}
 #else
 	adapter->priv->oper_mode = common->dev_oper_mode;
 	if (rsi_validate_oper_mode(common->dev_oper_mode)) {
-		rsi_dbg(ERR_ZONE, "%s: Invalid operating mode %d\n",
+		redpine_dbg(ERR_ZONE, "%s: Invalid operating mode %d\n",
 			__func__, common->dev_oper_mode);
 		goto err;
 	}
@@ -926,26 +926,26 @@ static int rsi_probe(struct usb_interface *pfunction,
 #endif
 	status = rsi_init_usb_interface(adapter, pfunction);
 	if (status) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to init usb interface\n",
+		redpine_dbg(ERR_ZONE, "%s: Failed to init usb interface\n",
 			__func__);
 		goto err;
 	}
 
-	rsi_dbg(ERR_ZONE, "%s: Initialized os intf ops\n", __func__);
+	redpine_dbg(ERR_ZONE, "%s: Initialized os intf ops\n", __func__);
 
-	rsi_dbg(INIT_ZONE, "%s: product id = 0x%x vendor id = 0x%x\n",
+	redpine_dbg(INIT_ZONE, "%s: product id = 0x%x vendor id = 0x%x\n",
 		__func__, id->idProduct, id->idVendor);
 
 	if (id && (id->idProduct == 0x9113)) {
-		rsi_dbg(INIT_ZONE, "%s: 9113 MODULE IS CONNECTED\n",
+		redpine_dbg(INIT_ZONE, "%s: 9113 MODULE IS CONNECTED\n",
 			__func__);
 		adapter->device_model = RSI_DEV_9113;
 	} else if (id && (id->idProduct == 0x9116)) {
 		adapter->device_model = RSI_DEV_9116;
-		rsi_dbg(INIT_ZONE, "%s: 9116 MODULE IS CONNECTED\n",
+		redpine_dbg(INIT_ZONE, "%s: 9116 MODULE IS CONNECTED\n",
 			__func__);
 	} else {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"##### Invalid RSI device id 0x%x\n",
 			id->idProduct);
 		goto err1;
@@ -960,14 +960,14 @@ static int rsi_probe(struct usb_interface *pfunction,
 		fw_status &= 1;
 
 	if (!fw_status) {
-		rsi_dbg(INIT_ZONE, "Loading firmware...\n");
-		status = rsi_hal_device_init(adapter);
+		redpine_dbg(INIT_ZONE, "Loading firmware...\n");
+		status = redpine_hal_device_init(adapter);
 		if (status) {
-			rsi_dbg(ERR_ZONE, "%s: Failed in device init\n",
+			redpine_dbg(ERR_ZONE, "%s: Failed in device init\n",
 				__func__);
 			goto err1;
 		}
-		rsi_dbg(INIT_ZONE, "%s: Device Init Done\n", __func__);
+		redpine_dbg(INIT_ZONE, "%s: Device Init Done\n", __func__);
 	}
 
 	status = rsi_rx_urb_submit(adapter, 1 /* RX_WLAN_EP */);  
@@ -984,8 +984,8 @@ static int rsi_probe(struct usb_interface *pfunction,
 err1:
 	rsi_deinit_usb_interface(adapter);
 err:
-	rsi_91x_deinit(adapter);
-	rsi_dbg(ERR_ZONE, "%s: Failed in probe...Exiting\n", __func__);
+	redpine_91x_deinit(adapter);
+	redpine_dbg(ERR_ZONE, "%s: Failed in probe...Exiting\n", __func__);
 	return status;
 }
 
@@ -1003,24 +1003,24 @@ static void rsi_disconnect(struct usb_interface *pfunction)
 	if (!adapter)
 		return;
 
-	rsi_mac80211_detach(adapter);
-	rsi_dbg(INFO_ZONE, "mac80211 detach done\n");
+	redpine_mac80211_detach(adapter);
+	redpine_dbg(INFO_ZONE, "mac80211 detach done\n");
 
 #if defined(CONFIG_REDPINE_BT_ALONE) || defined(CONFIG_REDPINE_COEX_MODE)
 	if ((adapter->priv->coex_mode == 2) ||
 	    (adapter->priv->coex_mode == 4))
 		rsi_hci_detach(adapter->priv);
-	rsi_dbg(INFO_ZONE, "HCI Detach Done\n");
+	redpine_dbg(INFO_ZONE, "HCI Detach Done\n");
 #endif
 
 	rsi_reset_card(adapter);
 
 	rsi_deinit_usb_interface(adapter);
-	rsi_dbg(INFO_ZONE, "USB interface down\n");
+	redpine_dbg(INFO_ZONE, "USB interface down\n");
 
-	rsi_91x_deinit(adapter);
+	redpine_91x_deinit(adapter);
 
-	rsi_dbg(INFO_ZONE, "%s: Deinitialization completed\n", __func__);
+	redpine_dbg(INFO_ZONE, "%s: Deinitialization completed\n", __func__);
 }
 
 #ifdef CONFIG_PM
@@ -1056,7 +1056,7 @@ static struct usb_driver rsi_driver = {
 
 static int __init rsi_usb_module_init(void)
 {
-	rsi_dbg(INIT_ZONE,
+	redpine_dbg(INIT_ZONE,
 		"=====> RSI USB Module Initialize <=====\n");
 	return usb_register(&rsi_driver);
 }

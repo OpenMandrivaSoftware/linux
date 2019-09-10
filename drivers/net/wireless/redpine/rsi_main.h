@@ -76,7 +76,7 @@ struct rsi_hw;
 #define MAX_SCAN_PER_ANTENNA		2
 
 extern u16 rsi_zone_enabled;
-extern __printf(2, 3) void rsi_dbg(u32 zone, const char *fmt, ...);
+extern __printf(2, 3) void redpine_dbg(u32 zone, const char *fmt, ...);
 void rsi_hex_dump(u32 zone, char *msg_str, const u8 *msg, u32 len);
 
 #define RSI_MAX_VIFS                    3

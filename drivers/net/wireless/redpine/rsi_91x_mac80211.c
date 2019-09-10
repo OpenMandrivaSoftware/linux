@@ -221,7 +221,7 @@ static int rsi_validate_mac_addr(struct rsi_common *common, u8 *addr_t)
 	u8 addr[ETH_ALEN] = {0};
 
 	if (!memcmp(addr, addr_t, ETH_ALEN)) {
-		rsi_dbg(ERR_ZONE, "%s: MAC addr is NULL\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: MAC addr is NULL\n", __func__);
 		return -1;
 	} else if (memcmp(common->mac_addr, addr_t, ETH_ALEN)) {
 		memcpy(common->mac_addr, addr_t, ETH_ALEN);
@@ -237,7 +237,7 @@ static int rsi_mac80211_get_chan_survey(struct ieee80211_hw *hw,
 	struct rsi_hw *adapter = hw->priv;
 
 	if (!idx)
-		rsi_dbg(INFO_ZONE, "Copying ACS survey results\n");
+		redpine_dbg(INFO_ZONE, "Copying ACS survey results\n");
 
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(4, 6, 0))
 	sband = hw->wiphy->bands[NL80211_BAND_2GHZ];
@@ -362,8 +362,8 @@ static void rsi_set_min_rate(struct ieee80211_hw *hw,
 		rate_bitmap = (common->fixedrate_mask[band] &
 			       sta->supp_rates[band]);
 	}
-	rsi_dbg(INFO_ZONE, "bitrate_mask = %x\n", common->bitrate_mask[band]);
-	rsi_dbg(INFO_ZONE, "rate_bitmap = %x\n", rate_bitmap);
+	redpine_dbg(INFO_ZONE, "bitrate_mask = %x\n", common->bitrate_mask[band]);
+	redpine_dbg(INFO_ZONE, "rate_bitmap = %x\n", rate_bitmap);
 
 	if (rate_bitmap & 0xfff) {
 		/* Find out the min rate */
@@ -396,7 +396,7 @@ static void rsi_set_min_rate(struct ieee80211_hw *hw,
 	if (!matched)
 		common->min_rate = 0xffff;
 
-	rsi_dbg(INFO_ZONE, "Min Rate = %d\n", common->min_rate);
+	redpine_dbg(INFO_ZONE, "Min Rate = %d\n", common->min_rate);
 }
 
 static void rsi_trigger_antenna_change(struct rsi_common *common)
@@ -409,10 +409,10 @@ static void rsi_trigger_antenna_change(struct rsi_common *common)
 		else
 			common->obm_ant_sel_val = ANTENNA_SEL_INT;
 		if (rsi_set_antenna(common, common->obm_ant_sel_val)) {
-			rsi_dbg(ERR_ZONE, "Failed to change antenna to %d\n",
+			redpine_dbg(ERR_ZONE, "Failed to change antenna to %d\n",
 				common->obm_ant_sel_val);
 		} else {
-			rsi_dbg(ERR_ZONE, "Antenna is changed to %d\n",
+			redpine_dbg(ERR_ZONE, "Antenna is changed to %d\n",
 				common->obm_ant_sel_val);
 			common->ant_in_use = common->obm_ant_sel_val;
 		}
@@ -433,7 +433,7 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 	struct ieee80211_bss_conf *bss = &adapter->vifs[0]->bss_conf;
 	int ii = 0, n;
 
-	rsi_dbg(INFO_ZONE, "***** Hardware scan start *****\n");
+	redpine_dbg(INFO_ZONE, "***** Hardware scan start *****\n");
 
 	if (common->fsm_state != FSM_MAC_INIT_DONE)
 		return -ENODEV;
@@ -486,13 +486,13 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 			if (scan_req->n_ssids > MAX_HW_SCAN_SSID) {
 				n = 0;
 				cfg_ssid = &scan_req->ssids[n];
-				rsi_dbg(INFO_ZONE, "handling only '%s'ssid of %d "
+				redpine_dbg(INFO_ZONE, "handling only '%s'ssid of %d "
 					"hw scan ssid's\n", cfg_ssid->ssid,
 					scan_req->n_ssids);
 			}
 			rsi_send_probe_request(common, scan_req, n, 0, 1);
 			if (!rsi_send_bgscan_probe_req(common)) {
-				rsi_dbg(INFO_ZONE,
+				redpine_dbg(INFO_ZONE,
 					"Background scan started\n");
 				common->bgscan_en = 1;
 			}
@@ -547,13 +547,13 @@ EXPORT_SYMBOL_GPL(rsi_mac80211_hw_scan_cancel);
 #endif
 
 /**
- * rsi_mac80211_detach() - This function is used to de-initialize the
+ * redpine_mac80211_detach() - This function is used to de-initialize the
  *			   Mac80211 stack.
  * @adapter: Pointer to the adapter structure.
  *
  * Return: None.
  */
-void rsi_mac80211_detach(struct rsi_hw *adapter)
+void redpine_mac80211_detach(struct rsi_hw *adapter)
 {
 	struct ieee80211_hw *hw = adapter->hw;
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
@@ -565,7 +565,7 @@ void rsi_mac80211_detach(struct rsi_hw *adapter)
 	int band;
 #endif
 
-	rsi_dbg(INFO_ZONE, "Detach mac80211...\n");
+	redpine_dbg(INFO_ZONE, "Detach mac80211...\n");
 
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
 	flush_workqueue(common->scan_workqueue);
@@ -590,11 +590,11 @@ void rsi_mac80211_detach(struct rsi_hw *adapter)
 	}
 
 #ifdef CONFIG_REDPINE_DEBUGFS
-	rsi_remove_dbgfs(adapter);
+	redpine_remove_dbgfs(adapter);
 	kfree(adapter->dfsentry);
 #endif
 }
-EXPORT_SYMBOL_GPL(rsi_mac80211_detach);
+EXPORT_SYMBOL_GPL(redpine_mac80211_detach);
 
 /**
  * rsi_indicate_tx_status() - This function indicates the transmit status.
@@ -612,12 +612,12 @@ void rsi_indicate_tx_status(struct rsi_hw *adapter,
 	struct skb_info *tx_params;
 
 	if (!adapter->hw) {
-		rsi_dbg(ERR_ZONE, "##### No Hardware #####\n");
+		redpine_dbg(ERR_ZONE, "##### No Hardware #####\n");
 		return;
 	}
         
 	if (adapter->priv->iface_down) {
-		rsi_dbg(ERR_ZONE, "#####Interface is down#####\n");
+		redpine_dbg(ERR_ZONE, "#####Interface is down#####\n");
 		return;
 	}
 
@@ -676,7 +676,7 @@ static void rsi_mac80211_tx(struct ieee80211_hw *hw,
 	    (vif->type == NL80211_IFTYPE_STATION) &&
 	    ((ieee80211_is_probe_req(wlh->frame_control) ||
 	      (ieee80211_is_auth(wlh->frame_control))))) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Dropping Station packets in AP+BT dual mode\n");
 		ieee80211_free_txskb(common->priv->hw, skb);
 		return;
@@ -702,7 +702,7 @@ static int rsi_mac80211_start(struct ieee80211_hw *hw)
 	struct rsi_hw *adapter = hw->priv;
 	struct rsi_common *common = adapter->priv;
 
-	rsi_dbg(ERR_ZONE, "===> Interface UP <===\n");
+	redpine_dbg(ERR_ZONE, "===> Interface UP <===\n");
 	mutex_lock(&common->mutex);
 
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
@@ -728,7 +728,7 @@ static void rsi_mac80211_stop(struct ieee80211_hw *hw)
 	struct rsi_hw *adapter = hw->priv;
 	struct rsi_common *common = adapter->priv;
 	
-	rsi_dbg(ERR_ZONE, "===> Interface DOWN <===\n");
+	redpine_dbg(ERR_ZONE, "===> Interface DOWN <===\n");
 
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
 	cancel_work_sync(&common->scan_work);
@@ -768,7 +768,7 @@ static int rsi_mac80211_add_interface(struct ieee80211_hw *hw,
 	struct vif_priv *vif_info = (struct vif_priv *)vif->drv_priv;
 	enum vap_status vap_status = VAP_ADD;
 
-	rsi_dbg(INFO_ZONE, "Add Interface Called\n");
+	redpine_dbg(INFO_ZONE, "Add Interface Called\n");
 
 	if (!adapter)
 		return -ENODEV;
@@ -793,30 +793,30 @@ static int rsi_mac80211_add_interface(struct ieee80211_hw *hw,
 
 	switch (vif->type) {
 	case NL80211_IFTYPE_STATION:
-		rsi_dbg(INFO_ZONE, "Station Mode");
+		redpine_dbg(INFO_ZONE, "Station Mode");
 		intf_mode = STA_OPMODE;
 		break;
 	case NL80211_IFTYPE_AP:
-		rsi_dbg(INFO_ZONE, "AP Mode");
+		redpine_dbg(INFO_ZONE, "AP Mode");
 		intf_mode = AP_OPMODE;
 		break;
 	case NL80211_IFTYPE_P2P_DEVICE:
-		rsi_dbg(INFO_ZONE, "P2P Device Mode");
+		redpine_dbg(INFO_ZONE, "P2P Device Mode");
 		common->p2p_enabled = 1;
 		intf_mode = STA_OPMODE;
 		break;
 	case NL80211_IFTYPE_P2P_GO:
-		rsi_dbg(INFO_ZONE, "P2P GO Mode");
+		redpine_dbg(INFO_ZONE, "P2P GO Mode");
 		intf_mode = P2P_GO_OPMODE;
 		common->p2p_enabled = 1;
 		break;
 	case NL80211_IFTYPE_P2P_CLIENT:
-		rsi_dbg(INFO_ZONE, "P2P Client Mode");
+		redpine_dbg(INFO_ZONE, "P2P Client Mode");
 		intf_mode = P2P_CLIENT_OPMODE;
 		common->p2p_enabled = 1;
 		break;
 	default:
-		rsi_dbg(ERR_ZONE, "Unsupported mode");
+		redpine_dbg(ERR_ZONE, "Unsupported mode");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -841,7 +841,7 @@ static int rsi_mac80211_add_interface(struct ieee80211_hw *hw,
 				       vif->addr, vif_info->vap_id,
 				       vap_status);
 	if (ret) {
-		rsi_dbg(ERR_ZONE, "Failed to set VAP capabilities\n");
+		redpine_dbg(ERR_ZONE, "Failed to set VAP capabilities\n");
 		goto out;
 	}
 	memset(vif_info->rx_bcmc_pn, 0, IEEE80211_CCMP_PN_LEN);
@@ -881,7 +881,7 @@ static void rsi_mac80211_remove_interface(struct ieee80211_hw *hw,
 	struct vif_priv *vif_info = (struct vif_priv *)vif->drv_priv;
 	int i;
 
-	rsi_dbg(INFO_ZONE, "Remove Interface Called\n");
+	redpine_dbg(INFO_ZONE, "Remove Interface Called\n");
 	
 	if (adapter->sc_nvifs <= 0)
 		return;
@@ -943,7 +943,7 @@ static int rsi_mac80211_change_interface(struct ieee80211_hw *hw,
 	int status = 0;
 	enum opmode intf_mode;
 
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"Change Interface: New_type = %d, New_p2p = %d\n",
 		newtype, newp2p);
 
@@ -956,19 +956,19 @@ static int rsi_mac80211_change_interface(struct ieee80211_hw *hw,
 		case NL80211_IFTYPE_AP:
 			if (adapter->ps_state == PS_ENABLED)
 				rsi_disable_ps(adapter);
-			rsi_dbg(INFO_ZONE, "Change to AP Mode\n");
+			redpine_dbg(INFO_ZONE, "Change to AP Mode\n");
 			intf_mode = AP_OPMODE;
 			break;
 		case NL80211_IFTYPE_STATION:
 			intf_mode = STA_OPMODE;
-			rsi_dbg(INFO_ZONE, "Change to Station Mode\n");
+			redpine_dbg(INFO_ZONE, "Change to Station Mode\n");
 			break;
 		case NL80211_IFTYPE_P2P_CLIENT:
-			rsi_dbg(INFO_ZONE, "Change to P2P Client Mode\n");
+			redpine_dbg(INFO_ZONE, "Change to P2P Client Mode\n");
 			intf_mode = P2P_CLIENT_OPMODE;
 			break;
 		case NL80211_IFTYPE_P2P_GO:
-			rsi_dbg(INFO_ZONE, "Change to P2P Go Mode\n");
+			redpine_dbg(INFO_ZONE, "Change to P2P Go Mode\n");
 			intf_mode = P2P_GO_OPMODE;
 			break;
 		default:
@@ -1028,50 +1028,50 @@ static int rsi_channel_change(struct ieee80211_hw *hw)
 	struct ieee80211_vif *vif = adapter->vifs[adapter->sc_nvifs - 1];
 
 	if (adapter->sc_nvifs <= 0) {
-		rsi_dbg(ERR_ZONE, "%s: No virtual interface found\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: No virtual interface found\n", __func__);
 		return -EINVAL;
 	}
 	bss = &vif->bss_conf;
 
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"%s: Set channel: %d MHz type: %d channel_no %d\n",
 		__func__, curchan->center_freq,
 		curchan->flags, channel);
 
 	if ((vif->type == NL80211_IFTYPE_AP) ||
 	    (vif->type == NL80211_IFTYPE_P2P_GO)) {
-		rsi_dbg(INFO_ZONE, "Configure channel %d for AP\n", channel);
+		redpine_dbg(INFO_ZONE, "Configure channel %d for AP\n", channel);
 		if (rsi_band_check(common, curchan)) {
-			rsi_dbg(ERR_ZONE, "Failed to set band\n");
+			redpine_dbg(ERR_ZONE, "Failed to set band\n");
 			return -EINVAL;
 		}
 		if (rsi_set_channel(common, curchan)) {
-			rsi_dbg(ERR_ZONE, "Failed to set the channel\n");
+			redpine_dbg(ERR_ZONE, "Failed to set the channel\n");
 			return -EINVAL;
 		}
 		common->ap_channel = curchan;
 		if (vif->type == NL80211_IFTYPE_AP &&
 		    adapter->auto_chan_sel) {
-			rsi_dbg(INFO_ZONE, "ACS Final Channel selection");
+			redpine_dbg(INFO_ZONE, "ACS Final Channel selection");
 			adapter->auto_chan_sel = ACS_DISABLE;
 		}
 		return 0;
 	}
 	common->mac80211_cur_channel = channel;
 	if (bss->assoc) {
-		rsi_dbg(INFO_ZONE, "%s: connected\n", __func__);
+		redpine_dbg(INFO_ZONE, "%s: connected\n", __func__);
 
 		if (common->bgscan_en)
 			return 0;
 
 		if (!common->hw_data_qs_blocked &&
 		    (rsi_get_connected_channel(adapter) != channel)) {
-			rsi_dbg(INFO_ZONE, "blk data q %d\n", channel);
+			redpine_dbg(INFO_ZONE, "blk data q %d\n", channel);
 			if (!rsi_send_block_unblock_frame(common, true))
 				common->hw_data_qs_blocked = true;
 		}
 	} else {
-		rsi_dbg(INFO_ZONE, "assoc status:%d channel:%d\n",
+		redpine_dbg(INFO_ZONE, "assoc status:%d channel:%d\n",
 			bss->assoc, channel);
 	}
 
@@ -1082,14 +1082,14 @@ static int rsi_channel_change(struct ieee80211_hw *hw)
 	if (bss->assoc) {
 		if (common->hw_data_qs_blocked &&
 		    (rsi_get_connected_channel(adapter) == channel)) {
-			rsi_dbg(INFO_ZONE, "unblk data q %d\n", channel);
+			redpine_dbg(INFO_ZONE, "unblk data q %d\n", channel);
 			if (!rsi_send_block_unblock_frame(common, false))
 				common->hw_data_qs_blocked = false;
 		}
 	} else {
 #if 0
 		if (common->hw_data_qs_blocked) {
-			rsi_dbg(INFO_ZONE, "unblk data q %d\n", channel);
+			redpine_dbg(INFO_ZONE, "unblk data q %d\n", channel);
 			if (!rsi_send_block_unblock_frame(common, false))
 				common->hw_data_qs_blocked = false;
 		}
@@ -1113,11 +1113,11 @@ static int rsi_config_power(struct ieee80211_hw *hw)
 	int status;
 
 	if (adapter->sc_nvifs <= 0) {
-		rsi_dbg(ERR_ZONE, "%s: No virtual interface found\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: No virtual interface found\n", __func__);
 		return -EINVAL;
 	}
 
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"%s: Set tx power: %d dBM\n", __func__, conf->power_level);
 
 	if (conf->power_level == common->tx_power)
@@ -1160,7 +1160,7 @@ static int rsi_mac80211_config(struct ieee80211_hw *hw,
 
 	/* listen interval */
 	if (changed & IEEE80211_CONF_CHANGE_LISTEN_INTERVAL) {
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"listen_int = %d\n", conf->listen_interval);
 		if (bss->dtim_period < conf->listen_interval)
 			adapter->ps_info.num_bcns_per_lis_int =
@@ -1172,7 +1172,7 @@ static int rsi_mac80211_config(struct ieee80211_hw *hw,
 
 	/* tx power */
 	if (changed & IEEE80211_CONF_CHANGE_POWER) {
-		rsi_dbg(INFO_ZONE, "%s: Configuring Power\n", __func__);
+		redpine_dbg(INFO_ZONE, "%s: Configuring Power\n", __func__);
 		status = rsi_config_power(hw);
 	}
 
@@ -1197,9 +1197,9 @@ static int rsi_mac80211_config(struct ieee80211_hw *hw,
 
 	/* RTS threshold */
 	if (changed & WIPHY_PARAM_RTS_THRESHOLD) {
-		rsi_dbg(INFO_ZONE,"RTS threshold\n");
+		redpine_dbg(INFO_ZONE,"RTS threshold\n");
 		if ((common->rts_threshold) <= IEEE80211_MAX_RTS_THRESHOLD) {
-			rsi_dbg(INFO_ZONE,
+			redpine_dbg(INFO_ZONE,
 				"%s: Sending vap updates....\n", __func__);
 			status = rsi_send_vap_dynamic_update(common);
 		}
@@ -1261,7 +1261,7 @@ void rsi_resume_conn_channel(struct rsi_hw *adapter,
 		rsi_band_check(common, channel);
 
 		rsi_set_channel(common, channel);
-		rsi_dbg(INFO_ZONE, "resumed to channel %d\n",
+		redpine_dbg(INFO_ZONE, "resumed to channel %d\n",
 			channel->hw_value);
 	}
 }
@@ -1288,7 +1288,7 @@ static void rsi_mac80211_bss_info_changed(struct ieee80211_hw *hw,
 	struct ieee80211_conf *conf = &hw->conf;
 	u16 rx_filter_word = 0;
 
-	rsi_dbg(INFO_ZONE, "%s: BSS status changed; changed=%08x\n",
+	redpine_dbg(INFO_ZONE, "%s: BSS status changed; changed=%08x\n",
 		__func__, changed);
 
 	if (common->fsm_state != FSM_MAC_INIT_DONE)
@@ -1298,7 +1298,7 @@ static void rsi_mac80211_bss_info_changed(struct ieee80211_hw *hw,
 
 	if ((changed & BSS_CHANGED_ASSOC) &&
 	    (vif->type == NL80211_IFTYPE_STATION)) {
-		rsi_dbg(INFO_ZONE, "%s: Changed Association status: %d\n",
+		redpine_dbg(INFO_ZONE, "%s: Changed Association status: %d\n",
 			__func__, bss_conf->assoc);
 		bss->assoc = bss_conf->assoc;
 		if (bss->assoc) {
@@ -1309,16 +1309,16 @@ static void rsi_mac80211_bss_info_changed(struct ieee80211_hw *hw,
 					  0);
 			rsi_send_rx_filter_frame(common, rx_filter_word);
 		}
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"assoc_status=%d, qos=%d, aid=%d\n",
 			bss->assoc, bss->qos, bss->aid);
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 				"bssid=%02x:%02x:%02x:%02x:%02x:%02x",
 				bss->bssid[0], bss->bssid[1], bss->bssid[2],
 				bss->bssid[3], bss->bssid[4], bss->bssid[5]);
 
 		/* Send peer notify to device */
-		rsi_dbg(INFO_ZONE, "Indicate bss status to device\n");
+		redpine_dbg(INFO_ZONE, "Indicate bss status to device\n");
 		rsi_inform_bss_status(common, STA_OPMODE, bss->assoc,
 				      bss->bssid, bss->qos, bss->aid, NULL, 0,
 				      bss->assoc_capability);
@@ -1326,14 +1326,14 @@ static void rsi_mac80211_bss_info_changed(struct ieee80211_hw *hw,
 		/* Update DTIM period and listen interval */
 		adapter->ps_info.dtim_interval_duration = bss->dtim_period;
 		adapter->ps_info.listen_interval = conf->listen_interval;
-		rsi_dbg(INFO_ZONE, "Beacon_Int = %d Lis_Int = %d Dtim = %d\n",
+		redpine_dbg(INFO_ZONE, "Beacon_Int = %d Lis_Int = %d Dtim = %d\n",
 			bss->beacon_int, adapter->ps_info.num_bcns_per_lis_int,
 			bss->dtim_period);
 
 		/* If UAPSD is updated send ps params */
 		if (bss->assoc) {
 			if (common->uapsd_bitmap) {
-				rsi_dbg(INFO_ZONE, "Configuring UAPSD\n");
+				redpine_dbg(INFO_ZONE, "Configuring UAPSD\n");
 				rsi_conf_uapsd(adapter);
 			}
 		} else
@@ -1342,22 +1342,22 @@ static void rsi_mac80211_bss_info_changed(struct ieee80211_hw *hw,
 
 	if ((vif->type == NL80211_IFTYPE_STATION) &&
 	    changed & BSS_CHANGED_CQM) {
-		rsi_dbg(INFO_ZONE, "%s: Changed CQM\n", __func__);
+		redpine_dbg(INFO_ZONE, "%s: Changed CQM\n", __func__);
 		common->cqm_info.last_cqm_event_rssi = 0;
 		common->cqm_info.rssi_thold = bss_conf->cqm_rssi_thold;
 		common->cqm_info.rssi_hyst = bss_conf->cqm_rssi_hyst;
-		rsi_dbg(INFO_ZONE, "RSSI throld & hysteresis are: %d %d\n",
+		redpine_dbg(INFO_ZONE, "RSSI throld & hysteresis are: %d %d\n",
 			common->cqm_info.rssi_thold,
 			common->cqm_info.rssi_hyst);
 	}
 
 	if (changed & BSS_CHANGED_TXPOWER) {
-		rsi_dbg(INFO_ZONE, "%s: Changed TX power: %d\n",
+		redpine_dbg(INFO_ZONE, "%s: Changed TX power: %d\n",
 			__func__, bss_conf->txpower);
 	}
 
 	if (changed & BSS_CHANGED_BEACON_INT) {
-		rsi_dbg(INFO_ZONE, "%s: Changed Beacon interval: %d\n",
+		redpine_dbg(INFO_ZONE, "%s: Changed Beacon interval: %d\n",
 			__func__, bss_conf->beacon_int);
 		common->beacon_interval = bss->beacon_int; 
 		adapter->ps_info.listen_interval =
@@ -1368,10 +1368,10 @@ static void rsi_mac80211_bss_info_changed(struct ieee80211_hw *hw,
 	    ((vif->type == NL80211_IFTYPE_AP) ||
 	     (vif->type == NL80211_IFTYPE_P2P_GO))) {
 		if (bss->enable_beacon) {
-			rsi_dbg(INFO_ZONE, "===> BEACON ENABLED <===\n");
+			redpine_dbg(INFO_ZONE, "===> BEACON ENABLED <===\n");
 			common->beacon_enabled = 1;
 		} else {
-			rsi_dbg(INFO_ZONE, "===> BEACON DISABLED <===\n");
+			redpine_dbg(INFO_ZONE, "===> BEACON DISABLED <===\n");
 			common->beacon_enabled = 0;
 		}
 	}
@@ -1427,7 +1427,7 @@ static int rsi_mac80211_conf_tx(struct ieee80211_hw *hw,
 	if (queue >= IEEE80211_NUM_ACS)
 		return 0;
 
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"[Conf] queue:%d, aifs:%d, cwmin:%d cwmax:%d, txop:%d uapsd:%d\n",
 		queue, params->aifs, params->cw_min, params->cw_max,
 		params->txop, params->uapsd);
@@ -1489,9 +1489,9 @@ static int rsi_hal_key_config(struct ieee80211_hw *hw,
 	else
 		key_type = RSI_GROUP_KEY;
 
-	rsi_dbg(ERR_ZONE, "%s: Cipher 0x%x key_type: %d key_len: %d\n",
+	redpine_dbg(ERR_ZONE, "%s: Cipher 0x%x key_type: %d key_len: %d\n",
 		__func__, key->cipher, key_type, key->keylen);
-	rsi_dbg(INFO_ZONE, "hw_key_idx %d\n", key->hw_key_idx);
+	redpine_dbg(INFO_ZONE, "hw_key_idx %d\n", key->hw_key_idx);
 
 	if ((vif->type == NL80211_IFTYPE_AP) ||
 	    (vif->type == NL80211_IFTYPE_P2P_GO)) {
@@ -1605,7 +1605,7 @@ static int rsi_mac80211_set_key(struct ieee80211_hw *hw,
 				vif_info->key = key;
 				break;
 			}
-			rsi_dbg(INFO_ZONE,
+			redpine_dbg(INFO_ZONE,
 				"%s: RX PN: %02x-%02x-%02x-%02x-%02x-%02x",
 				__func__, vif_info->rx_bcmc_pn[5],
 				vif_info->rx_bcmc_pn[4], vif_info->rx_bcmc_pn[3],
@@ -1616,14 +1616,14 @@ static int rsi_mac80211_set_key(struct ieee80211_hw *hw,
 		key->hw_key_idx = key->keyidx;
 		key->flags |= IEEE80211_KEY_FLAG_GENERATE_IV;
 
-		rsi_dbg(ERR_ZONE, "%s: RSI set_key\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: RSI set_key\n", __func__);
 		break;
 
 	case DISABLE_KEY:
 		if ((vif->type == NL80211_IFTYPE_STATION) ||
 		    (vif->type == NL80211_IFTYPE_P2P_CLIENT))
 			secinfo->security_enable = false;
-		rsi_dbg(ERR_ZONE, "%s: RSI del key\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: RSI del key\n", __func__);
 		memset(key, 0, sizeof(struct ieee80211_key_conf));
 		memset(vif_info->rx_bcmc_pn, 0, IEEE80211_CCMP_PN_LEN);
 		vif_info->rx_pn_valid = false;
@@ -1726,21 +1726,21 @@ static int rsi_mac80211_ampdu_action(struct ieee80211_hw *hw,
 		rsta = rsi_find_sta(common, sta->addr);
 
 		if (!rsta) {
-			rsi_dbg(ERR_ZONE, "No station mapped\n");
+			redpine_dbg(ERR_ZONE, "No station mapped\n");
 			return 0;
 		}
 		sta_id = rsta->sta_id;
 	}
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0))
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"%s: AMPDU action tid=%d ssn=0x%x, buf_size=%d\n",
 		__func__, tid, seq_no, buf_size);
 #endif
 
 	switch (action) {
 	case IEEE80211_AMPDU_RX_START:
-		rsi_dbg(INFO_ZONE, "AMPDU action RX_START (%d)\n", action);
+		redpine_dbg(INFO_ZONE, "AMPDU action RX_START (%d)\n", action);
 		status = rsi_send_aggr_params_frame(common,
 						    tid,
 						    seq_no,
@@ -1750,7 +1750,7 @@ static int rsi_mac80211_ampdu_action(struct ieee80211_hw *hw,
 		break;
 
 	case IEEE80211_AMPDU_RX_STOP:
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"AMPDU action RX_STOP (%d) called\n", action);
 		status = rsi_send_aggr_params_frame(common,
 						    tid,
@@ -1761,7 +1761,7 @@ static int rsi_mac80211_ampdu_action(struct ieee80211_hw *hw,
 		break;
 
 	case IEEE80211_AMPDU_TX_START:
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"AMPDU action TX_START (%d) called\n", action);
 		if ((vif->type == NL80211_IFTYPE_STATION) ||
 		    (vif->type == NL80211_IFTYPE_P2P_CLIENT))
@@ -1776,7 +1776,7 @@ static int rsi_mac80211_ampdu_action(struct ieee80211_hw *hw,
 	case IEEE80211_AMPDU_TX_STOP_CONT:
 	case IEEE80211_AMPDU_TX_STOP_FLUSH:
 	case IEEE80211_AMPDU_TX_STOP_FLUSH_CONT:
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"AMPDU action TX_STOP_CONT / TX_STOP_FLUSH /"
 			" TX_STOP_FLUSH_CONT (%d) called\n", action);
 		status = rsi_send_aggr_params_frame(common,
@@ -1790,7 +1790,7 @@ static int rsi_mac80211_ampdu_action(struct ieee80211_hw *hw,
 		break;
 
 	case IEEE80211_AMPDU_TX_OPERATIONAL:
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"AMPDU action TX_OPERATIONAL(%d) called\n",
 			action);
     if ((vif->type == NL80211_IFTYPE_STATION) ||
@@ -1808,7 +1808,7 @@ static int rsi_mac80211_ampdu_action(struct ieee80211_hw *hw,
 		break;
 
 	default:
-		rsi_dbg(ERR_ZONE, "%s: Uknown AMPDU action\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Uknown AMPDU action\n", __func__);
 		break;
 	}
 
@@ -1894,7 +1894,7 @@ static void rsi_perform_cqm(struct rsi_common *common,
 		return;
 
 	common->cqm_info.last_cqm_event_rssi = rssi;
-	rsi_dbg(INFO_ZONE, "CQM: Notifying event: %s\n",
+	redpine_dbg(INFO_ZONE, "CQM: Notifying event: %s\n",
 		(event == NL80211_CQM_RSSI_THRESHOLD_EVENT_LOW) ? "LOW" : "HIGH");
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0))
@@ -1910,7 +1910,7 @@ void rsi_indicate_bcnmiss(struct rsi_common *common)
 {
 	struct rsi_hw *adapter = common->priv;
 
-	rsi_dbg(INFO_ZONE, "CQM: Notifying beacon miss\n" );
+	redpine_dbg(INFO_ZONE, "CQM: Notifying beacon miss\n" );
 
 	if (common->iface_down)
 		return;
@@ -2061,12 +2061,12 @@ static int rsi_fill_rx_status(struct ieee80211_hw *hw,
 			skb_pull(skb, 4);
 		} else {
 			if (skb->len < (hdrlen + IEEE80211_CCMP_HDR_LEN)) {
-				rsi_dbg(ERR_ZONE, "Invalid encrypted packet\n");
+				redpine_dbg(ERR_ZONE, "Invalid encrypted packet\n");
 				dev_kfree_skb(skb);
 				return -EINVAL;
 			}
 			if (rsi_validate_pn(adapter, hdr) < 0) {
-				rsi_dbg(INFO_ZONE,
+				redpine_dbg(INFO_ZONE,
 					"Invalid RX PN; Dropping\n");
 				dev_kfree_skb(skb);
 				return -EINVAL;
@@ -2081,7 +2081,7 @@ static int rsi_fill_rx_status(struct ieee80211_hw *hw,
 	}
 
 	if (!vif) {
-		rsi_dbg(INFO_ZONE, "No virtual interface\n");
+		redpine_dbg(INFO_ZONE, "No virtual interface\n");
 		return 0;
 	}
 	bss = &vif->bss_conf;
@@ -2118,7 +2118,7 @@ void rsi_indicate_pkt_to_os(struct rsi_common *common,
 	if (rsi_fill_rx_status(hw, skb, common, rx_status))
 		return;
 
-	rsi_dbg(MGMT_RX_ZONE, "RX Packet Type: %s\n",
+	redpine_dbg(MGMT_RX_ZONE, "RX Packet Type: %s\n",
 		dot11_pkt_type(skb->data[0]));
 	rsi_hex_dump(DATA_RX_ZONE, "802.11 RX packet", skb->data, skb->len);
 	ieee80211_rx_irqsafe(hw, skb);
@@ -2154,13 +2154,13 @@ static int rsi_mac80211_sta_add(struct ieee80211_hw *hw,
 
 		/* Check if max stations reached */
 		if (common->num_stations >= common->max_stations) {
-			rsi_dbg(ERR_ZONE, "Reject: Max Stations exists\n");
+			redpine_dbg(ERR_ZONE, "Reject: Max Stations exists\n");
 			mutex_unlock(&common->mutex);
 			return -EOPNOTSUPP;
 		}
 
 		/* Send peer notify to device */
-		rsi_dbg(INFO_ZONE, "Indicate bss status to device\n");
+		redpine_dbg(INFO_ZONE, "Indicate bss status to device\n");
 		for (i = 0; i < common->max_stations; i++) {
 			if (!common->stations[i].sta) {
 				if (free_index < 0)
@@ -2169,13 +2169,13 @@ static int rsi_mac80211_sta_add(struct ieee80211_hw *hw,
 			}
 			if (!memcmp(common->stations[i].sta->addr,
 				    sta->addr, ETH_ALEN)) {
-				rsi_dbg(INFO_ZONE, "Station exists\n");
+				redpine_dbg(INFO_ZONE, "Station exists\n");
 				sta_exist = 1;
 				break;
 			}
 		}
 		if (!sta_exist) {
-			rsi_dbg(INFO_ZONE, "New Station\n");
+			redpine_dbg(INFO_ZONE, "New Station\n");
 			if (free_index >= 0)
 				i = free_index;
 			common->stations[i].sta = sta;
@@ -2269,7 +2269,7 @@ static int rsi_mac80211_sta_remove(struct ieee80211_hw *hw,
 		u8 j;
 
 		/* Send peer notify to device */
-		rsi_dbg(INFO_ZONE, "Indicate bss status to device\n");
+		redpine_dbg(INFO_ZONE, "Indicate bss status to device\n");
 		for (i = 0; i < common->max_stations; i++) {
 			if (!common->stations[i].sta)
 				continue;
@@ -2288,7 +2288,7 @@ static int rsi_mac80211_sta_remove(struct ieee80211_hw *hw,
 			}
 		}
 		if (i >= common->max_stations)
-			rsi_dbg(ERR_ZONE, "%s: No station found\n", __func__);
+			redpine_dbg(ERR_ZONE, "%s: No station found\n", __func__);
 	}
 
 	if (vif->type == NL80211_IFTYPE_STATION) {
@@ -2356,7 +2356,7 @@ static void rsi_mac80211_sw_scan_start(struct ieee80211_hw *hw,
 
 	if (!rsi_send_bgscan_params(common, 1)) {
 		if (!rsi_send_bgscan_probe_req(common)) {
-			rsi_dbg(INFO_ZONE,
+			redpine_dbg(INFO_ZONE,
 				"Background scan started\n");
 			common->bgscan_en = 1;
 		}
@@ -2385,7 +2385,7 @@ static void rsi_mac80211_sw_scan_stop(struct ieee80211_hw *hw,
 	if (common->bgscan_en) {
 		if (!rsi_send_bgscan_params(common, 0)) {
 			common->bgscan_en = 0;
-			rsi_dbg(INFO_ZONE,"Bg scan stopped");
+			redpine_dbg(INFO_ZONE,"Bg scan stopped");
 		}
 	}
 
@@ -2412,15 +2412,15 @@ static int rsi_mac80211_set_antenna(struct ieee80211_hw *hw,
 	u32 antenna = 0;
 
 	if (tx_ant > 1 || rx_ant > 1) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Invalid antenna selection (tx: %d, rx:%d)\n",
 			tx_ant, rx_ant);
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Use 0 for int_ant, 1 for ext_ant\n");
 		return -EINVAL; 
 	}
 
-	rsi_dbg(INFO_ZONE, "%s: Antenna map Tx %x Rx %d\n",
+	redpine_dbg(INFO_ZONE, "%s: Antenna map Tx %x Rx %d\n",
 			__func__, tx_ant, rx_ant);
 
 	mutex_lock(&common->mutex);
@@ -2430,7 +2430,7 @@ static int rsi_mac80211_set_antenna(struct ieee80211_hw *hw,
 		if (rsi_set_antenna(common, antenna))
 			goto fail_set_antenna;
 
-	rsi_dbg(INFO_ZONE, "(%s) Antenna path configured successfully\n",
+	redpine_dbg(INFO_ZONE, "(%s) Antenna path configured successfully\n",
 		tx_ant ? "UFL" : "INT");
 
 	common->ant_in_use = antenna;
@@ -2440,7 +2440,7 @@ static int rsi_mac80211_set_antenna(struct ieee80211_hw *hw,
 	return 0;
 
 fail_set_antenna:
-	rsi_dbg(ERR_ZONE, "%s: Failed.\n", __func__);
+	redpine_dbg(ERR_ZONE, "%s: Failed.\n", __func__);
 	mutex_unlock(&common->mutex);
 	return -EINVAL;
 }
@@ -2504,7 +2504,7 @@ static void rsi_reg_notify(struct wiphy *wiphy,
 
 	mutex_lock(&common->mutex);
 
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"%s: country = %s dfs_region = %s\n",
 		__func__, request->alpha2,
 		regdfs_region_str(request->dfs_region));
@@ -2521,7 +2521,7 @@ static void rsi_reg_notify(struct wiphy *wiphy,
 	if (!memcmp(request->alpha2, "00", 2))
 		region_code = NL80211_DFS_JP;
 
-	rsi_dbg(ERR_ZONE, "%s: Updating regulatory for region %s\n",
+	redpine_dbg(ERR_ZONE, "%s: Updating regulatory for region %s\n",
 		__func__, regdfs_region_str(region_code));
 #endif
 
@@ -2621,7 +2621,7 @@ static u16 rsi_wow_map_triggers(struct rsi_common *common,
 {
 	u16 wow_triggers = 0;
 
-        rsi_dbg(INFO_ZONE,"Mapping wowlan triggers\n");
+        redpine_dbg(INFO_ZONE,"Mapping wowlan triggers\n");
 
 	if (wowlan->any)
 		wow_triggers |= RSI_WOW_ANY;
@@ -2638,32 +2638,32 @@ static u16 rsi_wow_map_triggers(struct rsi_common *common,
 #endif
 
 #ifdef CONFIG_REDPINE_WOW
-int rsi_config_wowlan(struct rsi_hw *adapter, struct cfg80211_wowlan *wowlan)
+int redpine_config_wowlan(struct rsi_hw *adapter, struct cfg80211_wowlan *wowlan)
 {
 	struct rsi_common *common = adapter->priv;
 	u16 triggers = 0;
        	u16 rx_filter_word = 0;
 	struct ieee80211_bss_conf *bss = &adapter->vifs[0]->bss_conf;
 
-	rsi_dbg(INFO_ZONE, "Config WoWLAN to device\n");
+	redpine_dbg(INFO_ZONE, "Config WoWLAN to device\n");
 
 	if (WARN_ON(!wowlan)) {
-		rsi_dbg(ERR_ZONE, "WoW triggers not enabled\n");
+		redpine_dbg(ERR_ZONE, "WoW triggers not enabled\n");
 		return -EINVAL;
 	}
 
 	triggers = rsi_wow_map_triggers(common, wowlan);
 	if (!triggers) {
-		rsi_dbg(ERR_ZONE, "%s:No valid WoW triggers\n",__func__);
+		redpine_dbg(ERR_ZONE, "%s:No valid WoW triggers\n",__func__);
 		return -EINVAL;
 	}
 	if (!bss->assoc) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Cannot configure WoWLAN (Station not connected)\n");
 		common->wow_flags |= RSI_WOW_NO_CONNECTION;
 		return 0;
 	}
-	rsi_dbg(INFO_ZONE, "TRIGGERS %x\n", triggers);
+	redpine_dbg(INFO_ZONE, "TRIGGERS %x\n", triggers);
 	rsi_send_wowlan_request(common, triggers, 1);
 
 	/* Send updated vap caps */
@@ -2678,7 +2678,7 @@ int rsi_config_wowlan(struct rsi_hw *adapter, struct cfg80211_wowlan *wowlan)
         
 	return 0;
 }
-EXPORT_SYMBOL_GPL(rsi_config_wowlan);
+EXPORT_SYMBOL_GPL(redpine_config_wowlan);
 #endif
 
 #ifdef CONFIG_PM
@@ -2693,8 +2693,8 @@ static int rsi_mac80211_suspend(struct ieee80211_hw *hw,
 	if ((common->coex_mode > 1) && (adapter->ps_state == PS_ENABLED))
 		rsi_disable_ps(adapter);
 
-	if (rsi_config_wowlan(adapter, wowlan)) {
-		rsi_dbg(ERR_ZONE, "Failed to configure WoWLAN\n");
+	if (redpine_config_wowlan(adapter, wowlan)) {
+		redpine_dbg(ERR_ZONE, "Failed to configure WoWLAN\n");
 		mutex_unlock(&common->mutex);
 		return 1;
 	}
@@ -2702,7 +2702,7 @@ static int rsi_mac80211_suspend(struct ieee80211_hw *hw,
 	if (common->bgscan_en) {
 		if (!rsi_send_bgscan_params(common, 0)) {
 			common->bgscan_en = 0;
-			rsi_dbg(INFO_ZONE,"Bg scan canceled");
+			redpine_dbg(INFO_ZONE,"Bg scan canceled");
 		}
 	}
 	mutex_unlock(&common->mutex);
@@ -2721,7 +2721,7 @@ static int rsi_mac80211_resume(struct ieee80211_hw *hw)
 	adapter->priv->wow_flags = 0;
 #endif
 	
-	rsi_dbg(INFO_ZONE, "%s: mac80211 resume\n", __func__);
+	redpine_dbg(INFO_ZONE, "%s: mac80211 resume\n", __func__);
 
 	if (common->hibernate_resume) {
 		if (common->reinit_hw)
@@ -2807,7 +2807,7 @@ void rsi_roc_timeout(struct timer_list *t)
 	struct vif_priv *vif_info = (struct vif_priv *)vif->drv_priv;
 	enum opmode intf_mode; 
 
-	rsi_dbg(INFO_ZONE, "Remain on channel expired\n");	
+	redpine_dbg(INFO_ZONE, "Remain on channel expired\n");	
 	
 	mutex_lock(&common->mutex);
 	
@@ -2819,19 +2819,19 @@ void rsi_roc_timeout(struct timer_list *t)
 	if ((vif->type == NL80211_IFTYPE_STATION) ||
 	    (vif->type == NL80211_IFTYPE_AP) ||
 	    (vif->type == NL80211_IFTYPE_P2P_GO)) {
-		rsi_dbg(INFO_ZONE, "Resume to connected channel\n");
+		redpine_dbg(INFO_ZONE, "Resume to connected channel\n");
 		rsi_resume_conn_channel(common->priv, vif);
 	}
 
 	intf_mode = rsi_map_vif_type(vif->type);
 	if ((common->last_vap_type != intf_mode) ||
 	    (!ether_addr_equal(common->last_vap_addr, vif->addr))) {
-		rsi_dbg(INFO_ZONE, "Resume the vap caps to orig mode\n");	
+		redpine_dbg(INFO_ZONE, "Resume the vap caps to orig mode\n");	
 		if (rsi_set_vap_capabilities(common, intf_mode,
 					     vif->addr,
 					     vif_info->vap_id,
 					     VAP_UPDATE))
-			rsi_dbg(ERR_ZONE, "Failed to update VAP caps\n");
+			redpine_dbg(ERR_ZONE, "Failed to update VAP caps\n");
 	}
 
 	mutex_unlock(&common->mutex);
@@ -2845,7 +2845,7 @@ static int rsi_mac80211_cancel_roc(struct ieee80211_hw *hw)
 	struct vif_priv *vif_info = (struct vif_priv *)vif->drv_priv;
 	enum opmode intf_mode; 
 	
-	rsi_dbg(INFO_ZONE, "Cancel remain on channel\n");
+	redpine_dbg(INFO_ZONE, "Cancel remain on channel\n");
 
 	mutex_lock(&common->mutex);
 	if (!timer_pending(&adapter->priv->roc_timer))
@@ -2857,18 +2857,18 @@ static int rsi_mac80211_cancel_roc(struct ieee80211_hw *hw)
 	if ((vif->type == NL80211_IFTYPE_STATION) ||
 	    (vif->type == NL80211_IFTYPE_AP) ||
 	    (vif->type == NL80211_IFTYPE_P2P_GO)) {
-		rsi_dbg(INFO_ZONE, "Resume to connected channel\n");
+		redpine_dbg(INFO_ZONE, "Resume to connected channel\n");
 		rsi_resume_conn_channel(adapter, vif);
 	}
 
 	intf_mode = rsi_map_vif_type(vif->type);
 	if ((common->last_vap_type != intf_mode) ||
 	    (!ether_addr_equal(common->last_vap_addr, vif->addr))) {
-		rsi_dbg(INFO_ZONE, "Resume the vap caps to orig mode\n");
+		redpine_dbg(INFO_ZONE, "Resume the vap caps to orig mode\n");
 		if (rsi_set_vap_capabilities(common, intf_mode,
 					     vif->addr, vif_info->vap_id,
 					     VAP_UPDATE))
-			rsi_dbg(ERR_ZONE, "Failed to update VAP caps\n");
+			redpine_dbg(ERR_ZONE, "Failed to update VAP caps\n");
 	}
 
 	mutex_unlock(&common->mutex);
@@ -2887,22 +2887,22 @@ static int rsi_mac80211_roc(struct ieee80211_hw *hw,
 	struct rsi_common *common = (struct rsi_common *)adapter->priv;
 	int status = 0;
 
-	rsi_dbg(INFO_ZONE, "***** Remain on channel *****\n");
+	redpine_dbg(INFO_ZONE, "***** Remain on channel *****\n");
 
 	if (common->priv->sc_nvifs <= 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: No virtual interface found\n", __func__);
 		return -EINVAL;
 	}
 
 	mutex_lock(&common->mutex);
 
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"%s: channel_no: %d duration: %dms\n",
 		__func__, chan->hw_value, duration);
 
 	if (timer_pending(&common->roc_timer)) {
-		rsi_dbg(INFO_ZONE, "Stop on-going ROC\n");
+		redpine_dbg(INFO_ZONE, "Stop on-going ROC\n");
 		del_timer(&common->roc_timer);
 	}
 	common->roc_timer.expires = msecs_to_jiffies(duration) + jiffies;
@@ -2910,25 +2910,25 @@ static int rsi_mac80211_roc(struct ieee80211_hw *hw,
 
 	/* Configure band */
 	if (rsi_band_check(common, chan)) {
-		rsi_dbg(ERR_ZONE, "Failed to set band\n");
+		redpine_dbg(ERR_ZONE, "Failed to set band\n");
 		status = -EINVAL;
 		goto out;
 	}
 
 	/* Configure channel */
 	if (rsi_set_channel(common, chan)) {
-		rsi_dbg(ERR_ZONE, "Failed to set the channel\n");
+		redpine_dbg(ERR_ZONE, "Failed to set the channel\n");
 		status = -EINVAL;
 		goto out;
 	}
 
 	/* For listen phase, configure vap as AP mode */
 	if (vif->type == NL80211_IFTYPE_P2P_DEVICE) {
-		rsi_dbg(INFO_ZONE, "Update VAP mode to p2p_client mode\n");	
+		redpine_dbg(INFO_ZONE, "Update VAP mode to p2p_client mode\n");	
 		if (rsi_set_vap_capabilities(common, P2P_CLIENT_OPMODE,
 					     vif->addr, vif_info->vap_id,
 					     VAP_UPDATE)) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"Failed to update VAP capabilities\n");
 			goto out;
 		}
@@ -2936,7 +2936,7 @@ static int rsi_mac80211_roc(struct ieee80211_hw *hw,
 
 	common->roc_vif = vif;
 	ieee80211_ready_on_channel(hw);
-	rsi_dbg(INFO_ZONE, "%s: Ready on channel :%d\n",
+	redpine_dbg(INFO_ZONE, "%s: Ready on channel :%d\n",
 		__func__, chan->hw_value);	
 
 out:
@@ -2956,7 +2956,7 @@ static void rsi_mac80211_event_callback(struct ieee80211_hw *hw,
 
 	if (event->type == MLME_EVENT && event->u.mlme.data == ASSOC_EVENT &&
 	    event->u.mlme.status == MLME_TIMEOUT) {
-		rsi_dbg(ERR_ZONE, "%s: ASSOC Timeout: reason = %d\n",
+		redpine_dbg(ERR_ZONE, "%s: ASSOC Timeout: reason = %d\n",
 			__func__, event->u.mlme.reason);
 		rsi_send_sta_notify_frame(common, STA_OPMODE,
 					  STA_DISCONNECTED,
@@ -3019,11 +3019,11 @@ int rsi_mac80211_attach(struct rsi_common *common)
 	struct rsi_hw *adapter = common->priv;
 	u8 addr_mask[ETH_ALEN] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x3};
 
-	rsi_dbg(INIT_ZONE, "%s: Performing mac80211 attach\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Performing mac80211 attach\n", __func__);
 
 	hw = ieee80211_alloc_hw(sizeof(struct rsi_hw), &mac80211_ops);
 	if (!hw) {
-		rsi_dbg(ERR_ZONE, "%s: ieee80211 hw alloc failed\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: ieee80211 hw alloc failed\n", __func__);
 		return -ENOMEM;
 	}
 
@@ -3101,7 +3101,7 @@ int rsi_mac80211_attach(struct rsi_common *common)
 
 	wiphy->max_ap_assoc_sta = rsi_max_ap_stas[common->oper_mode - 1];
 	common->max_stations = wiphy->max_ap_assoc_sta;
-	rsi_dbg(ERR_ZONE, "Max Stations Allowed = %d\n", common->max_stations);
+	redpine_dbg(ERR_ZONE, "Max Stations Allowed = %d\n", common->max_stations);
 
 	wiphy->max_scan_ssids = 16;
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
@@ -3135,9 +3135,9 @@ int rsi_mac80211_attach(struct rsi_common *common)
 
 	status = ieee80211_register_hw(hw);
 	if (status) {
-		rsi_dbg(ERR_ZONE, "Failed to register to mac80211\n");
+		redpine_dbg(ERR_ZONE, "Failed to register to mac80211\n");
 		return status;
 	}
 
-	return rsi_init_dbgfs(adapter);
+	return redpine_init_dbgfs(adapter);
 }

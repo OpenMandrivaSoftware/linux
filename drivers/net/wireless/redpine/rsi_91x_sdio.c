@@ -62,7 +62,7 @@ static u32 rsi_sdio_set_cmd52_arg(bool rw,
 static int rsi_sdio_validate_clock(int sdio_clock)
 {
 	if (sdio_clock > 50 || sdio_clock <= 0) {
-		rsi_dbg(ERR_ZONE, "%s: Wrong Value given for SDIO clock\n"
+		redpine_dbg(ERR_ZONE, "%s: Wrong Value given for SDIO clock\n"
 			"\t\tSetting default clock to SDIO\n", __func__);
 		sdio_clock = 50;
 	}
@@ -235,12 +235,12 @@ static void rsi_reset_chip(struct rsi_hw *adapter)
 		return;
 
 	put_unaligned_le32(TA_SDIO_WAKE_REQUEST, data);
-	rsi_dbg(INFO_ZONE, "Writing disable to wakeup register\n");
+	redpine_dbg(INFO_ZONE, "Writing disable to wakeup register\n");
 	if (rsi_sdio_write_register(adapter,
 				    0,
 				    SDIO_WAKEUP_REG,
 				    data) < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to Write SDIO WAKEUP REG\n", __func__);
 		goto err;
 	}
@@ -248,16 +248,16 @@ static void rsi_reset_chip(struct rsi_hw *adapter)
 	if (rsi_sdio_read_register(adapter,
 				   RSI_FN1_INT_REGISTER,
 				   &sdio_interrupt_status) < 0) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to Read Intr Status Register\n",
+		redpine_dbg(ERR_ZONE, "%s: Failed to Read Intr Status Register\n",
 			__func__);
 		goto err;
 	}
-	rsi_dbg(INFO_ZONE, "%s: Intr Status Register value = %d \n",
+	redpine_dbg(INFO_ZONE, "%s: Intr Status Register value = %d \n",
 		__func__, sdio_interrupt_status);
 
 	/* Put TA on hold */
 	if (rsi_sdio_master_access_msword(adapter, 0x2200)) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Unable to set ms word to common reg\n",
 			__func__);
 		goto err;
@@ -267,7 +267,7 @@ static void rsi_reset_chip(struct rsi_hw *adapter)
 	if (rsi_sdio_write_register_multiple(adapter,
 					TA_HOLD_THREAD_REG | SD_REQUEST_MASTER,
 					(u8 *)data, 4)) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to hold TA threads\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Unable to hold TA threads\n", __func__);
 		goto err;
 	}
 
@@ -278,21 +278,21 @@ static void rsi_reset_chip(struct rsi_hw *adapter)
 		if ((rsi_sdio_master_reg_write(adapter,
 					       NWP_WWD_INTERRUPT_TIMER,
 						5, 4)) < 0) {
-			rsi_dbg(ERR_ZONE, "Failed to write to intr timer\n");
+			redpine_dbg(ERR_ZONE, "Failed to write to intr timer\n");
 		}
 		if ((rsi_sdio_master_reg_write(adapter,
 					       NWP_WWD_SYSTEM_RESET_TIMER,
 						4, 4)) < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"Failed to write to system reset timer\n");
 		}
 		if ((rsi_sdio_master_reg_write(adapter,
 					       NWP_WWD_MODE_AND_RSTART,
 						0xAA0001, 4)) < 0) {
-			rsi_dbg(ERR_ZONE,
+			redpine_dbg(ERR_ZONE,
 				"Failed to write to mode and restart\n");
 		}
-		rsi_dbg(ERR_ZONE, "***** Watch Dog Reset Successful *****\n");
+		redpine_dbg(ERR_ZONE, "***** Watch Dog Reset Successful *****\n");
 	} else {
 		*(u32 *)temp = 0;
 		ulp_read_write(adapter, ULP_RESET_REG, temp, 32);
@@ -342,7 +342,7 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 	 * Hence expect a timeout status from host controller
 	 */
 	if (err != -ETIMEDOUT)
-		rsi_dbg(ERR_ZONE, "%s: Reset failed : %d\n", __func__, err);
+		redpine_dbg(ERR_ZONE, "%s: Reset failed : %d\n", __func__, err);
 
 	cmd_delay = 20;
 #else
@@ -391,7 +391,7 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 	host->use_spi_crc = 0;
 
 	if (err)
-		rsi_dbg(ERR_ZONE, "%s: CMD0 failed : %d\n", __func__, err);
+		redpine_dbg(ERR_ZONE, "%s: CMD0 failed : %d\n", __func__, err);
 
 #ifdef CONFIG_CARACALLA_BOARD
 	if (!host->ocr_avail) {
@@ -405,7 +405,7 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 					    (MMC_RSP_R4 | MMC_CMD_BCR),
 					    &resp);
 		if (err)
-			rsi_dbg(ERR_ZONE, "%s: CMD5 failed : %d\n",
+			redpine_dbg(ERR_ZONE, "%s: CMD5 failed : %d\n",
 				__func__, err);
 #ifdef CONFIG_CARACALLA_BOARD
 		host->ocr_avail = resp;
@@ -426,7 +426,7 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 					    (MMC_RSP_R4 | MMC_CMD_BCR),
 					    &resp);
 		if (err) {
-			rsi_dbg(ERR_ZONE, "%s: CMD5 failed : %d\n",
+			redpine_dbg(ERR_ZONE, "%s: CMD5 failed : %d\n",
 				__func__, err);
 			break;
 		}
@@ -437,7 +437,7 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 	}
 
 	if ((i == 100) || (err)) {
-		rsi_dbg(ERR_ZONE, "%s: card in not ready : %d %d\n",
+		redpine_dbg(ERR_ZONE, "%s: card in not ready : %d %d\n",
 			__func__, i, err);
 		return;
 	}
@@ -449,7 +449,7 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 				    (MMC_RSP_R6 | MMC_CMD_BCR),
 				    &resp);
 	if (err) {
-		rsi_dbg(ERR_ZONE, "%s: CMD3 failed : %d\n", __func__, err);
+		redpine_dbg(ERR_ZONE, "%s: CMD3 failed : %d\n", __func__, err);
 		return;
 	}
 	rca = resp >> 16;
@@ -463,17 +463,17 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 				    (MMC_RSP_R1 | MMC_CMD_AC),
 				    NULL);
 	if (err) {
-		rsi_dbg(ERR_ZONE, "%s: CMD7 failed : %d\n", __func__, err);
+		redpine_dbg(ERR_ZONE, "%s: CMD7 failed : %d\n", __func__, err);
 		return;
 	}
 
 	/* Enable high speed */
 	if (card->host->caps & MMC_CAP_SD_HIGHSPEED) {
-		rsi_dbg(ERR_ZONE, "%s: Set high speed mode\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Set high speed mode\n", __func__);
 		err = rsi_cmd52readbyte(card, SDIO_CCCR_SPEED, &cmd52_resp,
 					true);
 		if (err) {
-			rsi_dbg(ERR_ZONE, "%s: CCCR speed reg read failed: %d\n",
+			redpine_dbg(ERR_ZONE, "%s: CCCR speed reg read failed: %d\n",
 				__func__, err);
 		} else {
 			err = rsi_cmd52writebyte(card,
@@ -481,7 +481,7 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 						 (cmd52_resp | SDIO_SPEED_EHS),
 						 true);
 			if (err) {
-				rsi_dbg(ERR_ZONE,
+				redpine_dbg(ERR_ZONE,
 					"%s: CCR speed regwrite failed %d\n",
 					__func__, err);
 				return;
@@ -510,7 +510,7 @@ static void rsi_reset_card(struct sdio_func *pfunction)
 					 (SDIO_BUS_CD_DISABLE |
 					  SDIO_BUS_WIDTH_4BIT), true);
 		if (err) {
-			rsi_dbg(ERR_ZONE, "%s: Set bus mode failed : %d\n",
+			redpine_dbg(ERR_ZONE, "%s: Set bus mode failed : %d\n",
 				__func__, err);
 			return;
 		}
@@ -554,12 +554,12 @@ static int rsi_setblocklength(struct rsi_hw *adapter, u32 length)
 		(struct rsi_91x_sdiodev *)adapter->rsi_dev;
 	int status;
 
-	rsi_dbg(INIT_ZONE, "%s: Setting the block length\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Setting the block length\n", __func__);
 
 	status = sdio_set_block_size(dev->pfunction, length);
 	dev->pfunction->max_blksize = 256;
 
-	rsi_dbg(INFO_ZONE,
+	redpine_dbg(INFO_ZONE,
 		"%s: Operational blk length is %d\n", __func__, length);
 	return status;
 }
@@ -582,7 +582,7 @@ static int rsi_setupcard(struct rsi_hw *adapter)
 	adapter->tx_blk_size = dev->tx_blk_size;
 	status = rsi_setblocklength(adapter, dev->tx_blk_size);
 	if (status)
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Unable to set block length\n", __func__);
 	return status;
 }
@@ -669,7 +669,7 @@ void rsi_sdio_ack_intr(struct rsi_hw *adapter, u8 int_bit)
 					  SD_REQUEST_MASTER),
 					 &int_bit);
 	if (status)
-		rsi_dbg(ERR_ZONE, "%s: unable to send ack\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: unable to send ack\n", __func__);
 }
 
 /**
@@ -700,7 +700,7 @@ int rsi_sdio_read_register_multiple(struct rsi_hw *adapter,
 		sdio_release_host(dev->pfunction);
 
 	if (status != 0)
-		rsi_dbg(ERR_ZONE, "%s: Synch Cmd53 read failed\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Synch Cmd53 read failed\n", __func__);
 	return status;
 }
 
@@ -724,14 +724,14 @@ int rsi_sdio_write_register_multiple(struct rsi_hw *adapter,
 	int status;
 
 	if (dev->write_fail > 1) {
-		rsi_dbg(ERR_ZONE, "%s: Stopping card writes\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Stopping card writes\n", __func__);
 		return 0;
 	} else if (dev->write_fail == 1) {
 		/**
 		 * Assuming it is a CRC failure, we want to allow another
 		 *  card write
 		 */
-		rsi_dbg(ERR_ZONE, "%s: Continue card writes\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Continue card writes\n", __func__);
 		dev->write_fail++;
 	}
 
@@ -744,7 +744,7 @@ int rsi_sdio_write_register_multiple(struct rsi_hw *adapter,
 		sdio_release_host(dev->pfunction);
 
 	if (status) {
-		rsi_dbg(ERR_ZONE, "%s: Synch Cmd53 write failed %d\n",
+		redpine_dbg(ERR_ZONE, "%s: Synch Cmd53 write failed %d\n",
 			__func__, status);
 		dev->write_fail = 2;
 	} else {
@@ -772,12 +772,12 @@ int rsi_sdio_load_data_master_write(struct rsi_hw *adapter,
 	num_blocks = instructions_sz / block_size;
 	msb_address = base_address >> 16;
 
-	rsi_dbg(INFO_ZONE, "ins_size: %d\n", instructions_sz);
-	rsi_dbg(INFO_ZONE, "num_blocks: %d\n", num_blocks);
+	redpine_dbg(INFO_ZONE, "ins_size: %d\n", instructions_sz);
+	redpine_dbg(INFO_ZONE, "num_blocks: %d\n", num_blocks);
 
 	/* Loading DM ms word in the sdio slave */
 	if (rsi_sdio_master_access_msword(adapter, msb_address)) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to set ms word reg\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Unable to set ms word reg\n", __func__);
 		goto err;
 	}
 
@@ -788,10 +788,10 @@ int rsi_sdio_load_data_master_write(struct rsi_hw *adapter,
 		if (rsi_sdio_write_register_multiple(adapter,
 					lsb_address | SD_REQUEST_MASTER,
 					temp_buf, block_size)) {
-			rsi_dbg(ERR_ZONE, "%s: failed to write\n", __func__);
+			redpine_dbg(ERR_ZONE, "%s: failed to write\n", __func__);
 			goto err;
 		}
-		rsi_dbg(INFO_ZONE, "%s: loading block: %d\n", __func__, ii);
+		redpine_dbg(INFO_ZONE, "%s: loading block: %d\n", __func__, ii);
 		base_address += block_size;
 
 		if ((base_address >> 16) != msb_address) {
@@ -800,7 +800,7 @@ int rsi_sdio_load_data_master_write(struct rsi_hw *adapter,
 			/* Loading DM ms word in the sdio slave */
 			if (rsi_sdio_master_access_msword(adapter,
 							  msb_address)) {
-				rsi_dbg(ERR_ZONE,
+				redpine_dbg(ERR_ZONE,
 					"%s: Unable to set ms word reg\n",
 					__func__);
 				goto err;
@@ -820,7 +820,7 @@ int rsi_sdio_load_data_master_write(struct rsi_hw *adapter,
 						instructions_sz % block_size)) {
 			goto err;
 		}
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"Written Last Block in Address 0x%x Successfully\n",
 			offset | SD_REQUEST_MASTER);
 	}
@@ -846,7 +846,7 @@ int rsi_sdio_master_reg_read(struct rsi_hw *adapter, u32 addr,
 
 	ms_addr = (addr >> 16);
 	if (rsi_sdio_master_access_msword(adapter, ms_addr)) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Unable to set ms word to common reg\n",
 			__func__);
 		kfree(data);
@@ -865,7 +865,7 @@ int rsi_sdio_master_reg_read(struct rsi_hw *adapter, u32 addr,
 	if (rsi_sdio_read_register_multiple(adapter,
 					    (addr_on_bus | SD_REQUEST_MASTER),
 					    (u8 *)data, 4)) {
-		rsi_dbg(ERR_ZONE, "%s: AHB register read failed\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: AHB register read failed\n", __func__);
 		kfree(data);
 		return -EIO;
 	}
@@ -920,7 +920,7 @@ int rsi_sdio_master_reg_write(struct rsi_hw *adapter,
 	size = 4;
 
 	if (rsi_sdio_master_access_msword(adapter, (addr >> 16))) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Unable to set ms word to common reg\n",
 			__func__);
 		kfree(data_aligned);
@@ -932,7 +932,7 @@ int rsi_sdio_master_reg_write(struct rsi_hw *adapter,
 	if (rsi_sdio_write_register_multiple(adapter,
 					     (addr | SD_REQUEST_MASTER),
 					     (u8 *)data_aligned, size)) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Unable to do AHB reg write\n", __func__);
 		kfree(data_aligned);
 		return -EIO;
@@ -999,9 +999,9 @@ int rsi_sdio_host_intf_write_pkt(struct rsi_hw *adapter,
 	} while (1); 
 #endif
 	if (status < 0)
-		rsi_dbg(ERR_ZONE, "%s: Unable to write onto the card: %d\n",
+		redpine_dbg(ERR_ZONE, "%s: Unable to write onto the card: %d\n",
 			__func__, status);
-	rsi_dbg(DATA_TX_ZONE, "%s: Successfully written onto card\n", __func__);
+	redpine_dbg(DATA_TX_ZONE, "%s: Successfully written onto card\n", __func__);
 
 	return status;
 }
@@ -1022,7 +1022,7 @@ int rsi_sdio_host_intf_read_pkt(struct rsi_hw *adapter,
 	int status = -EINVAL;
 
 	if (!length) {
-		rsi_dbg(ERR_ZONE, "%s: Pkt size is zero\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Pkt size is zero\n", __func__);
 		return status;
 	}
 
@@ -1032,7 +1032,7 @@ int rsi_sdio_host_intf_read_pkt(struct rsi_hw *adapter,
 						 length);
 
 	if (status)
-		rsi_dbg(ERR_ZONE, "%s: Failed to read frame: %d\n", __func__,
+		redpine_dbg(ERR_ZONE, "%s: Failed to read frame: %d\n", __func__,
 			status);
 	return status;
 }
@@ -1046,12 +1046,12 @@ static int rsi_sdio_ta_reset_ops(struct rsi_hw *adapter)
 		return -ENOMEM;
 
 	if (rsi_sdio_master_access_msword(adapter, 0x2200) < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"Unable to set ms word to common reg\n");
 		goto err;
 	}
 
-	rsi_dbg(INIT_ZONE, "%s: Bringing TA Out of Reset\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Bringing TA Out of Reset\n", __func__);
 	put_unaligned_le32(TA_HOLD_THREAD_VALUE, data);
 
 	/* Bringing TA out of reset */
@@ -1059,7 +1059,7 @@ static int rsi_sdio_ta_reset_ops(struct rsi_hw *adapter)
 					     TA_HOLD_THREAD_REG |
 					     SD_REQUEST_MASTER,
 					     data, 4) < 0) {
-		rsi_dbg(ERR_ZONE, "Unable to hold TA threads\n");
+		redpine_dbg(ERR_ZONE, "Unable to hold TA threads\n");
 		goto err;
 	}
 	/* Bringing TA out of reset */
@@ -1068,7 +1068,7 @@ static int rsi_sdio_ta_reset_ops(struct rsi_hw *adapter)
 					     TA_SOFT_RESET_REG |
 					     SD_REQUEST_MASTER,
 					     data, 4) < 0) {
-		rsi_dbg(ERR_ZONE, "Unable to get TA out of reset state\n");
+		redpine_dbg(ERR_ZONE, "Unable to get TA out of reset state\n");
 		goto err;
 	}
 
@@ -1083,7 +1083,7 @@ static int rsi_sdio_ta_reset_ops(struct rsi_hw *adapter)
 					     TA_TH0_PC_REG |
 					     SD_REQUEST_MASTER,
 					     data, 4) < 0) {
-		rsi_dbg(ERR_ZONE, "Unable to Reset TA PC value\n");
+		redpine_dbg(ERR_ZONE, "Unable to Reset TA PC value\n");
 		goto err;
 	}
 	put_unaligned_le32(TA_RELEASE_THREAD_VALUE, data);
@@ -1092,15 +1092,15 @@ static int rsi_sdio_ta_reset_ops(struct rsi_hw *adapter)
 					     TA_RELEASE_THREAD_REG |
 					     SD_REQUEST_MASTER,
 					     data, 4) < 0) {
-		rsi_dbg(ERR_ZONE, "Unable to release TA threads\n");
+		redpine_dbg(ERR_ZONE, "Unable to release TA threads\n");
 		goto err;
 	}
 	if (rsi_sdio_master_access_msword(adapter, 0x4105) < 0) {
-		rsi_dbg(ERR_ZONE, "Unable to set ms word to common reg\n");
+		redpine_dbg(ERR_ZONE, "Unable to set ms word to common reg\n");
 		goto err;
 	}
 
-	rsi_dbg(INIT_ZONE, "Setting ms word to common reg 0x41050000\n");
+	redpine_dbg(INIT_ZONE, "Setting ms word to common reg 0x41050000\n");
 	kfree(data);
 	return 0;
 
@@ -1130,7 +1130,7 @@ int rsi_sdio_reinit_device(struct rsi_hw *adapter)
 	rsi_setupcard(adapter);
 	rsi_init_sdio_slave_regs(adapter);
 	sdio_claim_irq(pfunction, rsi_handle_interrupt);
-	rsi_hal_device_init(adapter);
+	redpine_hal_device_init(adapter);
 
 	sdio_release_host(pfunction);
 
@@ -1164,12 +1164,12 @@ static int rsi_init_sdio_interface(struct rsi_hw *adapter,
 	pfunction->enable_timeout = 100;
 	status = sdio_enable_func(pfunction);
 	if (status) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to enable interface\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed to enable interface\n", __func__);
 		sdio_release_host(pfunction);
 		return status;
 	}
 
-	rsi_dbg(INIT_ZONE, "%s: Enabled the interface\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Enabled the interface\n", __func__);
 
 	rsi_91x_dev->pfunction = pfunction;
 	adapter->device = &pfunction->dev;
@@ -1178,15 +1178,15 @@ static int rsi_init_sdio_interface(struct rsi_hw *adapter,
 
 	status = rsi_setupcard(adapter);
 	if (status) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to setup card\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed to setup card\n", __func__);
 		goto fail;
 	}
 
-	rsi_dbg(INIT_ZONE, "%s: Setup card successfully\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Setup card successfully\n", __func__);
 
 	status = rsi_init_sdio_slave_regs(adapter);
 	if (status) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to init slave regs\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed to init slave regs\n", __func__);
 		goto fail;
 	}
 	sdio_release_host(pfunction);
@@ -1236,11 +1236,11 @@ static int rsi_probe(struct sdio_func *pfunction,
 	struct rsi_common *common;
 	int status;
 
-	rsi_dbg(INIT_ZONE, "%s: Init function called\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Init function called\n", __func__);
 
-	adapter = rsi_91x_init();
+	adapter = redpine_91x_init();
 	if (!adapter) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to init os intf ops\n",
+		redpine_dbg(ERR_ZONE, "%s: Failed to init os intf ops\n",
 			__func__);
 		return 1;
 	}
@@ -1250,14 +1250,14 @@ static int rsi_probe(struct sdio_func *pfunction,
 	adapter->host_intf_ops = &sdio_host_intf_ops;
 #ifdef CONFIG_REDPINE_MULTI_MODE
 	if (rsi_opermode_instances(adapter)) {
-		rsi_dbg(ERR_ZONE, "%s: Invalid operating modes\n",
+		redpine_dbg(ERR_ZONE, "%s: Invalid operating modes\n",
 			__func__);
 		goto fail_free_adapter;
 	}
 #else
 	adapter->priv->oper_mode = common->dev_oper_mode;
 	if (rsi_validate_oper_mode(common->dev_oper_mode)) {
-		rsi_dbg(ERR_ZONE, "%s: Invalid operating mode %d\n",
+		redpine_dbg(ERR_ZONE, "%s: Invalid operating mode %d\n",
 			__func__, common->dev_oper_mode);
 		goto fail_free_adapter;
 	}
@@ -1265,21 +1265,21 @@ static int rsi_probe(struct sdio_func *pfunction,
 #endif
 
 	if (rsi_init_sdio_interface(adapter, pfunction)) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to init sdio interface\n",
+		redpine_dbg(ERR_ZONE, "%s: Failed to init sdio interface\n",
 			__func__);
 		goto fail_free_adapter;
 	}
 
-	rsi_dbg(INFO_ZONE, "Vendor Id:%x, Device Id:%x\n",
+	redpine_dbg(INFO_ZONE, "Vendor Id:%x, Device Id:%x\n",
 		pfunction->vendor, pfunction->device);
 	if ((pfunction->device == 0X9330)) {
-		rsi_dbg(ERR_ZONE, "%s: ***** 9113 Module *****\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: ***** 9113 Module *****\n", __func__);
 		adapter->device_model = RSI_DEV_9113;
 	} else  if ((pfunction->device == 0X9116)) {
-		rsi_dbg(ERR_ZONE, "%s: ***** 9116 Module *****\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: ***** 9116 Module *****\n", __func__);
 		adapter->device_model = RSI_DEV_9116;
 	} else {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"##### Invalid RSI device id 0x%x\n",
 			pfunction->device);
 		goto fail_free_adapter;
@@ -1291,7 +1291,7 @@ static int rsi_probe(struct sdio_func *pfunction,
 	status = rsi_create_kthread(adapter->priv, &sdev->rx_thread,
 				    rsi_sdio_rx_thread, "SDIO-RX-Thread");
 	if (status) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to init rx thrd\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Unable to init rx thrd\n", __func__);
 		goto fail_kill_thread;
 	}
 	skb_queue_head_init(&sdev->rx_q.head);
@@ -1302,24 +1302,24 @@ static int rsi_probe(struct sdio_func *pfunction,
 #endif
 	sdio_claim_host(pfunction);
 	if (sdio_claim_irq(pfunction, rsi_handle_interrupt)) {
-		rsi_dbg(ERR_ZONE, "%s: Failed to request IRQ\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Failed to request IRQ\n", __func__);
 		sdio_release_host(pfunction);
 		goto fail_claim_irq;
 	}
 	sdio_release_host(pfunction);
-	rsi_dbg(INIT_ZONE, "%s: Registered Interrupt handler\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Registered Interrupt handler\n", __func__);
 
-	if (rsi_hal_device_init(adapter)) {
-		rsi_dbg(ERR_ZONE, "%s: Failed in device init\n", __func__);
+	if (redpine_hal_device_init(adapter)) {
+		redpine_dbg(ERR_ZONE, "%s: Failed in device init\n", __func__);
 		goto fail_dev_init;
 	}
-	rsi_dbg(INFO_ZONE, "===> RSI Device Init Done <===\n");
+	redpine_dbg(INFO_ZONE, "===> RSI Device Init Done <===\n");
 
 	if (rsi_sdio_master_access_msword(adapter, MISC_CFG_BASE_ADDR)) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to set ms word reg\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Unable to set ms word reg\n", __func__);
 		goto fail_dev_init;
 	}
-	rsi_dbg(INIT_ZONE, "%s: Setting ms word to 0x41050000\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Setting ms word to 0x41050000\n", __func__);
 
 	adapter->priv->hibernate_resume = false;
 
@@ -1339,8 +1339,8 @@ fail_free_adapter:
 #ifdef CONFIG_SDIO_INTR_POLL
 	rsi_kill_thread(&adapter->priv->sdio_intr_poll_thread);
 #endif
-	rsi_91x_deinit(adapter);
-	rsi_dbg(ERR_ZONE, "%s: Failed in probe...Exiting\n", __func__);
+	redpine_91x_deinit(adapter);
+	redpine_dbg(ERR_ZONE, "%s: Failed in probe...Exiting\n", __func__);
 	return 1;
 }
 
@@ -1369,7 +1369,7 @@ static void rsi_disconnect(struct sdio_func *pfunction)
 	sdio_release_irq(pfunction);
 	sdio_release_host(pfunction);
 
-	rsi_mac80211_detach(adapter);
+	redpine_mac80211_detach(adapter);
 
 #if defined(CONFIG_REDPINE_BT_ALONE) || defined(CONFIG_REDPINE_COEX_MODE)
 	if ((adapter->priv->coex_mode == 2) ||
@@ -1387,9 +1387,9 @@ static void rsi_disconnect(struct sdio_func *pfunction)
 	sdio_disable_func(pfunction);
 	sdio_release_host(pfunction);
 	dev->write_fail = 2;
-	rsi_91x_deinit(adapter);
+	redpine_91x_deinit(adapter);
 
-	rsi_dbg(ERR_ZONE, "##### RSI SDIO device disconnected #####\n");
+	redpine_dbg(ERR_ZONE, "##### RSI SDIO device disconnected #####\n");
 }
 
 #ifdef CONFIG_PM
@@ -1403,7 +1403,7 @@ static int rsi_set_sdio_pm_caps(struct rsi_hw *adapter)
 	/* Keep Power to the MMC while suspend */
 	ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
 	if (ret) {
-		rsi_dbg(ERR_ZONE, "set sdio keep pwr flag failed: %d\n", ret);
+		redpine_dbg(ERR_ZONE, "set sdio keep pwr flag failed: %d\n", ret);
 		return ret;
 	}
 
@@ -1416,32 +1416,32 @@ static int rsi_sdio_disable_interrupts(struct sdio_func *pfunction)
 	u8 isr_status = 0, data = 0;
 	int ret;
 
-	rsi_dbg(ERR_ZONE, "Waiting for interrupts to be cleared..");
+	redpine_dbg(ERR_ZONE, "Waiting for interrupts to be cleared..");
 	do {
 		rsi_sdio_read_register(adapter,
 				       RSI_FN1_INT_REGISTER,
 				       &isr_status);
-		rsi_dbg(ERR_ZONE, ".");
+		redpine_dbg(ERR_ZONE, ".");
 	} while (isr_status); 
-	rsi_dbg(ERR_ZONE, "\nInterrupts cleared");
+	redpine_dbg(ERR_ZONE, "\nInterrupts cleared");
 
 	sdio_claim_host(pfunction);
 	ret = rsi_cmd52readbyte(pfunction->card, 0x04, &data, false);
 	if (ret < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to read INTR_EN register\n",
 			__func__);
 		sdio_release_host(pfunction);
 		return ret;
 	}
-	rsi_dbg(INFO_ZONE, "INTR_EN reg content = %x\n", data);
+	redpine_dbg(INFO_ZONE, "INTR_EN reg content = %x\n", data);
 
 	/* And bit0 and b1 */
 	data &= 0xfc;
 
 	ret = rsi_cmd52writebyte(pfunction->card, 0x04, data, false);
 	if (ret < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to Write to INTR_EN register\n",
 			__func__);
 		sdio_release_host(pfunction);
@@ -1449,13 +1449,13 @@ static int rsi_sdio_disable_interrupts(struct sdio_func *pfunction)
 	}
 	ret = rsi_cmd52readbyte(pfunction->card, 0x04, &data, false);
 	if (ret < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to read INTR_EN register\n",
 			__func__);
 		sdio_release_host(pfunction);
 		return ret;
 	}
-	rsi_dbg(INFO_ZONE, "INTR_EN reg content. = %x\n", data);
+	redpine_dbg(INFO_ZONE, "INTR_EN reg content. = %x\n", data);
 
 	sdio_release_host(pfunction);
 
@@ -1470,19 +1470,19 @@ static int rsi_sdio_enable_interrupts(struct sdio_func *pfunction)
 	sdio_claim_host(pfunction);
 	ret = rsi_cmd52readbyte(pfunction->card, 0x04, &data, false);
 	if (ret < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to read INTR_EN register\n", __func__);
 		sdio_release_host(pfunction);
 		return ret;
 	}
-	rsi_dbg(INFO_ZONE, "INTR_EN reg content1 = %x\n", data);
+	redpine_dbg(INFO_ZONE, "INTR_EN reg content1 = %x\n", data);
 
 	/* Enable b1 and b0 */
 	data |= 0x03;
 
 	ret = rsi_cmd52writebyte(pfunction->card, 0x04, data, false);
 	if (ret < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to Write to INTR_EN register\n",
 			__func__);
 		sdio_release_host(pfunction);
@@ -1491,12 +1491,12 @@ static int rsi_sdio_enable_interrupts(struct sdio_func *pfunction)
 	
         ret = rsi_cmd52readbyte(pfunction->card, 0x04, &data, false);
 	if (ret < 0) {
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"%s: Failed to read INTR_EN register\n", __func__);
 		sdio_release_host(pfunction);
 		return ret;
 	}
-	rsi_dbg(INFO_ZONE, "INTR_EN reg content1.. = %x\n", data);
+	redpine_dbg(INFO_ZONE, "INTR_EN reg content1.. = %x\n", data);
 	sdio_release_host(pfunction);
 
 	return ret;
@@ -1511,10 +1511,10 @@ static int rsi_suspend(struct device *dev)
 	struct rsi_91x_sdiodev *sdev =
 		(struct rsi_91x_sdiodev *)adapter->rsi_dev;
 
-	rsi_dbg(ERR_ZONE, "SDIO Bus suspend ===>\n");
+	redpine_dbg(ERR_ZONE, "SDIO Bus suspend ===>\n");
 
 	if (!adapter) {
-		rsi_dbg(ERR_ZONE, "Device is not ready\n");
+		redpine_dbg(ERR_ZONE, "Device is not ready\n");
 		return -ENODEV;
 	}
 
@@ -1522,7 +1522,7 @@ static int rsi_suspend(struct device *dev)
 #ifdef CONFIG_REDPINE_WOW
 	if ((common->wow_flags & RSI_WOW_ENABLED) &&
 	    (common->wow_flags & RSI_WOW_NO_CONNECTION))
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"##### Device can not wake up through WLAN\n");
 
 #endif
@@ -1530,15 +1530,15 @@ static int rsi_suspend(struct device *dev)
 	ret = rsi_sdio_disable_interrupts(pfunction);
 
 	if (sdev->write_fail)
-		rsi_dbg(INFO_ZONE, "###### Device is not ready #######\n");
+		redpine_dbg(INFO_ZONE, "###### Device is not ready #######\n");
 
 	ret = rsi_set_sdio_pm_caps(adapter);
 	if (ret)
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"Setting power management caps failed\n");
 
 	common->fsm_state = FSM_CARD_NOT_READY;
-	rsi_dbg(INFO_ZONE, "***** RSI module suspended ******\n");
+	redpine_dbg(INFO_ZONE, "***** RSI module suspended ******\n");
 
 	return 0;
 }
@@ -1550,14 +1550,14 @@ static int rsi_resume(struct device *dev)
 	struct rsi_hw *adapter = sdio_get_drvdata(pfunction);
 	struct rsi_common *common = adapter->priv;
         
-	rsi_dbg(INFO_ZONE, "SDIO Bus resume =====>\n");
+	redpine_dbg(INFO_ZONE, "SDIO Bus resume =====>\n");
 
 	common->suspend_in_prog = false;
 	common->fsm_state = FSM_MAC_INIT_DONE;
 
 	ret = rsi_sdio_enable_interrupts(pfunction);
 
-	rsi_dbg(INFO_ZONE, "***** RSI module resumed *****\n");
+	redpine_dbg(INFO_ZONE, "***** RSI module resumed *****\n");
 
 	return 0;
 }
@@ -1570,10 +1570,10 @@ static int rsi_freeze(struct device *dev)
 	struct rsi_common *common;
 	struct rsi_91x_sdiodev *sdev;
 
-	rsi_dbg(INFO_ZONE, "SDIO Bus freeze ===>\n");
+	redpine_dbg(INFO_ZONE, "SDIO Bus freeze ===>\n");
 
 	if (!adapter) {
-		rsi_dbg(ERR_ZONE, "Device is not ready\n");
+		redpine_dbg(ERR_ZONE, "Device is not ready\n");
 		return -ENODEV;
 	}
 	common = adapter->priv;
@@ -1583,7 +1583,7 @@ static int rsi_freeze(struct device *dev)
 #ifdef CONFIG_REDPINE_WOW
 	if ((common->wow_flags & RSI_WOW_ENABLED) &&
 	    (common->wow_flags & RSI_WOW_NO_CONNECTION))
-		rsi_dbg(ERR_ZONE,
+		redpine_dbg(ERR_ZONE,
 			"##### Device can not wake up through WLAN\n");
 #endif
 #if defined(CONFIG_REDPINE_BT_ALONE) || defined(CONFIG_REDPINE_COEX_MODE)
@@ -1593,13 +1593,13 @@ static int rsi_freeze(struct device *dev)
 	ret = rsi_sdio_disable_interrupts(pfunction);
 
 	if (sdev->write_fail)
-		rsi_dbg(INFO_ZONE, "###### Device is not ready #######\n");
+		redpine_dbg(INFO_ZONE, "###### Device is not ready #######\n");
 	
 	ret = rsi_set_sdio_pm_caps(adapter);
 	if (ret)
-		rsi_dbg(INFO_ZONE, "Setting power management caps failed\n");
+		redpine_dbg(INFO_ZONE, "Setting power management caps failed\n");
 	
-	rsi_dbg(INFO_ZONE, "***** RSI module freezed *****\n");
+	redpine_dbg(INFO_ZONE, "***** RSI module freezed *****\n");
 
 	return 0;
 }
@@ -1609,7 +1609,7 @@ static int rsi_thaw(struct device *dev)
 	struct sdio_func *pfunction = dev_to_sdio_func(dev);
 	struct rsi_hw *adapter = sdio_get_drvdata(pfunction);
         
-	rsi_dbg(ERR_ZONE, "SDIO Bus thaw =====>\n");
+	redpine_dbg(ERR_ZONE, "SDIO Bus thaw =====>\n");
 
 	adapter->priv->hibernate_resume = true;
 	adapter->priv->fsm_state = FSM_CARD_NOT_READY;
@@ -1618,7 +1618,7 @@ static int rsi_thaw(struct device *dev)
 
 	rsi_sdio_enable_interrupts(pfunction);
 
-	rsi_dbg(INFO_ZONE, "***** RSI module thaw done *****\n");
+	redpine_dbg(INFO_ZONE, "***** RSI module thaw done *****\n");
 
 	return 0;
 }
@@ -1639,13 +1639,13 @@ static void rsi_shutdown(struct device *dev)
 	struct cfg80211_wowlan *wowlan = hw->wiphy->wowlan_config;
 #endif
 
-	rsi_dbg(ERR_ZONE, "SDIO Bus shutdown =====>\n");
+	redpine_dbg(ERR_ZONE, "SDIO Bus shutdown =====>\n");
 
 	adapter->priv->suspend_in_prog = true;
 
 #ifdef CONFIG_REDPINE_WOW
-	if (rsi_config_wowlan(adapter, wowlan))
-		rsi_dbg(ERR_ZONE, "Failed to configure WoWLAN\n");
+	if (redpine_config_wowlan(adapter, wowlan))
+		redpine_dbg(ERR_ZONE, "Failed to configure WoWLAN\n");
 #endif
 
 #if defined(CONFIG_REDPINE_BT_ALONE) || defined(CONFIG_REDPINE_COEX_MODE)
@@ -1655,12 +1655,12 @@ static void rsi_shutdown(struct device *dev)
 	rsi_sdio_disable_interrupts(sdev->pfunction);
 
 	if (sdev->write_fail)
-		rsi_dbg(INFO_ZONE, "###### Device is not ready #######\n");
+		redpine_dbg(INFO_ZONE, "###### Device is not ready #######\n");
 	
 	if (rsi_set_sdio_pm_caps(adapter))
-		rsi_dbg(INFO_ZONE, "Setting power management caps failed\n");
+		redpine_dbg(INFO_ZONE, "Setting power management caps failed\n");
 
-	rsi_dbg(INFO_ZONE, "***** RSI module shut down *****\n");
+	redpine_dbg(INFO_ZONE, "***** RSI module shut down *****\n");
 }
 
 static int rsi_restore(struct device *dev)
@@ -1668,7 +1668,7 @@ static int rsi_restore(struct device *dev)
 	struct sdio_func *pfunction = dev_to_sdio_func(dev);
 	struct rsi_hw *adapter = sdio_get_drvdata(pfunction);
 
-	rsi_dbg(INFO_ZONE, "SDIO Bus restore ======>\n");
+	redpine_dbg(INFO_ZONE, "SDIO Bus restore ======>\n");
 
 	adapter->priv->suspend_in_prog = false;
 	adapter->priv->hibernate_resume = true;
@@ -1693,7 +1693,7 @@ static int rsi_restore(struct device *dev)
 #endif
 	adapter->priv->iface_down = false;
 
-	rsi_dbg(INFO_ZONE, "RSI module restored\n");
+	redpine_dbg(INFO_ZONE, "RSI module restored\n");
 
 	return 0;
 }
@@ -1738,7 +1738,7 @@ static int rsi_module_init(void)
 	int ret;
 
 	ret = sdio_register_driver(&rsi_driver);
-	rsi_dbg(INIT_ZONE, "%s: Registering driver\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Registering driver\n", __func__);
 	return ret;
 }
 
@@ -1751,7 +1751,7 @@ static int rsi_module_init(void)
 static void rsi_module_exit(void)
 {
 	sdio_unregister_driver(&rsi_driver);
-	rsi_dbg(INFO_ZONE, "%s: Unregistering driver\n", __func__);
+	redpine_dbg(INFO_ZONE, "%s: Unregistering driver\n", __func__);
 }
 
 module_init(rsi_module_init);

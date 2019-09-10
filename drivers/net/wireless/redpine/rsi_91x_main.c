@@ -195,13 +195,13 @@ static struct rsi_proto_ops g_proto_ops = {
 #endif
 
 /**
- * rsi_dbg() - This function outputs informational messages.
+ * redpine_dbg() - This function outputs informational messages.
  * @zone: Zone of interest for output message.
  * @fmt: printf-style format for output message.
  *
  * Return: none
  */
-void rsi_dbg(u32 zone, const char *fmt, ...)
+void redpine_dbg(u32 zone, const char *fmt, ...)
 {
 	struct va_format vaf;
 	va_list args;
@@ -215,7 +215,7 @@ void rsi_dbg(u32 zone, const char *fmt, ...)
 		pr_info("%pV", &vaf);
 	va_end(args);
 }
-EXPORT_SYMBOL_GPL(rsi_dbg);
+EXPORT_SYMBOL_GPL(redpine_dbg);
 
 /**
  * rsi_hex_dump() - This function prints the packet (/msg) in hex bytes.
@@ -280,17 +280,17 @@ void rsi_print_version(struct rsi_common *common)
 	memcpy(common->driver_ver, DRV_VER, ARRAY_SIZE(DRV_VER));
 	common->driver_ver[ARRAY_SIZE(DRV_VER)] = '\0';
 
-	rsi_dbg(ERR_ZONE, "================================================\n");
-	rsi_dbg(ERR_ZONE, "================ RSI Version Info ==============\n");
-	rsi_dbg(ERR_ZONE, "================================================\n");
-	rsi_dbg(ERR_ZONE, "FW Version\t: %d.%d.%d\n",
+	redpine_dbg(ERR_ZONE, "================================================\n");
+	redpine_dbg(ERR_ZONE, "================ RSI Version Info ==============\n");
+	redpine_dbg(ERR_ZONE, "================================================\n");
+	redpine_dbg(ERR_ZONE, "FW Version\t: %d.%d.%d\n",
 		common->lmac_ver.major, common->lmac_ver.minor,
 		common->lmac_ver.release_num);
-	rsi_dbg(ERR_ZONE, "Driver Version\t: %s", common->driver_ver);
-	rsi_dbg(ERR_ZONE, "Operating mode\t: %d [%s]",
+	redpine_dbg(ERR_ZONE, "Driver Version\t: %s", common->driver_ver);
+	redpine_dbg(ERR_ZONE, "Operating mode\t: %d [%s]",
 		common->oper_mode, opmode_str(common->oper_mode));
-	rsi_dbg(ERR_ZONE, "Firmware file\t: %s", common->priv->fw_file_name);
-	rsi_dbg(ERR_ZONE, "================================================\n");
+	redpine_dbg(ERR_ZONE, "Firmware file\t: %s", common->priv->fw_file_name);
+	redpine_dbg(ERR_ZONE, "================================================\n");
 }
 
 /**
@@ -316,7 +316,7 @@ static struct sk_buff *rsi_prepare_skb(struct rsi_common *common,
 		return NULL;
 
 	if (pkt_len > (RSI_RCV_BUFFER_LEN * 4)) {
-		rsi_dbg(ERR_ZONE, "%s: Pkt size > max rx buf size %d\n",
+		redpine_dbg(ERR_ZONE, "%s: Pkt size > max rx buf size %d\n",
 			__func__, pkt_len);
 		pkt_len = RSI_RCV_BUFFER_LEN * 4;
 	}
@@ -340,13 +340,13 @@ static struct sk_buff *rsi_prepare_skb(struct rsi_common *common,
 }
 
 /**
- * rsi_read_pkt() - This function reads frames from the card.
+ * redpine_read_pkt() - This function reads frames from the card.
  * @common: Pointer to the driver private structure.
  * @rcv_pkt_len: Received pkt length. In case of USB it is 0.
  *
  * Return: 0 on success, -1 on failure.
  */
-int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
+int redpine_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
 {
 	u8 *frame_desc = NULL, extended_desc = 0;
 	u32 index = 0, length = 0, queueno = 0;
@@ -367,7 +367,7 @@ int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
 
 		if (queueno != RSI_ZIGB_Q) {
 			if ((actual_length < (4 + FRAME_DESC_SZ)) || (offset < 4)) {
-				rsi_dbg(ERR_ZONE,
+				redpine_dbg(ERR_ZONE,
 					"%s: actual_length (%d) is less than 20 or"
 					" offset(%d) is less than 4\n",
 					__func__, actual_length, offset);
@@ -430,12 +430,12 @@ int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
 			zb_pkt_type = frame_desc[offset + ZB_RX_PKT_TYPE_OFST];
 			if ((zb_pkt_type == ZB_CARD_READY_IND) &&
 			    (common->zb_fsm_state == ZB_DEVICE_NOT_READY)) {
-				rsi_dbg(INFO_ZONE, "ZIGB Card ready recvd\n");
+				redpine_dbg(INFO_ZONE, "ZIGB Card ready recvd\n");
 				common->zb_fsm_state = ZB_DEVICE_READY;
 				if (zb_ops && zb_ops->attach) {
 					if (zb_ops->attach(common,
 							   &g_proto_ops))
-						rsi_dbg(ERR_ZONE,
+						redpine_dbg(ERR_ZONE,
 							"Failed to attach ZIGB module\n");
 				}
 			} else {
@@ -448,7 +448,7 @@ int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
 #endif
 
 		default:
-			rsi_dbg(ERR_ZONE, "%s: pkt from invalid queue: %d\n",
+			redpine_dbg(ERR_ZONE, "%s: pkt from invalid queue: %d\n",
 				__func__,   queueno);
 			goto fail;
 		}
@@ -461,7 +461,7 @@ int rsi_read_pkt(struct rsi_common *common, u8 *rx_pkt, s32 rcv_pkt_len)
 fail:
 	return -EINVAL;
 }
-EXPORT_SYMBOL_GPL(rsi_read_pkt);
+EXPORT_SYMBOL_GPL(redpine_read_pkt);
 
 /**
  * rsi_tx_scheduler_thread() - This function is a kernel thread to send the
@@ -513,7 +513,7 @@ void init_sdio_intr_status_poll_thread(struct rsi_common *common)
 			       &common->sdio_intr_poll_thread,
 			       rsi_sdio_intr_poll_scheduler_thread,
 			       "Sdio Intr poll-Thread")) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to init sdio intr poll thrd\n",
+		redpine_dbg(ERR_ZONE, "%s: Unable to init sdio intr poll thrd\n",
 				__func__);
 	}
 }
@@ -544,12 +544,12 @@ void *rsi_get_zb_context(void *priv)
 #endif
 
 /**
- * rsi_91x_init() - This function initializes os interface operations.
+ * redpine_91x_init() - This function initializes os interface operations.
  * @void: Void.
  *
  * Return: Pointer to the adapter structure on success, NULL on failure.
  */
-struct rsi_hw *rsi_91x_init(void)
+struct rsi_hw *redpine_91x_init(void)
 {
 	struct rsi_hw *adapter = NULL;
 	struct rsi_common *common = NULL;
@@ -561,7 +561,7 @@ struct rsi_hw *rsi_91x_init(void)
 
 	adapter->priv = kzalloc(sizeof(*common), GFP_KERNEL);
 	if (!adapter->priv) {
-		rsi_dbg(ERR_ZONE, "%s: Failed in allocation of priv\n",
+		redpine_dbg(ERR_ZONE, "%s: Failed in allocation of priv\n",
 			__func__);
 		kfree(adapter);
 		return NULL;
@@ -620,13 +620,13 @@ struct rsi_hw *rsi_91x_init(void)
 			       &common->tx_thread,
 			       rsi_tx_scheduler_thread,
 			       "Tx-Thread")) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to init tx thrd\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Unable to init tx thrd\n", __func__);
 		goto err;
 	}
 
 #ifdef CONFIG_REDPINE_COEX_MODE
 	if (rsi_coex_init(common)) {
-		rsi_dbg(ERR_ZONE, "Failed to init COEX module\n");
+		redpine_dbg(ERR_ZONE, "Failed to init COEX module\n");
 		goto err;
 	}
 #endif
@@ -657,20 +657,20 @@ err:
 	kfree(adapter);
 	return NULL;
 }
-EXPORT_SYMBOL_GPL(rsi_91x_init);
+EXPORT_SYMBOL_GPL(redpine_91x_init);
 
 /**
- * rsi_91x_deinit() - This function de-intializes os intf operations.
+ * redpine_91x_deinit() - This function de-intializes os intf operations.
  * @adapter: Pointer to the adapter structure.
  *
  * Return: None.
  */
-void rsi_91x_deinit(struct rsi_hw *adapter)
+void redpine_91x_deinit(struct rsi_hw *adapter)
 {
 	struct rsi_common *common = adapter->priv;
 	u8 ii;
 
-	rsi_dbg(INFO_ZONE, "%s: Deinit core module...\n", __func__);
+	redpine_dbg(INFO_ZONE, "%s: Deinit core module...\n", __func__);
 
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
 	flush_workqueue(common->scan_workqueue);
@@ -687,7 +687,7 @@ void rsi_91x_deinit(struct rsi_hw *adapter)
 #ifdef CONFIG_REDPINE_ZIGB
 		if ((common->zb_fsm_state == ZB_DEVICE_READY) &&
 		    g_proto_ops.zb_ops->detach) {
-			rsi_dbg(INFO_ZONE,
+			redpine_dbg(INFO_ZONE,
 				"%s: Detaching the zigbee module\n", __func__);
 			g_proto_ops.zb_ops->detach(common);
 		}
@@ -696,7 +696,7 @@ void rsi_91x_deinit(struct rsi_hw *adapter)
 	rsi_coex_deinit(common);
 #endif
 #ifdef CONFIG_REDPINE_MULTI_MODE
-	rsi_dbg(ERR_ZONE, "%s: reset drv instance: %d\n",
+	redpine_dbg(ERR_ZONE, "%s: reset drv instance: %d\n",
 			__func__, adapter->drv_instance_index);
 	DRV_INSTANCE_SET(adapter->drv_instance_index, 0);
 #endif
@@ -706,7 +706,7 @@ void rsi_91x_deinit(struct rsi_hw *adapter)
 	kfree(adapter->rsi_dev);
 	kfree(adapter);
 }
-EXPORT_SYMBOL_GPL(rsi_91x_deinit);
+EXPORT_SYMBOL_GPL(redpine_91x_deinit);
 
 /**
  * rsi_91x_hal_module_init() - This function is invoked when the module is
@@ -718,11 +718,11 @@ EXPORT_SYMBOL_GPL(rsi_91x_deinit);
  */
 static int rsi_91x_hal_module_init(void)
 {
-	rsi_dbg(INIT_ZONE, "%s: Module init called\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Module init called\n", __func__);
 #if defined(CONFIG_REDPINE_COEX_MODE) && defined(CONFIG_REDPINE_ZIGB)
 	g_proto_ops.zb_ops = rsi_get_zb_ops();
 	if (!g_proto_ops.zb_ops)
-		rsi_dbg(ERR_ZONE, "Failed to get ZIGB ops\n");
+		redpine_dbg(ERR_ZONE, "Failed to get ZIGB ops\n");
 #endif
 
 	return 0;
@@ -738,7 +738,7 @@ static int rsi_91x_hal_module_init(void)
  */
 static void rsi_91x_hal_module_exit(void)
 {
-	rsi_dbg(INIT_ZONE, "%s: Module exit called\n", __func__);
+	redpine_dbg(INIT_ZONE, "%s: Module exit called\n", __func__);
 }
 
 module_init(rsi_91x_hal_module_init);

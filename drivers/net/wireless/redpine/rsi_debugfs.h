@@ -35,17 +35,17 @@
 #include <linux/debugfs.h>
 
 #ifndef CONFIG_REDPINE_DEBUGFS
-static inline int rsi_init_dbgfs(struct rsi_hw *adapter)
+static inline int redpine_init_dbgfs(struct rsi_hw *adapter)
 {
 	return 0;
 }
 
-static inline void rsi_remove_dbgfs(struct rsi_hw *adapter)
+static inline void redpine_remove_dbgfs(struct rsi_hw *adapter)
 {
 	return;
 }
 #else
-struct rsi_dbg_files {
+struct redpine_dbg_files {
 	const char *name;
 	umode_t perms;
 	const struct file_operations fops;
@@ -53,10 +53,10 @@ struct rsi_dbg_files {
 
 struct rsi_debugfs {
 	struct dentry *subdir;
-	struct rsi_dbg_ops *dfs_get_ops;
+	struct redpine_dbg_ops *dfs_get_ops;
 	struct dentry *rsi_files[MAX_DEBUGFS_ENTRIES];
 };
-int rsi_init_dbgfs(struct rsi_hw *adapter);
-void rsi_remove_dbgfs(struct rsi_hw *adapter);
+int redpine_init_dbgfs(struct rsi_hw *adapter);
+void redpine_remove_dbgfs(struct rsi_hw *adapter);
 #endif
 #endif

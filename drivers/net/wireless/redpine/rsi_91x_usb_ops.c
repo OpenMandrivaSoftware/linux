@@ -61,9 +61,9 @@ void rsi_usb_rx_thread(struct rsi_common *common)
 				if (!skb)
 					break;
 
-				status = rsi_read_pkt(common, skb->data, 0);
+				status = redpine_read_pkt(common, skb->data, 0);
 				if (status) {
-					rsi_dbg(ERR_ZONE, "%s: Failed To read data",
+					redpine_dbg(ERR_ZONE, "%s: Failed To read data",
 							__func__);
 				}
 				dev_kfree_skb(skb);
@@ -71,7 +71,7 @@ void rsi_usb_rx_thread(struct rsi_common *common)
 		}
 	} while (1);
 
-	rsi_dbg(INFO_ZONE, "%s: Terminated USB RX thread\n", __func__);
+	redpine_dbg(INFO_ZONE, "%s: Terminated USB RX thread\n", __func__);
 	atomic_inc(&dev->rx_thread.thread_done);
 	complete_and_exit(&dev->rx_thread.completion, 0);
 }

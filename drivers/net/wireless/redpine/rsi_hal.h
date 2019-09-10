@@ -247,7 +247,7 @@ struct bootload_ds {
 
 int rsi_prepare_mgmt_desc(struct rsi_common *common, struct sk_buff *skb);
 int rsi_prepare_data_desc(struct rsi_common *common, struct sk_buff *skb);
-int rsi_hal_device_init(struct rsi_hw *adapter);
+int redpine_hal_device_init(struct rsi_hw *adapter);
 int rsi_send_data_pkt(struct rsi_common *common, struct sk_buff *skb);
 int rsi_send_bt_pkt(struct rsi_common *common, struct sk_buff *skb);
 int rsi_send_zb_pkt(struct rsi_common *common, struct sk_buff *skb);

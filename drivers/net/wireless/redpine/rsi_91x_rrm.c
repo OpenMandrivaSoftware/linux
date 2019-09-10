@@ -84,14 +84,14 @@ int rsi_rrm_send_channel_load_req(struct rsi_common *common)
 
 	if ((chload_req->rmelem.mode >> 1 & 1) ||
 	    (chload_req->rmelem.mode >> 2 & 1)) {
-		rsi_dbg(INFO_ZONE, "station incapable/refusing frame report\n");
+		redpine_dbg(INFO_ZONE, "station incapable/refusing frame report\n");
 		goto err;
 	}
 
 	skb_put(skb, frame_len);
 	info = IEEE80211_SKB_CB(skb);
 	info->control.vif = vif;
-	rsi_dbg(MGMT_TX_ZONE, "Sending channel load measurement request\n");
+	redpine_dbg(MGMT_TX_ZONE, "Sending channel load measurement request\n");
 	rsi_core_xmit(common, skb);
 
 	return 0;
@@ -152,7 +152,7 @@ int rsi_rrm_send_frame_req(struct rsi_common *common)
 	skb_put(skb, frame_len);
 	info = IEEE80211_SKB_CB(skb);
 	info->control.vif = vif;
-	rsi_dbg(MGMT_TX_ZONE, "Sending frame measurement request\n");
+	redpine_dbg(MGMT_TX_ZONE, "Sending frame measurement request\n");
 	rsi_core_xmit(common, skb);
 
 	return 0;
@@ -229,7 +229,7 @@ int rsi_rrm_send_beacon_req(struct rsi_common *common)
 	skb_put(skb, sizeof(*beacon_req) + opt_elems_len);
 	info = IEEE80211_SKB_CB(skb);
 	info->control.vif = vif;
-	rsi_dbg(MGMT_TX_ZONE, "Sending beacon measurement request\n");
+	redpine_dbg(MGMT_TX_ZONE, "Sending beacon measurement request\n");
 	rsi_core_xmit(common, skb);
 
 	return 0;
@@ -304,24 +304,24 @@ int rsi_rrm_parse_beacon_req(struct rsi_common *common,
 	while (index < skb->len) {
 		opt_elem_id = frm[index];
 		opt_elem_len = frm[index + 1];
-		rsi_dbg(ERR_ZONE, "parse optional elemid %d elem_len %d\n",
+		redpine_dbg(ERR_ZONE, "parse optional elemid %d elem_len %d\n",
 			opt_elem_id, opt_elem_len);
 		switch (opt_elem_id) {
 		case SSID_ELEM_ID:
 			flags = flags | (1 << 0);
-			rsi_dbg(ERR_ZONE, "SSID INFO\n");
+			redpine_dbg(ERR_ZONE, "SSID INFO\n");
 			memset(&params->ssid_ie[2], 0, SSID_LEN);
 			memcpy(&params->ssid_ie[2],
 			       &frm[index + 2],
 			       opt_elem_len);
-			rsi_dbg(ERR_ZONE, "SSID INFO %s %d\n",
+			redpine_dbg(ERR_ZONE, "SSID INFO %s %d\n",
 				&params->ssid_ie[2],
 				params->ssid_ie[1]);
 			break;
 
 		case BEACON_REPORT_INFO:
 			flags = flags | (1 << 1);
-			rsi_dbg(ERR_ZONE, "BEACON REPORT INFO\n");
+			redpine_dbg(ERR_ZONE, "BEACON REPORT INFO\n");
 			memcpy(params->bcn_rpt_info,
 			       &frm[index],
 			       frm[index + 1] + 2);
@@ -330,22 +330,22 @@ int rsi_rrm_parse_beacon_req(struct rsi_common *common,
 		case REPORTING_DETAIL:
 			flags = flags | (1 << 2);
 			params->rpt_detail = frm[index + 2];
-			rsi_dbg(ERR_ZONE, "REPORTING DETAILS VALUE %d\n",
+			redpine_dbg(ERR_ZONE, "REPORTING DETAILS VALUE %d\n",
 				params->rpt_detail);
 			break;
 
 		case AP_CHANNEL_RPT:
 			flags = flags | (1 << 3);
-			rsi_dbg(ERR_ZONE, "Not supported in Firmware\n");
+			redpine_dbg(ERR_ZONE, "Not supported in Firmware\n");
 			return -EOPNOTSUPP;
 
 		case VENDOR_SPECIFIC:
 			flags = flags | (1 << 4);
-			rsi_dbg(ERR_ZONE, "Not supported in Firmware\n");
+			redpine_dbg(ERR_ZONE, "Not supported in Firmware\n");
 			return -EOPNOTSUPP;
 
 		default:
-			rsi_dbg(ERR_ZONE, "Reserved element id\n");
+			redpine_dbg(ERR_ZONE, "Reserved element id\n");
 			return -EOPNOTSUPP;
 		}
 		index += (2 + opt_elem_len);
@@ -362,7 +362,7 @@ int rsi_rrm_sched_req(struct rsi_common *common)
 	struct rsi_frame_meas_params frm_params;
 	struct rsi_beacon_meas_params bcn_params;
 
-	rsi_dbg(MGMT_RX_ZONE, "%s: Dequeing the radio action packets\n",
+	redpine_dbg(MGMT_RX_ZONE, "%s: Dequeing the radio action packets\n",
 		__func__);
 
 	if (skb_queue_len(&common->rrm_queue) <= 0)
@@ -385,21 +385,21 @@ int rsi_rrm_sched_req(struct rsi_common *common)
 		common->priv->rrm_enq_state = 1;
 		switch (meas_req_type) {
 		case RRM_TYPE_CHANNEL_LOAD:
-			rsi_dbg(INFO_ZONE, "Received channel load request\n");
+			redpine_dbg(INFO_ZONE, "Received channel load request\n");
 			rsi_rrm_parse_channel_load_req(common, skb, &chl_params);
 			rsi_get_channel_load_meas(common, chl_params);
 			memcpy((u8 *)&common->chload_meas, (u8 *)&chl_params,
 				sizeof(struct rsi_meas_params));
 			break;
 		case RRM_TYPE_FRAME:
-			rsi_dbg(INFO_ZONE, "Received Frame request\n");
+			redpine_dbg(INFO_ZONE, "Received Frame request\n");
 			rsi_rrm_parse_frame_req(common, skb, &frm_params);
 			rsi_get_frame_meas(common, frm_params);
 			memcpy((u8 *)&common->frame_meas, (u8 *)&frm_params,
 				sizeof(struct rsi_frame_meas_params));
 			break;
 		case RRM_TYPE_BEACON:
-			rsi_dbg(INFO_ZONE, "Received Beacon request\n");
+			redpine_dbg(INFO_ZONE, "Received Beacon request\n");
 			rsi_rrm_parse_beacon_req(common, skb, &bcn_params);
 			rsi_get_beacon_meas(common, bcn_params);
 			memcpy((u8 *)&common->beacon_meas, (u8 *)&bcn_params,
@@ -407,7 +407,7 @@ int rsi_rrm_sched_req(struct rsi_common *common)
 			break;
 		}
 	} else {
-		rsi_dbg(INFO_ZONE, "Measurement not supported\n");
+		redpine_dbg(INFO_ZONE, "Measurement not supported\n");
 		return -EPERM;
 	}
 
@@ -421,9 +421,9 @@ int rsi_rrm_parse_radio_action_frame(struct rsi_common *common,
 	struct rsi_hw *adapter = common->priv;
 	struct sk_buff *skb = NULL;
 
-	rsi_dbg(MGMT_RX_ZONE, "%s: Parsing Radio action frame\n", __func__);
+	redpine_dbg(MGMT_RX_ZONE, "%s: Parsing Radio action frame\n", __func__);
 	if (common->num_pend_rrm_reqs > MAX_RRM_REQ) {
-		rsi_dbg(ERR_ZONE, "Maxm requests received; dropping the req\n");
+		redpine_dbg(ERR_ZONE, "Maxm requests received; dropping the req\n");
 		kfree(rx_rrm);
 		return 0;
 	}
@@ -433,7 +433,7 @@ int rsi_rrm_parse_radio_action_frame(struct rsi_common *common,
 	memcpy(skb->data, rx_rrm, msg_len);
 	skb_put(skb, msg_len);
 	skb_queue_tail(&common->rrm_queue, skb);
-	rsi_dbg(MGMT_RX_ZONE, "%s:Queued frame to skb queue\n", __func__);
+	redpine_dbg(MGMT_RX_ZONE, "%s:Queued frame to skb queue\n", __func__);
 
 	if (adapter->rrm_state == RRM_REQ_SENT)
 		return 0;
@@ -519,11 +519,11 @@ int rsi_prepare_channel_load_rpt(struct rsi_common *common, u8 *msg, int len)
 
 	if ((chload_rpt->rmelem.mode >> 1 & 1) ||
 	    (chload_rpt->rmelem.mode >> 2 & 1)) {
-		rsi_dbg(INFO_ZONE,
+		redpine_dbg(INFO_ZONE,
 			"station incapable/refusing channel load report\n");
 		chload_rpt->actual_meas_start_time = 0;
 	}
-	rsi_dbg(ERR_ZONE, "sending onair channel load report\n");
+	redpine_dbg(ERR_ZONE, "sending onair channel load report\n");
 	skb_put(skb, sizeof(*chload_rpt));
 	info = IEEE80211_SKB_CB(skb);
 	info->control.vif = vif;
@@ -618,27 +618,27 @@ int rsi_prepare_frame_rpt(struct rsi_common *common, u8 *msg, int len)
 	frame_rpt->frame_count = *(u16 *)&msg[22];
 	frame_rpt->rmelem.mode = msg[6];
 
-	rsi_dbg(INFO_ZONE, "frame_rpt->actual_meas_start_time %llu\n",
+	redpine_dbg(INFO_ZONE, "frame_rpt->actual_meas_start_time %llu\n",
 		frame_rpt->actual_meas_start_time);
-	rsi_dbg(INFO_ZONE, "frame_rpt->meas_duration %d\n",
+	redpine_dbg(INFO_ZONE, "frame_rpt->meas_duration %d\n",
 		frame_rpt->meas_duration);
-	rsi_dbg(INFO_ZONE, "frame_rpt->phy_type %d\n",
+	redpine_dbg(INFO_ZONE, "frame_rpt->phy_type %d\n",
 		frame_rpt->phy_type);
-	rsi_dbg(INFO_ZONE, "frame_rpt->avg_rcpi %d\n",
+	redpine_dbg(INFO_ZONE, "frame_rpt->avg_rcpi %d\n",
 		frame_rpt->avg_rcpi);
-	rsi_dbg(INFO_ZONE, "frame_rpt->last_rcpi %d\n",
+	redpine_dbg(INFO_ZONE, "frame_rpt->last_rcpi %d\n",
 		frame_rpt->last_rcpi);
-	rsi_dbg(INFO_ZONE, "frame_rpt->ant_id %d\n",
+	redpine_dbg(INFO_ZONE, "frame_rpt->ant_id %d\n",
 		frame_rpt->ant_id);
-	rsi_dbg(INFO_ZONE, "frame_rpt->last_rsni %d\n",
+	redpine_dbg(INFO_ZONE, "frame_rpt->last_rsni %d\n",
 		frame_rpt->last_rsni);
-	rsi_dbg(INFO_ZONE, "frame_rpt->frame_count %d\n",
+	redpine_dbg(INFO_ZONE, "frame_rpt->frame_count %d\n",
 		frame_rpt->frame_count);
-	rsi_dbg(INFO_ZONE, "frame_rpt->length %d\n",
+	redpine_dbg(INFO_ZONE, "frame_rpt->length %d\n",
 		frame_rpt->length);
-	rsi_dbg(INFO_ZONE, "size of frame_report %d FRAME LEN %d\n",
+	redpine_dbg(INFO_ZONE, "size of frame_report %d FRAME LEN %d\n",
 		(int)sizeof(struct frame_report), frame_len);
-	rsi_dbg(INFO_ZONE, "meas_rpt->length %d\n",
+	redpine_dbg(INFO_ZONE, "meas_rpt->length %d\n",
 		frame_rpt->rmelem.length);
 	rsi_hex_dump(ERR_ZONE, "frame report dump", skb->data, frame_len);
 	skb_put(skb, sizeof(*frame_rpt));
@@ -727,7 +727,7 @@ int rsi_prepare_beacon_rpt(struct rsi_common *common, u8 *msg, int len)
 	bcon_rpt->antenna_id = msg[17];
 	bcon_rpt->parent_tsf = *(u32 *)&msg[20];
 
-	rsi_dbg(INFO_ZONE, "common->rrm_state %d\n",
+	redpine_dbg(INFO_ZONE, "common->rrm_state %d\n",
 		common->priv->rrm_state);
 	rsi_hex_dump(ERR_ZONE, "BEACON REPORT ", skb->data, skb->len);
 	skb_put(skb, sizeof(*bcon_rpt));
@@ -745,19 +745,19 @@ void rsi_rrm_recv_cmd_frame(struct rsi_common *common, u8 *msg, int len)
 
 	switch (meas_type) {
 	case RRM_TYPE_CHANNEL_LOAD:
-		rsi_dbg(INFO_ZONE, "Preparing channel load report\n");
+		redpine_dbg(INFO_ZONE, "Preparing channel load report\n");
 		rsi_prepare_channel_load_rpt(common, msg, len);
 		break;
 	case RRM_TYPE_BEACON:
-		rsi_dbg(INFO_ZONE, "Preparing Beacon report\n");
+		redpine_dbg(INFO_ZONE, "Preparing Beacon report\n");
 		rsi_prepare_beacon_rpt(common, msg, len);
 		break;
 	case RRM_TYPE_FRAME:
-		rsi_dbg(INFO_ZONE, "Preparing Frame report\n");
+		redpine_dbg(INFO_ZONE, "Preparing Frame report\n");
 		rsi_prepare_frame_rpt(common, msg, len);
 		break;
 	default:
-		rsi_dbg(INFO_ZONE, "Invalid cmd frame received\n");
+		redpine_dbg(INFO_ZONE, "Invalid cmd frame received\n");
 	}
 }
 

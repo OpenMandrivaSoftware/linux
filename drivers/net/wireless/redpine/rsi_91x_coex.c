@@ -60,10 +60,10 @@ static void rsi_coex_sched_tx_pkts(struct rsi_coex_ctrl_block *coex_cb)
 #endif
 	while (1) {
 		coex_q = rsi_coex_determine_coex_q(coex_cb);
-		rsi_dbg(INFO_ZONE, "queue = %d\n", coex_q);
+		redpine_dbg(INFO_ZONE, "queue = %d\n", coex_q);
 
 		if (coex_q == INVALID_QUEUE) {
-			rsi_dbg(DATA_TX_ZONE, "No more pkt\n");
+			redpine_dbg(DATA_TX_ZONE, "No more pkt\n");
 			break;
 		}
 
@@ -71,11 +71,11 @@ static void rsi_coex_sched_tx_pkts(struct rsi_coex_ctrl_block *coex_cb)
 			skb = skb_dequeue(&coex_cb->coex_tx_qs[BT_Q]);
 #ifdef CONFIG_REDPINE_ZIGB
 			if (common->zb_fsm_state == ZB_DEVICE_READY) {
-				rsi_dbg(DATA_TX_ZONE, "Sending zigbee pkt\n");
+				redpine_dbg(DATA_TX_ZONE, "Sending zigbee pkt\n");
 				rsi_send_zb_pkt(coex_cb->priv, skb);
 			} else {
 #endif
-				rsi_dbg(DATA_TX_ZONE, "Sending BT pkt\n");
+				redpine_dbg(DATA_TX_ZONE, "Sending BT pkt\n");
 				rsi_send_bt_pkt(coex_cb->priv, skb);
 #ifdef CONFIG_REDPINE_ZIGB
 			}
@@ -117,10 +117,10 @@ int rsi_coex_recv_pkt(struct rsi_common *common, u8 *msg)
 
 	if (msg_type == COMMON_CARD_READY_IND) {
 		common->hibernate_resume = false;
-		rsi_dbg(INFO_ZONE, "COMMON CARD READY RECEIVED\n");
+		redpine_dbg(INFO_ZONE, "COMMON CARD READY RECEIVED\n");
 		rsi_handle_card_ready(common, msg);
 	} else if (msg_type == SLEEP_NOTIFY_IND) {
-		rsi_dbg(INFO_ZONE, "\n\n sleep notify RECEIVED\n");
+		redpine_dbg(INFO_ZONE, "\n\n sleep notify RECEIVED\n");
 		rsi_mgmt_pkt_recv(common, msg);
 	}
 
@@ -184,7 +184,7 @@ int rsi_coex_init(struct rsi_common *common)
 			       &coex_cb->coex_tx_thread,
 			       rsi_coex_scheduler_thread,
 			       "Coex-Tx-Thread")) {
-		rsi_dbg(ERR_ZONE, "%s: Unable to init tx thrd\n", __func__);
+		redpine_dbg(ERR_ZONE, "%s: Unable to init tx thrd\n", __func__);
 		goto err;
 	}
 	return 0;
