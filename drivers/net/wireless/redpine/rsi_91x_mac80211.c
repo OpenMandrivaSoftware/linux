@@ -221,7 +221,7 @@ static int rsi_validate_mac_addr(struct rsi_common *common, u8 *addr_t)
 	u8 addr[ETH_ALEN] = {0};
 
 	if (!memcmp(addr, addr_t, ETH_ALEN)) {
-		rsi_dbg(ERR_ZONE, "%s: MAC addr is NULL \n", __func__);
+		rsi_dbg(ERR_ZONE, "%s: MAC addr is NULL\n", __func__);
 		return -1;
 	} else if (memcmp(common->mac_addr, addr_t, ETH_ALEN)) {
 		memcpy(common->mac_addr, addr_t, ETH_ALEN);
@@ -426,7 +426,7 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 	/* Scan already in progress. So return */
 	if (common->bgscan_en || common->scan_in_prog)
 		return -EBUSY;
-	if(rsi_validate_mac_addr(common, vif->addr))
+	if (rsi_validate_mac_addr(common, vif->addr))
 		return -ENODEV;
 
 	cancel_work_sync(&common->scan_work);
@@ -444,6 +444,10 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 				mutex_unlock(&common->mutex);
 				return -EBUSY;
 			}
+		}
+		if (common->bgscan_en) {
+			mutex_unlock(&common->mutex);
+			return 0;
 		}
 		if (!common->debugfs_bgscan) {
 			common->bgscan_info.num_user_channels = scan_req->n_channels;
@@ -2018,10 +2022,7 @@ static int rsi_fill_rx_status(struct ieee80211_hw *hw,
 
 	rxs->signal = -(rssi);
 
-	if (channel >=1 && channel <= 14)
-		rxs->band = NL80211_BAND_2GHZ;
-	else if (channel >= 32 && channel <= 173)
-		rxs->band = NL80211_BAND_5GHZ;
+	rxs->band = common->band;
 
 	freq = ieee80211_channel_to_frequency(channel, rxs->band);
 
@@ -2195,15 +2196,7 @@ static int rsi_mac80211_sta_add(struct ieee80211_hw *hw,
 		for (i = 0; i < IEEE80211_NUM_ACS; i++)
 			rsta->seq_start[i] = 0;
 		rsi_set_min_rate(hw, sta, common);
-		if (g_bgscan_enable) {
-			if (!rsi_send_bgscan_params(common, 1)) {
-				if (!rsi_send_bgscan_probe_req(common)) {
-					rsi_dbg(INFO_ZONE,
-						"Bgscan started ===>\n");
-					common->bgscan_en = 1;
-				}
-			}
-		}
+
 	}
 
 	if (((vif->type == NL80211_IFTYPE_STATION) ||
@@ -3108,9 +3101,6 @@ int rsi_mac80211_attach(struct rsi_common *common)
 //	wiphy->features |= (NL80211_FEATURE_P2P_GO_CTWIN |
 //			    NL80211_FEATURE_P2P_GO_OPPPS);
 #endif
-
-	if (common->coex_mode > 1)
-		wiphy->flags |= WIPHY_FLAG_PS_ON_BY_DEFAULT;
 
 	status = ieee80211_register_hw(hw);
 	if (status) {

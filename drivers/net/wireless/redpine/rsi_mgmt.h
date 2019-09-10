@@ -94,6 +94,7 @@ enum rx_cmd_type {
 	TSF_SYNC_CONFIRM = 0xc0,
 	ANTENNA_SELECT = 0xf,
 	RADIO_MEAS_RPT = 0x10,
+	FW_ERROR_STATE_IND = 0x1C,
 
 };
 
@@ -104,6 +105,9 @@ enum rx_cmd_type {
 #define EAPOL4_CONFIRM			1
 #define PROBEREQ_CONFIRM                2
 #define NULLDATA_CONFIRM		3
+
+#define RSI_MAX_BGSCAN_CHANNEL_SUPPORTED	0x6F
+#define RSI_MAX_BGSCAN_PROBE_REQ_LEN		0x71
 
 #define RSI_DELETE_PEER                 0x0
 #define RSI_ADD_PEER                    0x1

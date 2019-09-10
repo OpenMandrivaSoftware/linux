@@ -390,8 +390,8 @@ static ssize_t rsi_bgscan_write(struct file *file,
 		common->debugfs_bgscan = true;
 
 	/* Return if bgscan is already in progress */
-	if (common->bgscan_en)
-		return total_bytes;
+	if (common->bgscan_en && bss->assoc)
+		common->bgscan_en = 0;
 
 	bytes_read += t_bytes;
 	while (1) {
@@ -446,29 +446,6 @@ static ssize_t rsi_bgscan_write(struct file *file,
 #endif
 		return total_bytes;
 	}
-
-	/* Send bgscan params to device */
-	mutex_lock(&common->mutex);
-	if (!rsi_send_bgscan_params(common, 1)) {
-		if (!rsi_send_bgscan_probe_req(common)) {
-#ifdef PLATFORM_X86
-			rsi_dbg(INFO_ZONE, "Background scan started ===>\n");
-#endif
-			common->bgscan_en = 1;
-		} else {
-#ifdef PLATFORM_X86
-			rsi_dbg(ERR_ZONE, "Failed sending bgscan probe req\n");
-#endif
-			common->bgscan_en = 0;
-			g_bgscan_enable = 0;
-		}
-	
-} else {
-#ifdef PLATFORM_X86
-		rsi_dbg(ERR_ZONE, "Failed sending bgscan params req\n");
-#endif
-	}
-	mutex_unlock(&common->mutex);
 
 	return total_bytes;
 }
