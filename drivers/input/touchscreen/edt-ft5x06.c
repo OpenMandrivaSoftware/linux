@@ -13,6 +13,8 @@
  *    http://www.glyn.com/Products/Displays
  */
 
+#define DEBUG
+
 #include <linux/debugfs.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
@@ -957,6 +959,9 @@ static int edt_ft5x06_ts_identify(struct i2c_client *client,
 			snprintf(model_name, EDT_NAME_LEN,
 				 "EVERVISION-FT5726NEi");
 			break;
+		case 0x02:   /* FT 8506 */
+			snprintf(model_name, EDT_NAME_LEN, "Focaltec FT8006P");
+			break;
 		default:
 			snprintf(model_name, EDT_NAME_LEN,
 				 "generic ft5x06 (%02x)",
@@ -1101,6 +1106,8 @@ static void edt_ft5x06_disable_regulator(void *arg)
 	regulator_disable(data->vcc);
 }
 
+bool mantix_panel_prepared(void);
+
 static int edt_ft5x06_ts_probe(struct i2c_client *client,
 					 const struct i2c_device_id *id)
 {
@@ -1111,6 +1118,12 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 	unsigned long irq_flags;
 	int error;
 	char fw_version[EDT_NAME_LEN];
+
+	/* Since the panel handles the reset via gpio we need to wait until the panel is up */
+	if (!mantix_panel_prepared()) {
+	  dev_dbg(&client->dev, "Panel not yet ready\n");
+	  return -EPROBE_DEFER;
+	}
 
 	dev_dbg(&client->dev, "probing for EDT FT5x06 I2C\n");
 
@@ -1252,6 +1265,7 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 	error = devm_request_threaded_irq(&client->dev, client->irq,
 					NULL, edt_ft5x06_ts_isr, irq_flags,
 					client->name, tsdata);
+
 	if (error) {
 		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
 		return error;
