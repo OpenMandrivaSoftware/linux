@@ -13,6 +13,8 @@
  *    http://www.glyn.com/Products/Displays
  */
 
+#define DEBUG
+
 #include <linux/debugfs.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
@@ -70,6 +72,9 @@
 #define EDT_SWITCH_MODE_DELAY		5 /* msec */
 #define EDT_RAW_DATA_RETRIES		100
 #define EDT_RAW_DATA_DELAY		1000 /* usec */
+
+static int defers;
+#define MAX_DEFERS 4
 
 enum edt_pmode {
 	EDT_PMODE_NOT_SUPPORTED,
@@ -954,6 +959,9 @@ static int edt_ft5x06_ts_identify(struct i2c_client *client,
 			snprintf(model_name, EDT_NAME_LEN,
 				 "EVERVISION-FT5726NEi");
 			break;
+		case 0x02:   /* FT 8506 */
+			snprintf(model_name, EDT_NAME_LEN, "Focaltec FT8006P");
+			break;
 		default:
 			snprintf(model_name, EDT_NAME_LEN,
 				 "generic ft5x06 (%02x)",
@@ -1111,6 +1119,11 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 	int error;
 	char fw_version[EDT_NAME_LEN];
 
+	if (defers < MAX_DEFERS) {
+	  defers++;
+	  return -EPROBE_DEFER;
+	}
+
 	dev_dbg(&client->dev, "probing for EDT FT5x06 I2C\n");
 
 	tsdata = devm_kzalloc(&client->dev, sizeof(*tsdata), GFP_KERNEL);
@@ -1261,6 +1274,7 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 	error = devm_request_threaded_irq(&client->dev, client->irq,
 					NULL, edt_ft5x06_ts_isr, irq_flags,
 					client->name, tsdata);
+
 	if (error) {
 		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
 		return error;
