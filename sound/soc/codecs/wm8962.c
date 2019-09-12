@@ -35,6 +35,9 @@
 
 #include "wm8962.h"
 
+static int defers;
+#define MAX_DEFERS 1
+
 #define WM8962_NUM_SUPPLIES 8
 static const char *wm8962_supply_names[WM8962_NUM_SUPPLIES] = {
 	"DCVDD",
@@ -3545,6 +3548,12 @@ static int wm8962_i2c_probe(struct i2c_client *i2c,
 	struct wm8962_priv *wm8962;
 	unsigned int reg;
 	int ret, i, irq_pol, trigger;
+
+	if (defers < MAX_DEFERS) {
+		printk("%s: %d: defering probe", __func__, __LINE__);
+		defers++;
+		return -EPROBE_DEFER;
+	}
 
 	wm8962 = devm_kzalloc(&i2c->dev, sizeof(*wm8962), GFP_KERNEL);
 	if (wm8962 == NULL)
