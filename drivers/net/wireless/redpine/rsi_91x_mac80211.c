@@ -444,12 +444,13 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 	if (scan_req->n_channels == 0)
 		return -EINVAL;
 	/* Scan already in progress. So return */
-	if (common->bgscan_en || common->scan_in_prog)
+	if (common->scan_in_prog)
 		return -EBUSY;
 	if (rsi_validate_mac_addr(common, vif->addr))
 		return -ENODEV;
 
 	cancel_work_sync(&common->scan_work);
+	cancel_work_sync(&common->scan_complete_work);
 	mutex_lock(&common->mutex);
 
 	if (!bss->assoc) {
@@ -459,6 +460,7 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 		common->scan_request = scan_req;
 		common->scan_vif = vif;
 		common->scan_in_prog = false;
+		common->hwscan_en = false;
 		queue_work(common->scan_workqueue, &common->scan_work);
 	} else {
 		/* Upon connection, make scan count to 0 */
@@ -472,6 +474,7 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 			}
 		}
 		if (common->bgscan_en) {
+			queue_work(common->scan_workqueue, &common->scan_complete_work);
 			mutex_unlock(&common->mutex);
 			return 0;
 		}
@@ -482,6 +485,7 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 					scan_req->channels[ii]->hw_value;
 			}
 		}
+		common->hwscan_en = true;
 		if (!rsi_send_bgscan_params(common, 1)) {
 			if (scan_req->n_ssids > MAX_HW_SCAN_SSID) {
 				n = 0;
@@ -512,7 +516,6 @@ void rsi_mac80211_hw_scan_cancel(struct ieee80211_hw *hw,
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
 	struct cfg80211_scan_info info;
 #endif
-
 	mutex_lock(&common->mutex);
 
 	common->hw_scan_cancel = true;
@@ -732,6 +735,7 @@ static void rsi_mac80211_stop(struct ieee80211_hw *hw)
 
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
 	cancel_work_sync(&common->scan_work);
+	cancel_work_sync(&common->scan_complete_work);
 #endif
 	mutex_lock(&common->mutex);
 	
@@ -2310,10 +2314,13 @@ static int rsi_mac80211_sta_remove(struct ieee80211_hw *hw,
 		common->vif_info[0].seq_start = 0;
 		common->secinfo.ptk_cipher = 0;
 		common->secinfo.gtk_cipher = 0;
-#ifndef CONFIG_REDPINE_HW_SCAN_OFFLOAD
-		if (common->bgscan_en)
-			common->bgscan_en = 0;
-#endif
+		if (common->bgscan_en) {
+			if (!rsi_send_bgscan_params(common, 0)) {
+				common->bgscan_en = 0;
+			}
+			common->hwscan_en = false;
+		}
+
 		if (!common->iface_down)
 			rsi_send_rx_filter_frame(common, 0);
 	}

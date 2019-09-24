@@ -589,6 +589,7 @@ struct rsi_hw *redpine_91x_init(void)
 	common->scan_workqueue = 
 		create_singlethread_workqueue("rsi_scan_worker");
 	INIT_WORK(&common->scan_work, rsi_scan_start);
+	INIT_WORK(&common->scan_complete_work, rsi_scan_complete);
 #endif
 #ifdef CONFIG_REDPINE_MULTI_MODE
 	common->dev_oper_mode[0] = dev_oper_mode_count;
