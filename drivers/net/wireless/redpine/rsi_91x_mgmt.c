@@ -3114,6 +3114,7 @@ void rsi_scan_complete(struct work_struct *work)
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
 			info.aborted = false;
+			msleep(1);
 			ieee80211_scan_completed(adapter->hw, &info);
 #else
 			ieee80211_scan_completed(adapter->hw, false);
