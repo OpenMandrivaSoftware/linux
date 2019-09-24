@@ -476,6 +476,7 @@ struct rsi_common {
 	bool scan_in_prog;
 	struct workqueue_struct *scan_workqueue;
 	struct work_struct scan_work;
+	struct work_struct scan_complete_work;
 	struct rsi_event chan_set_event;
 	struct rsi_event probe_cfm_event;
 	struct rsi_event chan_change_event;

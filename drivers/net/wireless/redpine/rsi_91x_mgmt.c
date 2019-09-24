@@ -3102,6 +3102,24 @@ out:
 	return 0;
 }
 
+void rsi_scan_complete(struct work_struct *work)
+{
+	struct rsi_common *common =
+		container_of(work, struct rsi_common, scan_complete_work);
+	struct rsi_hw *adapter = common->priv;
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
+	struct cfg80211_scan_info info;
+#endif
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
+			info.aborted = false;
+			ieee80211_scan_completed(adapter->hw, &info);
+#else
+			ieee80211_scan_completed(adapter->hw, false);
+#endif
+}
+
 void rsi_scan_start(struct work_struct *work)
 {
 	struct ieee80211_channel *cur_chan = NULL;
@@ -3183,8 +3201,12 @@ void rsi_scan_start(struct work_struct *work)
 				rsi_reset_event(&common->probe_cfm_event);
 				status = rsi_wait_event(&common->probe_cfm_event,
 					       msecs_to_jiffies(50));
-				if (status < 0)
+				if (status < 0) {
+					redpine_dbg(ERR_ZONE,
+						"Did not received probe confirm\n");
+					common->scan_in_prog = false;
 					return;
+				}
 				rsi_reset_event(&common->probe_cfm_event);
 			}
 		}

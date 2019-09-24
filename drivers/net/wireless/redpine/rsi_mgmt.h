@@ -667,6 +667,7 @@ int rsi_send_wowlan_request(struct rsi_common *common, u16 flags,
 			    u16 sleep_status);
 #endif
 void rsi_scan_start(struct work_struct *data);
+void rsi_scan_complete(struct work_struct *data);
 #ifdef CONFIG_REDPINE_HW_SCAN_OFFLOAD
 int rsi_send_probe_request(struct rsi_common *common, 
 			   struct cfg80211_scan_request *scan_req, u8 n_ssid,
