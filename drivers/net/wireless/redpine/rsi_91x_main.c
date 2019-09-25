@@ -283,13 +283,15 @@ void rsi_print_version(struct rsi_common *common)
 	redpine_dbg(ERR_ZONE, "================================================\n");
 	redpine_dbg(ERR_ZONE, "================ RSI Version Info ==============\n");
 	redpine_dbg(ERR_ZONE, "================================================\n");
-	redpine_dbg(ERR_ZONE, "FW Version\t: %d.%d.%d\n",
+	redpine_dbg(ERR_ZONE, "FW Version\t: %d.%d.%d.%d\n",
 		common->lmac_ver.major, common->lmac_ver.minor,
-		common->lmac_ver.release_num);
+		common->lmac_ver.release_num,common->lmac_ver.patch_num);
 	redpine_dbg(ERR_ZONE, "Driver Version\t: %s", common->driver_ver);
 	redpine_dbg(ERR_ZONE, "Operating mode\t: %d [%s]",
 		common->oper_mode, opmode_str(common->oper_mode));
+#ifndef CONFIG_REDPINE_PURISM
 	redpine_dbg(ERR_ZONE, "Firmware file\t: %s", common->priv->fw_file_name);
+#endif
 	redpine_dbg(ERR_ZONE, "================================================\n");
 }
 

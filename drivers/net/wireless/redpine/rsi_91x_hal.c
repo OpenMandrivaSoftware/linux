@@ -1279,6 +1279,7 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 
 #ifdef CONFIG_REDPINE_PURISM
 	u32 flash_data_start = 0;
+	u8 flash_read[RSI_MAX_FLASH_OFFSET_SIZE];
 #endif
 	struct ta_metadata *metadata_p;
 	int status;
@@ -1350,6 +1351,27 @@ static int rsi_load_firmware(struct rsi_hw *adapter)
 		if (flash_data_start == 0x5aa5) {
 			status = rsi_load_9116_flash_fw(adapter);
 			mdelay(3000);
+			if ((hif_ops->master_reg_read(adapter,
+					RSI_FLASH_READ_FW_VER,					
+					(int *)flash_read,
+					4)) < 0) {
+			redpine_dbg(ERR_ZONE,
+				"%s: RSI_FLASH_READ_FW_VER failed\n", __func__);
+				goto bl_cmd_fail;
+			}
+			common->lmac_ver.major = flash_read[2];
+			common->lmac_ver.minor = flash_read[3];
+			if ((hif_ops->master_reg_read(adapter,
+					RSI_FLASH_READ_FW_VER1,
+					(int *)flash_read,
+					4)) < 0) {
+			redpine_dbg(ERR_ZONE,
+				"%s: RSI_FLASH_READ_FW_VER failed\n", __func__);
+				goto bl_cmd_fail;
+			}
+			common->lmac_ver.release_num = flash_read[0];
+			common->lmac_ver.patch_num = flash_read[2];
+			rsi_print_version(common);
 			if (adapter->rsi_host_intf == RSI_HOST_INTF_USB) {
 				if (bl_cmd(adapter, POLLING_MODE,
 					   CMD_PASS, "POLLING_MODE") < 0) {
