@@ -6,6 +6,7 @@
 
 #define pr_fmt(fmt)	"GICv3: " fmt
 
+#include <linux/arm-smccc.h>
 #include <linux/acpi.h>
 #include <linux/cpu.h>
 #include <linux/cpu_pm.h>
@@ -58,6 +59,7 @@ struct gic_chip_data {
 
 static struct gic_chip_data gic_data __read_mostly;
 static DEFINE_STATIC_KEY_TRUE(supports_deactivate_key);
+static unsigned int err11171;
 
 #define GIC_ID_NR	(1U << GICD_TYPER_ID_BITS(gic_data.rdists.gicd_typer))
 #define GIC_LINE_NR	min(GICD_TYPER_SPIS(gic_data.rdists.gicd_typer), 1020U)
@@ -1125,6 +1127,13 @@ static void gic_send_sgi(u64 cluster_id, u16 tlist, unsigned int irq)
 	gic_write_sgi1r(val);
 }
 
+#define FSL_SIP_GPC			0xC2000000
+#define FSL_SIP_CONFIG_GPC_MASK	0x00
+#define FSL_SIP_CONFIG_GPC_UNMASK	0x01
+#define FSL_SIP_CONFIG_GPC_SET_WAKE	0x02
+#define FSL_SIP_CONFIG_GPC_PM_DOMAIN	0x03
+#define FSL_SIP_CONFIG_GPC_CORE_WAKE	0x05
+
 static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
 {
 	int cpu;
@@ -1148,6 +1157,13 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
 
 	/* Force the above writes to ICC_SGI1R_EL1 to be executed */
 	isb();
+
+	if (err11171) {
+		struct arm_smccc_res res;
+
+		arm_smccc_smc(FSL_SIP_GPC, FSL_SIP_CONFIG_GPC_CORE_WAKE,
+				*cpumask_bits(mask), 0, 0, 0, 0, 0, &res);
+	}
 }
 
 static void __init gic_smp_init(void)
@@ -1841,6 +1857,12 @@ static int __init gic_of_init(struct device_node *node, struct device_node *pare
 			goto out_unmap_rdist;
 		}
 		rdist_regs[i].phys_base = res.start;
+	}
+
+	if (of_machine_is_compatible("fsl,imx8mq")) {
+		/* sw workaround for IPI can't wakeup CORE
+		   ERRATA(ERR011171) on i.MX8MQ */
+		err11171 = true;
 	}
 
 	if (of_property_read_u64(node, "redistributor-stride", &redist_stride))
