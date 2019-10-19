@@ -734,7 +734,7 @@
 
 	port@0 {
 		lcdif_mipi_dsi: endpoint {
-			remote-endpoint = <&mipi_dsi_in>;
+			remote-endpoint = <&mipi_dsi_lcdif_in>;
 		};
 	};
 };
@@ -760,10 +760,19 @@
 		#size-cells = <0>;
 
 		port@0 {
+			#size-cells = <0>;
+			#address-cells = <1>;
 			reg = <0>;
-			mipi_dsi_in: endpoint {
+			mipi_dsi_lcdif_in: endpoint@0 {
+				reg = <0>;
 				remote-endpoint = <&lcdif_mipi_dsi>;
 			};
+/*
+			mipi_dsi_dcss_in: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&dcss_mipi_dsi>;
+			};
+*/
 		};
 		port@1 {
 			reg = <1>;
