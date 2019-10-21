@@ -44,11 +44,6 @@
 #define REG_PUT(x, h, l) (((x) << (l)) & GENMASK(h, l))
 #define REG_GET(x, h, l) (((x) & GENMASK(h, l)) >> (l))
 
-#define SWIZZLE_LE		0 /* Little-Endian or No swap */
-#define SWIZZLE_BE		1 /* Big-Endian or swap all */
-#define SWIZZLE_HWD		2 /* Swap half-words */
-#define SWIZZLE_HWD_BYTE	3 /* Swap bytes within each half-word */
-
 #define CTRL_SFTRST			BIT(31)
 #define CTRL_CLKGATE			BIT(30)
 #define CTRL_SHIFT_DIR(x)		REG_PUT((x), 26, 26)
