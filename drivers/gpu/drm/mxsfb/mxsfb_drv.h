@@ -16,7 +16,6 @@ struct mxsfb_devdata {
 	unsigned int	 hs_wdth_mask;
 	unsigned int	 hs_wdth_shift;
 	unsigned int	 ipversion;
-	unsigned int	 num_formats;
 };
 
 struct mxsfb_drm_private {
@@ -42,6 +41,6 @@ int mxsfb_create_output(struct drm_device *dev);
 void mxsfb_crtc_enable(struct mxsfb_drm_private *mxsfb);
 void mxsfb_crtc_disable(struct mxsfb_drm_private *mxsfb);
 void mxsfb_plane_atomic_update(struct mxsfb_drm_private *mxsfb,
-			       struct drm_plane_state *old_state);
+			       struct drm_plane_state *state);
 
 #endif /* __MXSFB_DRV_H__ */
