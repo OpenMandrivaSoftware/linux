@@ -164,6 +164,7 @@
 				exit-latency-us = <700>;
 				min-residency-us = <2700>;
 				wakeup-latency-us = <1500>;
+				#cooling-cells = <2>; /* min followed by max */
 			};
 		};
 
@@ -233,6 +234,12 @@
 					type = "passive";
 				};
 
+				cpu_hot: cpu-hot {
+					temperature = <81000>;
+					hysteresis = <0>;
+					type = "passive";
+				};
+
 				cpu-crit {
 					temperature = <90000>;
 					hysteresis = <2000>;
@@ -248,6 +255,10 @@
 						<&A53_1 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
 						<&A53_2 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
 						<&A53_3 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+				};
+				map1 {
+					trip = <&cpu_hot>;
+					cooling-device = <&CPU_SLEEP THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
 				};
 			};
 		};
