@@ -131,11 +131,9 @@ static const struct drm_mode_config_helper_funcs mxsfb_mode_config_helpers = {
 	.atomic_commit_tail = drm_atomic_helper_commit_tail_rpm,
 };
 
-enum drm_mode_status mxsfb_pipe_mode_valid(struct drm_crtc *crtc,
+enum drm_mode_status mxsfb_pipe_mode_valid(struct drm_simple_display_pipe *pipe,
 					   const struct drm_display_mode *mode)
 {
-	struct drm_simple_display_pipe *pipe =
-		container_of(crtc, struct drm_simple_display_pipe, crtc);
 	struct mxsfb_drm_private *mxsfb = drm_pipe_to_mxsfb_drm_private(pipe);
 	u32 bpp;
 	u64 bw;
