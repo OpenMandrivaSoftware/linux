@@ -167,6 +167,35 @@ static int hdmi_vendor_info_set(struct cdns_mhdp_device *mhdp,
 	return 0;
 }
 
+static void hdmi_drm_info_set(struct cdns_mhdp_device *mhdp)
+{
+	struct drm_connector_state *conn_state;
+	struct hdmi_drm_infoframe frame;
+	u8 buf[32];
+	int ret;
+
+	conn_state = mhdp->connector.base.state;
+
+	if (!conn_state->hdr_output_metadata)
+		return;
+
+	ret = drm_hdmi_infoframe_set_hdr_metadata(&frame, conn_state);
+	if (ret < 0) {
+		DRM_DEBUG_KMS("couldn't set HDR metadata in infoframe\n");
+		return;
+	}
+
+	ret = hdmi_drm_infoframe_pack(&frame, buf + 1, sizeof(buf) - 1);
+	if (ret < 0) {
+		DRM_DEBUG_KMS("couldn't pack HDR infoframe\n");
+		return;
+	}
+
+	buf[0] = 0;
+	cdns_mhdp_infoframe_set(mhdp, 3, sizeof(buf),
+				buf, HDMI_INFOFRAME_TYPE_DRM);
+}
+
 void cdns_hdmi_mode_set(struct cdns_mhdp_device *mhdp)
 {
 	struct drm_display_mode *mode = &mhdp->mode;
@@ -200,6 +229,8 @@ void cdns_hdmi_mode_set(struct cdns_mhdp_device *mhdp)
 	ret = hdmi_vendor_info_set(mhdp, mode);
 	if (ret < 0)
 		DRM_WARN("Unable to configure Vendor infoframe\n");
+
+	hdmi_drm_info_set(mhdp);
 
 	ret = cdns_hdmi_mode_config(mhdp, mode, &mhdp->video_info);
 	if (ret < 0) {
@@ -259,6 +290,40 @@ static int cdns_hdmi_connector_get_modes(struct drm_connector *connector)
 	return num_modes;
 }
 
+static bool blob_equal(const struct drm_property_blob *a,
+		       const struct drm_property_blob *b)
+{
+	if (a && b)
+		return a->length == b->length &&
+			!memcmp(a->data, b->data, a->length);
+
+	return !a == !b;
+}
+
+static int cdns_hdmi_connector_atomic_check(struct drm_connector *connector,
+					    struct drm_atomic_state *state)
+{
+	struct drm_connector_state *new_con_state =
+		drm_atomic_get_new_connector_state(state, connector);
+	struct drm_connector_state *old_con_state =
+		drm_atomic_get_old_connector_state(state, connector);
+	struct drm_crtc *crtc = new_con_state->crtc;
+	struct drm_crtc_state *new_crtc_state;
+
+	if (!blob_equal(new_con_state->hdr_output_metadata,
+			old_con_state->hdr_output_metadata)) {
+		new_crtc_state = drm_atomic_get_crtc_state(state, crtc);
+		if (IS_ERR(new_crtc_state))
+			return PTR_ERR(new_crtc_state);
+
+		new_crtc_state->mode_changed =
+			!new_con_state->hdr_output_metadata ||
+			!old_con_state->hdr_output_metadata;
+	}
+
+	return 0;
+}
+
 static const struct drm_connector_funcs cdns_hdmi_connector_funcs = {
 	.fill_modes = drm_helper_probe_single_connector_modes,
 	.detect = cdns_hdmi_connector_detect,
@@ -270,11 +335,13 @@ static const struct drm_connector_funcs cdns_hdmi_connector_funcs = {
 
 static const struct drm_connector_helper_funcs cdns_hdmi_connector_helper_funcs = {
 	.get_modes = cdns_hdmi_connector_get_modes,
+	.atomic_check = cdns_hdmi_connector_atomic_check,
 };
 
 static int cdns_hdmi_bridge_attach(struct drm_bridge *bridge)
 {
 	struct cdns_mhdp_device *mhdp = bridge->driver_private;
+	struct drm_mode_config *config = &bridge->dev->mode_config;
 	struct drm_encoder *encoder = bridge->encoder;
 	struct drm_connector *connector = &mhdp->connector.base;
 
@@ -285,6 +352,11 @@ static int cdns_hdmi_bridge_attach(struct drm_bridge *bridge)
 
 	drm_connector_init(bridge->dev, connector, &cdns_hdmi_connector_funcs,
 			   DRM_MODE_CONNECTOR_HDMIA);
+
+	if (!strncmp("imx8mq-hdmi", mhdp->plat_data->plat_name, 11))
+		drm_object_attach_property(&connector->base,
+					   config->hdr_output_metadata_property,
+					   0);
 
 	drm_connector_attach_encoder(connector, encoder);
 
