@@ -41,6 +41,24 @@ static void __iomem *gpcv2_idx_to_reg(struct gpcv2_irqchip_data *cd, int i)
 	return cd->gpc_base + cd->cpu2wakeup + i * 4;
 }
 
+static void __iomem *gpcv2_idx_to_reg_cpu(struct gpcv2_irqchip_data *cd,
+					int i, int cpu)
+{
+	u32 offset =  GPC_IMR1_CORE0;
+	switch(cpu) {
+	case 1:
+		offset = GPC_IMR1_CORE1;
+		break;
+	case 2:
+		offset = GPC_IMR1_CORE2;
+		break;
+	case 3:
+		offset = GPC_IMR1_CORE3;
+		break;
+	}
+	return cd->gpc_base + offset + i * 4;
+}
+
 static int gpcv2_wakeup_source_save(void)
 {
 	struct gpcv2_irqchip_data *cd;
@@ -163,6 +181,28 @@ static void imx_gpcv2_irq_mask(struct irq_data *d)
 	irq_chip_mask_parent(d);
 }
 
+static int imx_gpcv2_irq_set_affinity(struct irq_data *d,
+				 const struct cpumask *dest, bool force)
+{
+	struct gpcv2_irqchip_data *cd = d->chip_data;
+	void __iomem *reg;
+	u32 val;
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		raw_spin_lock(&cd->rlock);
+		reg = gpcv2_idx_to_reg_cpu(cd, d->hwirq / 32, cpu);
+		val = readl_relaxed(reg);
+		val |= BIT(d->hwirq % 32);
+		if (cpumask_test_cpu(cpu, dest))
+			val &= ~BIT(d->hwirq % 32);
+		writel_relaxed(val, reg);
+		raw_spin_unlock(&cd->rlock);
+	}
+
+	return irq_chip_set_affinity_parent(d, dest, force);
+}
+
 static struct irq_chip gpcv2_irqchip_data_chip = {
 	.name			= "GPCv2",
 	.irq_eoi		= irq_chip_eoi_parent,
@@ -172,7 +212,7 @@ static struct irq_chip gpcv2_irqchip_data_chip = {
 	.irq_retrigger		= irq_chip_retrigger_hierarchy,
 	.irq_set_type		= irq_chip_set_type_parent,
 #ifdef CONFIG_SMP
-	.irq_set_affinity	= irq_chip_set_affinity_parent,
+	.irq_set_affinity	= imx_gpcv2_irq_set_affinity,
 #endif
 };
 
