@@ -255,7 +255,7 @@ static void mxsfb_crtc_mode_set_nofb(struct mxsfb_drm_private *mxsfb)
 	if (err)
 		return;
 
-	clk_set_rate(mxsfb->clk, m->crtc_clock * 1000);
+	clk_set_rate(mxsfb->clk, m->crtc_clock * 500);
 
 	if (mxsfb->bridge && mxsfb->bridge->timings)
 		bus_flags = mxsfb->bridge->timings->input_bus_flags;
