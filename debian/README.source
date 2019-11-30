@@ -1,0 +1,22 @@
+This package is maintained with git-buildpackage(1).
+
+The changelog is generated using "gbp dch" so if you submit any
+changes don't bother to add changelog entries but rather provide
+a nice git commit message that can then end up in the changelog.
+
+It is recommended to build the package with pbuilder using:
+
+    gbp builpackage --git-pbuilder
+
+For information on how to set up a pbuilder environment see the
+git-pbuilder(1) manpage.
+
+- To build the kernel meta package switch the source
+  package name in *debian/changelog* to 'linux-librem5'.
+  then run `debian/rules debian/control` and commit the result.
+
+- To switch the kernel/ABI version change `KREL` in
+  *debian/rules* then run `debian/rules debian/control`
+  and commit the result.
+
+- To create tags use `gbp tag`
