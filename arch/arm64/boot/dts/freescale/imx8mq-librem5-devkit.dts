@@ -415,6 +415,13 @@
 	pinctrl-0 = <&pinctrl_i2c3>;
 	status = "okay";
 
+	accel_gyro@6a {
+		compatible = "st,lsm9ds1-imu";
+		reg = <0x6a>;
+		vdd-supply = <&reg_3v3_p>;
+		vddio-supply = <&reg_3v3_p>;
+	};
+
 	magnetometer@1e	{
 		compatible = "st,lsm9ds1-magn";
 		reg = <0x1e>;
