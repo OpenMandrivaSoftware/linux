@@ -3,11 +3,14 @@ variables:
   DEPS: >
     build-essential gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf make device-tree-compiler
     bison flex bc libssl-dev
+  WORKING_DIR: $CI_PROJECT_DIR/debian/output
 
 before_script:
+  - echo "man-db man-db/auto-update boolean false" | debconf-set-selections
   - export DEBIAN_FRONTEND=noninteractive
   - apt-get -y update
-  - apt-get -y install $DEPS
+  - apt-get -y build-dep .
+  - apt-get -y install build-essential devscripts
 
 .tags: &tags
   tags:
@@ -29,13 +32,20 @@ build:aarch64:
       - modules/
     expire_in: 1 week
 
-build:armhf:
-  <<: *tags
+build:deb:
+  tags:
+    - librem5:arm64
   stage: build
-  variables:
-    CROSS_BUILD: "ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-"
   script:
-    - make      ${CROSS_BUILD} nitrogen6x-max_defconfig
-    - make -j 4 ${CROSS_BUILD} Image dtbs modules
-    - make -j 4 ${CROSS_BUILD} INSTALL_MOD_PATH=modules/ modules_install
-
+    - git clean -dfx
+    - git checkout -f
+    - rm -f ../* || true
+    - rm -rf "${WORKING_DIR}"; mkdir -p "${WORKING_DIR}"
+    - debian/rules debian/control
+    - dch -l +gitlabci "Gitlab ci build of ${CI_COMMIT_SHA}"
+    - dpkg-buildpackage -j4 -uc -us -B  --host-arch=arm64
+    - cp -l ../*.deb ../*.changes ../*.buildinfo "${WORKING_DIR}/"
+  artifacts:
+    paths:
+      - "${WORKING_DIR}"
+    expire_in: 1 week
