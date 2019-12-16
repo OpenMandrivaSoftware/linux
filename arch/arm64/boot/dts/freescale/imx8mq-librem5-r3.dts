@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+// Copyright (C) 2020 Purism SPC <kernel@puri.sm>
+
+/dts-v1/;
+
+#include "imx8mq-librem5.dtsi"
+
+/ {
+	model = "Purism Librem 5r3";
+	compatible = "purism,librem5r3", "purism,librem5", "fsl,imx8mq";
+
+	dogwood_leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_r3_camera_pwr>, <&pinctrl_smc_boot>;
+
+		camera-pwr {
+			label = "camera_pwr";
+			gpios = <&gpio5 4 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		smc-boot {
+			label = "smc_boot";
+			gpios = <&gpio5 29 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+};
+
+&accel_gyro {
+	mount-matrix =  "1",  "0",  "0",
+			"0",  "1",  "0",
+			"0",  "0", "-1";
+};
+
+&bq25895 {
+	ti,battery-regulation-voltage = <4200000>; /* uV */
+	ti,charge-current = <1500000>; /* uA */
+	ti,termination-current = <144000>;  /* uA */
+};
+
+&iomuxc {
+	pinctrl_r3_camera_pwr: r3camerapwrgrp {
+		fsl,pins = <
+			MX8MQ_IOMUXC_SPDIF_RX_GPIO5_IO4		0x83
+		>;
+	};
+
+	pinctrl_smc_boot: smcbootgrp {
+		 fsl,pins = <
+			 /* SMC_BOOT0 */
+			 MX8MQ_IOMUXC_UART4_TXD_GPIO5_IO29	0x83
+		>;
+	};
+};
+
+&proximity {
+	proximity-near-level = <25>;
+};
