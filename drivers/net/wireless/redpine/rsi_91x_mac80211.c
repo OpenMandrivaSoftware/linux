@@ -1589,15 +1589,15 @@ static int rsi_mac80211_set_key(struct ieee80211_hw *hw,
 				vif_info->key = key;
 				break;
 			case WLAN_CIPHER_SUITE_TKIP:
-				vif_info->rx_bcmc_pn[0] = seq.tkip.iv16 & 0xff;
-				vif_info->rx_bcmc_pn[1] =
-					(seq.tkip.iv16 >> 8) & 0xff;
-				vif_info->rx_bcmc_pn[2] = seq.tkip.iv32 & 0xff;
-				vif_info->rx_bcmc_pn[3] =
-					(seq.tkip.iv32 >> 8) & 0xff;
+				vif_info->rx_bcmc_pn[5] = seq.tkip.iv16 & 0xff;
 				vif_info->rx_bcmc_pn[4] =
+					(seq.tkip.iv16 >> 8) & 0xff;
+				vif_info->rx_bcmc_pn[3] = seq.tkip.iv32 & 0xff;
+				vif_info->rx_bcmc_pn[2] =
+					(seq.tkip.iv32 >> 8) & 0xff;
+				vif_info->rx_bcmc_pn[1] =
 					(seq.tkip.iv32 >> 16) & 0xff;
-				vif_info->rx_bcmc_pn[5] =
+				vif_info->rx_bcmc_pn[0] =
 					(seq.tkip.iv32 >> 24) & 0xff;
 				vif_info->rx_pn_valid = true;
 				vif_info->key = key;
@@ -1616,7 +1616,6 @@ static int rsi_mac80211_set_key(struct ieee80211_hw *hw,
 				vif_info->rx_bcmc_pn[2], vif_info->rx_bcmc_pn[1],
 				vif_info->rx_bcmc_pn[0]);
 		}
-
 		key->hw_key_idx = key->keyidx;
 		key->flags |= IEEE80211_KEY_FLAG_GENERATE_IV;
 
@@ -1628,6 +1627,11 @@ static int rsi_mac80211_set_key(struct ieee80211_hw *hw,
 		    (vif->type == NL80211_IFTYPE_P2P_CLIENT))
 			secinfo->security_enable = false;
 		redpine_dbg(ERR_ZONE, "%s: RSI del key\n", __func__);
+		if (vif_info->key) {
+			vif_info->prev_keyid = vif_info->key->keyidx;
+			memcpy(vif_info->rx_bcmc_pn_prev, vif_info->rx_bcmc_pn,
+				IEEE80211_CCMP_PN_LEN);
+		}
 		memset(key, 0, sizeof(struct ieee80211_key_conf));
 		memset(vif_info->rx_bcmc_pn, 0, IEEE80211_CCMP_PN_LEN);
 		vif_info->rx_pn_valid = false;
@@ -1951,7 +1955,7 @@ int rsi_validate_pn(struct rsi_hw *adapter, struct ieee80211_hdr *hdr)
 	struct vif_priv *vif_info = NULL;
 	u8 cur_pn[IEEE80211_CCMP_PN_LEN];
 	u8 *last_pn;
-	int i, hdrlen;
+	int i, hdrlen, keyid;
 
 	if (!is_broadcast_ether_addr(hdr->addr1) &&
 	    !is_multicast_ether_addr(hdr->addr1))
@@ -1988,6 +1992,7 @@ int rsi_validate_pn(struct rsi_hw *adapter, struct ieee80211_hdr *hdr)
 		struct dot11_ccmp_hdr *ccmp =
 			(struct dot11_ccmp_hdr *)&((u8 *)hdr)[hdrlen];
 
+		keyid = KEYID_BITMASK(ccmp->keyid_info);
 		cur_pn[0] = ccmp->pn0;
 		cur_pn[1] = ccmp->pn1;
 		cur_pn[2] = ccmp->pn2;
@@ -1998,23 +2003,43 @@ int rsi_validate_pn(struct rsi_hw *adapter, struct ieee80211_hdr *hdr)
 		struct dot11_tkip_hdr *tkip =
 			(struct dot11_tkip_hdr *)&((u8 *)hdr)[hdrlen];
 
-		cur_pn[0] = tkip->tsc0;
-		cur_pn[1] = tkip->tsc1;
-		cur_pn[2] = tkip->tsc2;
-		cur_pn[3] = tkip->tsc3;
-		cur_pn[4] = tkip->tsc4;
-		cur_pn[5] = tkip->tsc5;
+		keyid = KEYID_BITMASK(tkip->keyid_info);
+		cur_pn[5] = tkip->tsc0;
+		cur_pn[4] = tkip->tsc1;
+		cur_pn[3] = tkip->tsc2;
+		cur_pn[2] = tkip->tsc3;
+		cur_pn[1] = tkip->tsc4;
+		cur_pn[0] = tkip->tsc5;
 	}
-	for (i = (IEEE80211_CCMP_PN_LEN - 1); i >= 0; i--)
-		if (last_pn[i] ^ cur_pn[i])
-			break;
-	if (i < 0)
-		return -1;
 
-	if (last_pn[i] >= cur_pn[i])
-		return -1;
-
-	memcpy(vif_info->rx_bcmc_pn, cur_pn, IEEE80211_CCMP_PN_LEN);
+	if (keyid == vif_info->key->keyidx) {
+		i = memcmp(cur_pn, last_pn, IEEE80211_CCMP_PN_LEN);
+		if (i <= 0) {
+			redpine_dbg(ERR_ZONE,
+			"Packet Dropped as RX PN is less than last "
+			"received PN\n");
+			return -1;
+		}
+		memcpy(vif_info->rx_bcmc_pn, cur_pn, IEEE80211_CCMP_PN_LEN);
+	} else {
+		if (keyid == vif_info->prev_keyid) {
+			i = memcmp(cur_pn, vif_info->rx_bcmc_pn_prev,
+					IEEE80211_CCMP_PN_LEN);
+			if (i <= 0) {
+				redpine_dbg(ERR_ZONE,
+					"Packet Dropped as RX PN is less than "
+					"last  received PN\n");
+				return -1;
+			}
+			memcpy(vif_info->rx_bcmc_pn_prev, cur_pn,
+				IEEE80211_CCMP_PN_LEN);
+		} else {
+			redpine_dbg(ERR_ZONE,
+			"Packet Dropped as Key ID not matched with both "
+			"current and previous Key ID\n");
+			return -1;
+		}
+	}
 
 	return 0;
 }
