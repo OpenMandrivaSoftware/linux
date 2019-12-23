@@ -150,6 +150,7 @@ void rsi_hex_dump(u32 zone, char *msg_str, const u8 *msg, u32 len);
 
 #define MAX_REG_COUNTRIES		30
 #define NL80211_DFS_WORLD		4
+#define KEYID_BITMASK(key_info)		((key_info & 0xC0) >> 6)
 
 struct version_info {
 	u16 major;
@@ -207,6 +208,8 @@ struct vif_priv {
 	u8 vap_id;
 	struct ieee80211_key_conf *key;
 	u8 rx_bcmc_pn[IEEE80211_CCMP_PN_LEN];
+	u8 rx_bcmc_pn_prev[IEEE80211_CCMP_PN_LEN];
+	u8 prev_keyid;
 	bool rx_pn_valid;
 };
 
