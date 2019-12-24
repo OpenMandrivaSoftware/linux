@@ -349,11 +349,6 @@ static int lm3692x_brightness_set(struct led_classdev *led_cdev,
 		goto out;
 	}
 
-	if (brt_val > 0xcc) { /* l5 */
-		brt_val = 0xcc;
-		led_brightness_lsb = 0x04;
-	}
-
 	ret = regmap_write(led->regmap, LM3692X_BRT_MSB, brt_val);
 	if (ret) {
 		dev_err(&led->client->dev, "Cannot write MSB: %d\n", ret);
