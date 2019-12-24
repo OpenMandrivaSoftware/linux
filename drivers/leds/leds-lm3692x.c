@@ -242,8 +242,7 @@ static int lm3692x_leds_enable(struct lm3692x_led *led)
 	if (ret)
 		goto out;
 
-	ret = regmap_write(led->regmap, LM3692X_BRT_CTRL,
-			LM3692X_BL_ADJ_POL | LM3692X_RAMP_EN);
+	ret = regmap_write(led->regmap, LM3692X_BRT_CTRL, led->brightness_ctrl);
 	if (ret)
 		goto out;
 
@@ -371,7 +370,12 @@ static enum led_brightness lm3692x_max_brightness(struct lm3692x_led *led,
 	u32 max_code;
 
 	/* see p.12 of LM36922 data sheet for brightness formula */
-	max_code = ((max_cur * 1000) - 37806) / 12195;
+	if (led->brightness_ctrl & LM3692X_MAP_MODE_EXP) {
+		/*  228 =~ 1.0 / log2(1.003040572) */
+		max_code = ilog2(max_cur/50) * 228;
+	} else {
+		max_code = ((max_cur * 1000) - 37806) / 12195;
+	}
 	if (max_code > 0x7FF)
 		max_code = 0x7FF;
 
@@ -383,6 +387,7 @@ static int lm3692x_probe_dt(struct lm3692x_led *led)
 	struct fwnode_handle *child = NULL;
 	struct led_init_data init_data = {};
 	u32 ovp, max_cur;
+	bool exp_mode;
 	int ret;
 
 	led->enable_gpio = devm_gpiod_get_optional(&led->client->dev,
@@ -432,6 +437,12 @@ static int lm3692x_probe_dt(struct lm3692x_led *led)
 			return -EINVAL;
 		}
 	}
+
+	led->brightness_ctrl = LM3692X_BL_ADJ_POL | LM3692X_RAMP_EN;
+	exp_mode = device_property_read_bool(&led->client->dev,
+				     "ti,brightness-mapping-exponential");
+	if (exp_mode)
+		led->brightness_ctrl |= LM3692X_MAP_MODE_EXP;
 
 	child = device_get_next_child_node(&led->client->dev, child);
 	if (!child) {
