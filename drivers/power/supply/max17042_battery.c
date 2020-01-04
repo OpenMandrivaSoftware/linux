@@ -433,9 +433,28 @@ static int max17042_set_property(struct power_supply *psy,
 	struct regmap *map = chip->regmap;
 	int ret = 0;
 	u32 data;
+	u64 data64;
 	int8_t temp;
 
 	switch (psp) {
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+		ret = regmap_read(map, MAX17042_DesignCap, &data);
+		if (ret < 0)
+			return ret;
+
+		data64 = (u64)val->intval * chip->pdata->r_sns;
+		do_div(data64, 5000000ll);
+		ret = regmap_write(map, MAX17042_DesignCap, (u32)data64);
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+		ret = regmap_read(map, MAX17042_FullCAP, &data);
+		if (ret < 0)
+			return ret;
+
+		data64 = (u64)val->intval * chip->pdata->r_sns;
+		do_div(data64, 5000000ll);
+		ret = regmap_write(map, MAX17042_FullCAP, (u32)data64);
+		break;
 	case POWER_SUPPLY_PROP_TEMP_ALERT_MIN:
 		ret = regmap_read(map, MAX17042_TALRT_Th, &data);
 		if (ret < 0)
@@ -477,6 +496,8 @@ static int max17042_property_is_writeable(struct power_supply *psy,
 	int ret;
 
 	switch (psp) {
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
 	case POWER_SUPPLY_PROP_TEMP_ALERT_MIN:
 	case POWER_SUPPLY_PROP_TEMP_ALERT_MAX:
 		ret = 1;
