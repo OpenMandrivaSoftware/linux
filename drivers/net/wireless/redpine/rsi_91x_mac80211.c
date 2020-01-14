@@ -2869,11 +2869,10 @@ void rsi_roc_timeout(struct timer_list *t)
 	mutex_unlock(&common->mutex);
 }
 
-static int rsi_mac80211_cancel_roc(struct ieee80211_hw *hw)
+static int rsi_mac80211_cancel_roc(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
 {
 	struct rsi_hw *adapter = hw->priv;
 	struct rsi_common *common = adapter->priv;
-	struct ieee80211_vif *vif = common->roc_vif;
 	struct vif_priv *vif_info = (struct vif_priv *)vif->drv_priv;
 	enum opmode intf_mode; 
 	
