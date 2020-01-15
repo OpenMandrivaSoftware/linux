@@ -17,6 +17,7 @@ obj-$(CONFIG_DRM_TI_TFP410) += ti-tfp410.o
 obj-$(CONFIG_DRM_NWL_MIPI_DSI) += nwl-dsi.o
 
 obj-y += analogix/
+obj-y += cadence/
 obj-y += synopsys/
 
 header-test-y += nwl-dsi.h
