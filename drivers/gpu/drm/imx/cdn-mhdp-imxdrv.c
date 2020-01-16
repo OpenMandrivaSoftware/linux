@@ -73,6 +73,7 @@ static struct cdns_plat_data imx8mq_dp_drv_data = {
 	.bus_type = BUS_TYPE_NORMAL_APB,
 };
 
+#if 0
 static struct cdns_plat_data imx8qm_hdmi_drv_data = {
 	.plat_name = "imx8qm-hdmi",
 	.bind	= cdns_hdmi_bind,
@@ -112,6 +113,7 @@ static struct cdns_plat_data ls1028a_dp_drv_data = {
 	.pclk_rate = cdns_mhdp_pclk_rate_ls1028a,
 	.bus_type = BUS_TYPE_NORMAL_APB,
 };
+#endif
 
 static const struct of_device_id cdns_mhdp_imx_dt_ids[] = {
 	{ .compatible = "cdn,imx8mq-hdmi",
@@ -120,6 +122,7 @@ static const struct of_device_id cdns_mhdp_imx_dt_ids[] = {
 	{ .compatible = "cdn,imx8mq-dp",
 	  .data = &imx8mq_dp_drv_data
 	},
+#if 0
 	{ .compatible = "cdn,imx8qm-hdmi",
 	  .data = &imx8qm_hdmi_drv_data
 	},
@@ -129,6 +132,7 @@ static const struct of_device_id cdns_mhdp_imx_dt_ids[] = {
 	{ .compatible = "cdn,ls1028a-dp",
 	  .data = &ls1028a_dp_drv_data
 	},
+#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, cdns_mhdp_imx_dt_ids);
