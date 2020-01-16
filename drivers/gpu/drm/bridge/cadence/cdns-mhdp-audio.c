@@ -17,7 +17,7 @@
 #include <drm/bridge/cdns-mhdp-common.h>
 #include <sound/hdmi-codec.h>
 #include <drm/drm_of.h>
-#include <drm/drmP.h>
+#include <drm/drm_print.h>
 
 #define CDNS_DP_SPDIF_CLK		200000000
 
