@@ -15,8 +15,8 @@
 #include <drm/drm_encoder_slave.h>
 #include <drm/drm_of.h>
 #include <drm/drm_probe_helper.h>
+#include <drm/drm_print.h>
 #include <drm/drm_scdc_helper.h>
-#include <drm/drmP.h>
 #include <linux/delay.h>
 #include <linux/err.h>
 #include <linux/hdmi.h>
@@ -337,10 +337,12 @@ static int cdns_hdmi_bridge_attach(struct drm_bridge *bridge)
 					   config->hdr_output_metadata_property,
 					   0);
 
+#if 0
 		if (!drm_mode_create_colorspace_property(connector))
 			drm_object_attach_property(&connector->base,
 						connector->colorspace_property,
 						0);
+#endif
 	}
 
 	drm_connector_attach_encoder(connector, encoder);

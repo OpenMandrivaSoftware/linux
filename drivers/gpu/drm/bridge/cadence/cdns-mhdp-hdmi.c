@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 
-#include <drm/drmP.h>
+#include <drm/drm_print.h>
 #include <linux/io.h>
 #include <drm/bridge/cdns-mhdp-common.h>
 #include <linux/regmap.h>
