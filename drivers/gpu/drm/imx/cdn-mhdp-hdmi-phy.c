@@ -397,8 +397,8 @@ static int hdmi_phy_config(struct cdns_mhdp_device *mhdp,
 	 */
 	val = cdns_phy_reg_read(mhdp, PHY_PMA_CMN_CTRL1);
 	val &= 0xFF8F;
-	if (pclk_in == true)
-		val |= 0x0030;
+	//if (pclk_in == true)
+	val |= 0x0030;
 	cdns_phy_reg_write(mhdp, PHY_PMA_CMN_CTRL1, val);
 
 	/* for differential clock on the refclk_p and
