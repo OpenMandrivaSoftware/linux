@@ -730,7 +730,7 @@
 };
 
 &lcdif {
-	status = "okay";
+	status = "disabled";
 	max-res = <720>, <1440>;
 
 	port@0 {
