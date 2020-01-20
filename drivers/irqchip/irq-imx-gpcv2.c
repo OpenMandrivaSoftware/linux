@@ -14,7 +14,7 @@
 #include <linux/syscore_ops.h>
 #include <linux/smp.h>
 
-#define IMX_SIP_GPC		0xC2000004
+#define IMX_SIP_GPC		0xC2000005
 #define IMX_SIP_GPC_CORE_WAKE	0x00
 
 #define IMR_NUM			4
