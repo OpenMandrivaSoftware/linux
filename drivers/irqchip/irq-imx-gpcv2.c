@@ -96,6 +96,7 @@ static struct syscore_ops imx_gpcv2_syscore_ops = {
 	.resume		= gpcv2_wakeup_source_restore,
 };
 
+#ifdef CONFIG_ARM64
 static void (*__gic_v3_smp_cross_call)(const struct cpumask *, unsigned int);
 
 static void imx_gpcv2_raise_softirq(const struct cpumask *mask,
@@ -126,6 +127,7 @@ static void imx_gpcv2_wake_request_fixup(void)
 		regmap_update_bits(iomux_gpr, IOMUXC_GPR1, IMX6Q_GPR1_GINT,
 					IMX6Q_GPR1_GINT);
 }
+#endif
 
 static int imx_gpcv2_irq_set_wake(struct irq_data *d, unsigned int on)
 {
@@ -346,8 +348,10 @@ static int __init imx_gpcv2_irqchip_init(struct device_node *node,
 		cd->wakeup_sources[i] = ~0;
 	}
 
+#ifdef CONFIG_ARM64
 	if (of_property_read_bool(node, "broken-wake-request-signals"))
 		imx_gpcv2_wake_request_fixup();
+#endif
 
 	/* Let CORE0 as the default CPU to wake up by GPC */
 	cd->cpu2wakeup = GPC_IMR1_CORE0;
