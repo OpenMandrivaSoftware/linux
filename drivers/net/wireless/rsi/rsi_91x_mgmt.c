@@ -893,6 +893,12 @@ static int rsi_send_common_dev_params(struct rsi_common *common)
 	dev_cfgs->driver_mode = common->driver_mode;
 	dev_cfgs->region_code = NL80211_DFS_FCC;
 	dev_cfgs->antenna_sel_val = common->obm_ant_sel_val;
+	if (common->load_flash_fw) {
+		dev_cfgs->features_9116 = (common->ext_opt & 0xF) |
+					  (common->host_intf_on_demand << 4) |
+					  (common->crystal_as_sleep_clk << 5) |
+					  (common->feature_bitmap_9116 << 11);
+	}
 
 	skb_put(skb, frame_len);
 

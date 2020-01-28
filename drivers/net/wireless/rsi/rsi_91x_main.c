@@ -44,6 +44,21 @@ static struct rsi_proto_ops g_proto_ops = {
 };
 #endif
 
+static u8 antenna_sel = 2;
+module_param(antenna_sel, byte, 0);
+MODULE_PARM_DESC(antenna_sel, "\n Antenna selection. '2' for  intenal antenna \
+and '3' for External antenna\n");
+
+static u16 feature_bitmap_9116 = 0;
+module_param(feature_bitmap_9116, ushort, 0);
+MODULE_PARM_DESC(feature_bitmap_9116, "\n9116 Feature Bitmap BIT(0) 0: AGC_PD \
+Enable, 1: AGC_PD Disable BIT(7:1) Reserved\n");
+
+static bool load_flash_fw = 0;
+module_param(load_flash_fw, bool, 0);
+MODULE_PARM_DESC(load_flash_fw, "\n Load firmware from on board flash\n\
+'0' for disable and '1' for enable\n");
+
 /**
  * rsi_dbg() - This function outputs informational messages.
  * @zone: Zone of interest for output message.
@@ -103,7 +118,8 @@ void rsi_print_version(struct rsi_common *common)
 		common->lmac_ver.release_num);
 	rsi_dbg(ERR_ZONE, "Operating mode\t: %d [%s]",
 		common->oper_mode, opmode_str(common->oper_mode));
-	rsi_dbg(ERR_ZONE, "Firmware file\t: %s", common->priv->fw_file_name);
+	if (!common->load_flash_fw)
+		rsi_dbg(ERR_ZONE, "Firmware file\t: %s", common->priv->fw_file_name);
 	rsi_dbg(ERR_ZONE, "================================================\n");
 }
 
@@ -328,6 +344,8 @@ struct rsi_hw *rsi_91x_init(u16 oper_mode)
 	init_completion(&common->wlan_init_completion);
 	adapter->device_model = RSI_DEV_9113;
 	common->oper_mode = oper_mode;
+	common->load_flash_fw = load_flash_fw;
+	common->obm_ant_sel_val = antenna_sel;
 
 	/* Determine coex mode */
 	switch (common->oper_mode) {
@@ -341,7 +359,10 @@ struct rsi_hw *rsi_91x_init(u16 oper_mode)
 		break;
 	case DEV_OPMODE_AP_BT_DUAL:
 	case DEV_OPMODE_AP_BT:
-		common->coex_mode = 4;
+		if (load_flash_fw)
+			common->coex_mode = 2;
+		else
+			common->coex_mode = 4;
 		break;
 	case DEV_OPMODE_WIFI_ALONE:
 		common->coex_mode = 1;
