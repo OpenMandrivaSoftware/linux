@@ -54,4 +54,12 @@ config RSI_COEX
 	  Select M (recommended), if you have want to use this feature
 	  and you have RS9113 module.
 
+config RSI_PURISM
+	bool "Redpine Signals PURISM FW support"
+	depends on RSI_91X && RSI_COEX
+	default n
+	help
+	  This option enables the PURISM FW support.
+	  Say Y if you want to use this feature.
+
 endif # WLAN_VENDOR_RSI
