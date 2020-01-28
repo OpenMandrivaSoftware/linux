@@ -3798,8 +3798,8 @@ int rsi_mgmt_pkt_recv(struct rsi_common *common, u8 *msg)
 		common->priv->rrm_state = RRM_RESP_RCVD;
 		rsi_rrm_recv_cmd_frame(common, msg, msg_len);
 		rsi_rrm_sched_req(common);
-		break;
 #endif
+		break;
 	case RX_DOT11_MGMT:
 		return rsi_mgmt_pkt_to_core(common, msg, msg_len);
 
