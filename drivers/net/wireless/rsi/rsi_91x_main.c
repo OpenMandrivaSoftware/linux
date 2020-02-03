@@ -24,7 +24,7 @@
 #include "rsi_coex.h"
 #include "rsi_hal.h"
 
-u32 rsi_zone_enabled = /* INFO_ZONE |
+u16 rsi_zone_enabled = /* INFO_ZONE |
 			INIT_ZONE |
 			MGMT_TX_ZONE |
 			MGMT_RX_ZONE |
@@ -35,6 +35,12 @@ u32 rsi_zone_enabled = /* INFO_ZONE |
 			ERR_ZONE |
 			0;
 EXPORT_SYMBOL_GPL(rsi_zone_enabled);
+
+module_param(rsi_zone_enabled, ushort, S_IRUGO);
+MODULE_PARM_DESC(rsi_zone_enabled, "\nBIT(0) - ERROR ZONE\n\
+		 BIT(1) - INFO ZONE\nBIT(2) - INIT ZONE\nBIT(3) - MGMT TX ZONE\n\
+		 BIT(4) - MGMT RX ZONE\nBIT(5) - DATA TX ZONE\nBIT(6) - DATA RX ZONE\n\
+		 BIT(7) - FSM ZONE\nBIT(8) - ISR ZONE\n");
 
 #ifdef CONFIG_RSI_COEX
 static struct rsi_proto_ops g_proto_ops = {
