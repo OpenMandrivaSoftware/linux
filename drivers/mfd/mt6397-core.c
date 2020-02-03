@@ -12,12 +12,17 @@
 #include <linux/regmap.h>
 #include <linux/mfd/core.h>
 #include <linux/mfd/mt6323/core.h>
+#include <linux/mfd/mt6358/core.h>
 #include <linux/mfd/mt6397/core.h>
 #include <linux/mfd/mt6323/registers.h>
+#include <linux/mfd/mt6358/registers.h>
 #include <linux/mfd/mt6397/registers.h>
 
 #define MT6323_RTC_BASE		0x8000
 #define MT6323_RTC_SIZE		0x40
+
+#define MT6358_RTC_BASE		0x0588
+#define MT6358_RTC_SIZE		0x3c
 
 #define MT6397_RTC_BASE		0xe000
 #define MT6397_RTC_SIZE		0x3e
@@ -28,6 +33,11 @@
 static const struct resource mt6323_rtc_resources[] = {
 	DEFINE_RES_MEM(MT6323_RTC_BASE, MT6323_RTC_SIZE),
 	DEFINE_RES_IRQ(MT6323_IRQ_STATUS_RTC),
+};
+
+static const struct resource mt6358_rtc_resources[] = {
+	DEFINE_RES_MEM(MT6358_RTC_BASE, MT6358_RTC_SIZE),
+	DEFINE_RES_IRQ(MT6358_IRQ_RTC),
 };
 
 static const struct resource mt6397_rtc_resources[] = {
@@ -74,6 +84,21 @@ static const struct mfd_cell mt6323_devs[] = {
 	},
 };
 
+static const struct mfd_cell mt6358_devs[] = {
+	{
+		.name = "mt6358-regulator",
+		.of_compatible = "mediatek,mt6358-regulator"
+	}, {
+		.name = "mt6358-rtc",
+		.num_resources = ARRAY_SIZE(mt6358_rtc_resources),
+		.resources = mt6358_rtc_resources,
+		.of_compatible = "mediatek,mt6358-rtc",
+	}, {
+		.name = "mt6358-sound",
+		.of_compatible = "mediatek,mt6358-sound"
+	},
+};
+
 static const struct mfd_cell mt6397_devs[] = {
 	{
 		.name = "mt6397-rtc",
@@ -108,6 +133,11 @@ struct chip_data {
 static const struct chip_data mt6323_core = {
 	.cid_addr = MT6323_CID,
 	.cid_shift = 0,
+};
+
+static const struct chip_data mt6358_core = {
+	.cid_addr = MT6358_SWCID,
+	.cid_shift = 8,
 };
 
 static const struct chip_data mt6397_core = {
@@ -154,19 +184,33 @@ static int mt6397_probe(struct platform_device *pdev)
 	if (pmic->irq <= 0)
 		return pmic->irq;
 
-	ret = mt6397_irq_init(pmic);
-	if (ret)
-		return ret;
-
 	switch (pmic->chip_id) {
 	case MT6323_CHIP_ID:
+		ret = mt6397_irq_init(pmic);
+		if (ret)
+			return ret;
+
 		ret = devm_mfd_add_devices(&pdev->dev, PLATFORM_DEVID_NONE,
 					   mt6323_devs, ARRAY_SIZE(mt6323_devs),
 					   NULL, 0, pmic->irq_domain);
 		break;
 
+	case MT6358_CHIP_ID:
+		ret = mt6358_irq_init(pmic);
+		if (ret)
+			return ret;
+
+		ret = devm_mfd_add_devices(&pdev->dev, PLATFORM_DEVID_NONE,
+					   mt6358_devs, ARRAY_SIZE(mt6358_devs),
+					   NULL, 0, pmic->irq_domain);
+		break;
+
 	case MT6391_CHIP_ID:
 	case MT6397_CHIP_ID:
+		ret = mt6397_irq_init(pmic);
+		if (ret)
+			return ret;
+
 		ret = devm_mfd_add_devices(&pdev->dev, PLATFORM_DEVID_NONE,
 					   mt6397_devs, ARRAY_SIZE(mt6397_devs),
 					   NULL, 0, pmic->irq_domain);
@@ -189,6 +233,9 @@ static const struct of_device_id mt6397_of_match[] = {
 	{
 		.compatible = "mediatek,mt6323",
 		.data = &mt6323_core,
+	}, {
+		.compatible = "mediatek,mt6358",
+		.data = &mt6358_core,
 	}, {
 		.compatible = "mediatek,mt6397",
 		.data = &mt6397_core,
