@@ -183,6 +183,19 @@ bool rsi_is_cipher_wep(struct rsi_common *common)
 		return false;
 }
 
+static int rsi_validate_mac_addr(struct rsi_common *common, u8 *addr_t)
+{
+	u8 addr[ETH_ALEN] = {0};
+
+	if (!memcmp(addr, addr_t, ETH_ALEN)) {
+		rsi_dbg(ERR_ZONE, "%s: MAC addr is NULL \n", __func__);
+		return -1;
+	} else if (memcmp(common->mac_addr, addr_t, ETH_ALEN)) {
+		memcpy(common->mac_addr, addr_t, ETH_ALEN);
+	}
+	return 0;
+}
+
 /**
  * rsi_register_rates_channels() - This function registers channels and rates.
  * @adapter: Pointer to the adapter structure.
@@ -258,6 +271,9 @@ static int rsi_mac80211_hw_scan_start(struct ieee80211_hw *hw,
 	 */
 	if (!bss->assoc)
 		return 1;
+
+	if(rsi_validate_mac_addr(common, vif->addr))
+		return -ENODEV;
 
 	mutex_lock(&common->mutex);
 	common->hwscan = scan_req;
@@ -373,6 +389,9 @@ static void rsi_mac80211_tx(struct ieee80211_hw *hw,
 	struct rsi_hw *adapter = hw->priv;
 	struct rsi_common *common = adapter->priv;
 	struct ieee80211_hdr *wlh = (struct ieee80211_hdr *)skb->data;
+
+	if(rsi_validate_mac_addr(common, wlh->addr2))
+		return;
 
 	if (ieee80211_is_auth(wlh->frame_control))
 		common->mac_ops_resumed = false;
