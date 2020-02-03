@@ -58,7 +58,7 @@ enum RSI_FSM_STATES {
 	NUM_FSM_STATES
 };
 
-extern u32 rsi_zone_enabled;
+extern u16 rsi_zone_enabled;
 extern __printf(2, 3) void rsi_dbg(u32 zone, const char *fmt, ...);
 
 #define RSI_MAX_VIFS                    3
