@@ -513,7 +513,7 @@
 		ti,charge-current = <1600000>; /* 1.6A */
 		ti,termination-current = <66000>;  /* 66mA */
 		ti,precharge-current = <130000>; /* 130mA */
-		ti,minimum-sys-voltage = <3000000>; /* 3V */
+		ti,minimum-sys-voltage = <3500000>; /* 3.5V */
 		ti,boost-voltage = <5000000>; /* 5V */
 		ti,boost-max-current = <50000>; /* 50mA */
 		monitored-battery = <&bat>;
