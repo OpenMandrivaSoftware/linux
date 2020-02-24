@@ -900,6 +900,10 @@
 	power-supply = <&buck3_reg>;
 };
 
+&pgc_mipi {
+	power-supply = <&ldo5_reg>;
+};
+
 &pgc_vpu {
 	power-supply = <&buck4_reg>;
 };
