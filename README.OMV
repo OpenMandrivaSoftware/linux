@@ -1,0 +1,6 @@
+This kernel is based on the
+experiment/next-20200217/dcss-hdmi/v0-wip
+branch of
+https://source.puri.sm/guido.gunther/linux-imx8.git/
+
+Relevant patches imported from there include iMX8 HDMI support
