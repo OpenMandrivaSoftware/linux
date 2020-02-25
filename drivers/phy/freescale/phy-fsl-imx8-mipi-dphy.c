@@ -14,6 +14,7 @@
 #include <linux/of_platform.h>
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
+#include <linux/pm_runtime.h>
 #include <linux/regmap.h>
 
 /* DPHY registers */
@@ -93,6 +94,7 @@ struct mixel_dphy_cfg {
 };
 
 struct mixel_dphy_priv {
+	struct device *dev;
 	struct mixel_dphy_cfg cfg;
 	struct regmap *regmap;
 	struct clk *phy_ref_clk;
@@ -382,6 +384,7 @@ static int mixel_dphy_power_on(struct phy *phy)
 	ret = clk_prepare_enable(priv->phy_ref_clk);
 	if (ret < 0)
 		return ret;
+	pm_runtime_get_sync(priv->dev);
 
 	phy_write(phy, PWR_ON, DPHY_PD_PLL);
 	ret = regmap_read_poll_timeout(priv->regmap, DPHY_LOCK, locked,
@@ -395,6 +398,7 @@ static int mixel_dphy_power_on(struct phy *phy)
 
 	return 0;
 clock_disable:
+	pm_runtime_put(priv->dev);
 	clk_disable_unprepare(priv->phy_ref_clk);
 	return ret;
 }
@@ -406,6 +410,7 @@ static int mixel_dphy_power_off(struct phy *phy)
 	phy_write(phy, PWR_OFF, DPHY_PD_PLL);
 	phy_write(phy, PWR_OFF, DPHY_PD_DPHY);
 
+	pm_runtime_put(priv->dev);
 	clk_disable_unprepare(priv->phy_ref_clk);
 
 	return 0;
@@ -469,6 +474,7 @@ static int mixel_dphy_probe(struct platform_device *pdev)
 	dev_dbg(dev, "phy_ref clock rate: %lu\n",
 		clk_get_rate(priv->phy_ref_clk));
 
+	priv->dev = dev;
 	dev_set_drvdata(dev, priv);
 
 	phy = devm_phy_create(dev, np, &mixel_dphy_phy_ops);
@@ -479,12 +485,26 @@ static int mixel_dphy_probe(struct platform_device *pdev)
 	phy_set_drvdata(phy, priv);
 
 	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
+	if (IS_ERR(phy_provider))
+		return PTR_ERR(phy_provider);
 
-	return PTR_ERR_OR_ZERO(phy_provider);
+	pm_runtime_enable(dev);
+
+	return 0;
+}
+
+static int mixel_dphy_remove(struct platform_device *pdev)
+{
+	struct mixel_dphy_priv *priv = platform_get_drvdata(pdev);
+
+	pm_runtime_disable(priv->dev);
+
+	return 0;
 }
 
 static struct platform_driver mixel_dphy_driver = {
 	.probe	= mixel_dphy_probe,
+	.remove = mixel_dphy_remove,
 	.driver = {
 		.name = "mixel-mipi-dphy",
 		.of_match_table	= mixel_dphy_of_match,
