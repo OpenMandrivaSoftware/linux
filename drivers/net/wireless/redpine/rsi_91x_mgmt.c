@@ -2553,19 +2553,9 @@ int rsi_send_ps_request(struct rsi_hw *adapter, bool enable)
 		ps->desc_word[6] = WAKEUP_REQUEST;
 	}
 
-	if (common->uapsd_bitmap) {
-//		ps->ps_mimic_support = 1;
-		printk("<===== UAPSD Power Save ====>\n");
-		ps->ps_uapsd_acs = common->uapsd_bitmap;
-		ps->ps_uapsd_acs = (adapter->hw->uapsd_max_sp_len <<
-				    IEEE80211_WMM_IE_STA_QOSINFO_SP_SHIFT) |
-				    IEEE80211_WMM_IE_STA_QOSINFO_AC_MASK;
-		ps->ps_uapsd_wakeup_period = RSI_UAPSD_WAKEUP_PERIOD;
-	} else {
-		printk("<===== Mimic-UAPSD Power Save ====>\n");
-		ps->ps_mimic_support = 1;
-		ps->ps_uapsd_wakeup_period = RSI_UAPSD_WAKEUP_PERIOD;
-	}
+	ps->ps_mimic_support = 1;
+	ps->ps_uapsd_wakeup_period = RSI_UAPSD_WAKEUP_PERIOD;
+
 	ps->ps_sleep.sleep_type = ps_info->sleep_type;
 	ps->ps_sleep.num_bcns_per_lis_int =
 		cpu_to_le16(ps_info->num_bcns_per_lis_int);
