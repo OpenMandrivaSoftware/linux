@@ -52,6 +52,8 @@
 #define EV_REGISTER_OFFSET_Y		0x45
 #define EV_REGISTER_OFFSET_X		0x46
 
+#define REG_FW_VERSION			0xa6
+
 #define NO_REGISTER			0xff
 
 #define WORK_REGISTER_OPMODE		0x3c
@@ -694,6 +696,26 @@ static int edt_ft5x06_debugfs_mode_set(void *data, u64 mode)
 DEFINE_SIMPLE_ATTRIBUTE(debugfs_mode_fops, edt_ft5x06_debugfs_mode_get,
 			edt_ft5x06_debugfs_mode_set, "%llu\n");
 
+static int edt_ft5x06_debugfs_fw_version_get(void *data, u64 *version)
+{
+	struct edt_ft5x06_ts_data *tsdata = data;
+	struct i2c_client *client = tsdata->client;
+
+	mutex_lock(&tsdata->mutex);
+
+	*version = edt_ft5x06_register_read(tsdata, REG_FW_VERSION);
+	if (*version == 0xff || *version == 0x00)
+		dev_warn(&client->dev, "failed to get firmware version\n");
+
+	mutex_unlock(&tsdata->mutex);
+
+	return 0;
+};
+
+DEFINE_SIMPLE_ATTRIBUTE(debugfs_fw_version_fops,
+			edt_ft5x06_debugfs_fw_version_get,
+			NULL, "%llu\n");
+
 static ssize_t edt_ft5x06_debugfs_raw_data_read(struct file *file,
 				char __user *buf, size_t count, loff_t *off)
 {
@@ -787,6 +809,9 @@ static void edt_ft5x06_ts_prepare_debugfs(struct edt_ft5x06_ts_data *tsdata,
 
 	debugfs_create_file("mode", S_IRUSR | S_IWUSR,
 			    tsdata->debug_dir, tsdata, &debugfs_mode_fops);
+	debugfs_create_file("fw_version", S_IRUSR,
+			    tsdata->debug_dir, tsdata,
+			    &debugfs_fw_version_fops);
 	debugfs_create_file("raw_data", S_IRUSR,
 			    tsdata->debug_dir, tsdata, &debugfs_raw_data_fops);
 }
