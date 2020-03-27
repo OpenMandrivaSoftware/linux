@@ -19,6 +19,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/dma-resv.h>
 #include <linux/spinlock.h>
+#include <linux/interconnect.h>
 
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
@@ -125,6 +126,8 @@ static void mxsfb_pipe_enable(struct drm_simple_display_pipe *pipe,
 		mxsfb->connector = &mxsfb->panel_connector;
 	}
 
+	icc_set_bw(mxsfb->icc_path, 0, mxsfb->icc_path_bw);
+
 	pm_runtime_get_sync(drm->dev);
 	drm_panel_prepare(mxsfb->panel);
 	mxsfb_crtc_enable(mxsfb);
@@ -153,6 +156,8 @@ static void mxsfb_pipe_disable(struct drm_simple_display_pipe *pipe)
 
 	if (mxsfb->connector != &mxsfb->panel_connector)
 		mxsfb->connector = NULL;
+
+	icc_set_bw(mxsfb->icc_path, 0, 0);
 }
 
 static void mxsfb_pipe_update(struct drm_simple_display_pipe *pipe,
@@ -386,6 +391,31 @@ static const struct of_device_id mxsfb_dt_ids[] = {
 };
 MODULE_DEVICE_TABLE(of, mxsfb_dt_ids);
 
+
+static int mxsfb_init_icc(struct platform_device *pdev)
+{
+	struct drm_device *drm = platform_get_drvdata(pdev);
+	struct mxsfb_drm_private *mxsfb = drm->dev_private;
+	int ret;
+
+	/* Optional interconnect request */
+	mxsfb->icc_path = of_icc_get(&pdev->dev, NULL);
+	if (IS_ERR(mxsfb->icc_path)) {
+		ret = PTR_ERR(mxsfb->icc_path);
+		if (ret == -EPROBE_DEFER)
+			return ret;
+
+		mxsfb->icc_path = NULL;
+	}
+
+	/* Force DDRC high on imx8mq: */
+	mxsfb->icc_path_bw = 678900;
+
+	icc_set_bw(mxsfb->icc_path, 0, mxsfb->icc_path_bw);
+
+	return 0;
+}
+
 static int mxsfb_probe(struct platform_device *pdev)
 {
 	struct drm_device *drm;
@@ -404,6 +434,10 @@ static int mxsfb_probe(struct platform_device *pdev)
 		return PTR_ERR(drm);
 
 	ret = mxsfb_load(drm);
+	if (ret)
+		goto err_free;
+
+	ret = mxsfb_init_icc(pdev);
 	if (ret)
 		goto err_free;
 
@@ -426,10 +460,13 @@ err_free:
 static int mxsfb_remove(struct platform_device *pdev)
 {
 	struct drm_device *drm = platform_get_drvdata(pdev);
+	struct mxsfb_drm_private *mxsfb = drm->dev_private;
 
 	drm_dev_unregister(drm);
 	mxsfb_unload(drm);
 	drm_dev_put(drm);
+
+	icc_put(mxsfb->icc_path);
 
 	return 0;
 }

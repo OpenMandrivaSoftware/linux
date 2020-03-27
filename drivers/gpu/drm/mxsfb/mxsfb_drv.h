@@ -31,6 +31,9 @@ struct mxsfb_drm_private {
 	struct drm_connector		*connector;
 	struct drm_panel		*panel;
 	struct drm_bridge		*bridge;
+
+	struct icc_path 		*icc_path;
+	s32				icc_path_bw;
 };
 
 int mxsfb_setup_crtc(struct drm_device *dev);
