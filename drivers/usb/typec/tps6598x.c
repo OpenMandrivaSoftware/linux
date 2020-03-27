@@ -8,6 +8,7 @@
 
 #include "tps6598x.h"
 
+#include <linux/debugfs.h>
 #include <linux/i2c.h>
 #include <linux/acpi.h>
 #include <linux/extcon.h>
@@ -25,6 +26,7 @@
 /* Register offsets */
 #define TPS_REG_VID			0x00
 #define TPS_REG_MODE			0x03
+#define TPS_REG_CUSTOMER_USE		0x06
 #define TPS_REG_CMD1			0x08
 #define TPS_REG_DATA1			0x09
 #define TPS_REG_INT_EVENT1		0x14
@@ -102,12 +104,17 @@ struct tps6598x {
 	struct power_supply *psy;
 	struct power_supply_desc psy_desc;
 	enum power_supply_usb_type usb_type;
+
 	struct tps6598x_pdo terms;
 
 	u32 data_status;
 	u16 pwr_status;
 	bool dp;
 	struct extcon_dev *extcon;
+#ifdef CONFIG_DEBUG_FS
+	struct dentry *dev_dentry;
+	struct dentry *customer_user_dentry;
+#endif
 };
 
 static enum power_supply_property tps6598x_psy_props[] = {
@@ -234,6 +241,62 @@ static void tps6598x_set_data_role(struct tps6598x *tps,
 	usb_role_switch_set_role(tps->role_sw, role_val);
 	typec_set_data_role(tps->port, role);
 }
+
+#ifdef CONFIG_DEBUG_FS
+static struct dentry *rootdir;
+
+static int tps6598x_debug_customer_use_show(struct seq_file *s, void *v)
+{
+	struct tps6598x *tps = (struct tps6598x *)s->private;
+	u64 mode64;
+	int ret;
+
+	mutex_lock(&tps->lock);
+
+	ret =  tps6598x_block_read(tps, TPS_REG_CUSTOMER_USE, &mode64, sizeof(mode64));
+	if (!ret)
+		seq_printf(s, "0x%016llx\n", mode64);
+
+	mutex_unlock(&tps->lock);
+
+	return 0;
+}
+DEFINE_SHOW_ATTRIBUTE(tps6598x_debug_customer_use);
+
+static void tps6598x_debugfs_init(struct tps6598x *tps)
+{
+	struct dentry *dentry;
+
+	if (!rootdir)
+		rootdir = debugfs_create_dir("tps6598x", NULL);
+
+	dentry = debugfs_create_dir(dev_name(tps->dev), rootdir);
+	if (IS_ERR(dentry))
+		return;
+	tps->dev_dentry = dentry;
+
+	dentry = debugfs_create_file("customer_use",
+				     S_IFREG | 0444, tps->dev_dentry,
+				     tps, &tps6598x_debug_customer_use_fops);
+	if (IS_ERR(dentry))
+		return;
+	tps->customer_user_dentry = dentry;
+}
+
+static void tps6598x_debugfs_exit(struct tps6598x *tps)
+{
+	debugfs_remove(tps->customer_user_dentry);
+	debugfs_remove(tps->dev_dentry);
+	debugfs_remove(rootdir);
+	rootdir = NULL;
+}
+
+#else
+
+static void tps6598x_debugfs_init(const struct tps6598x *tps) { }
+static void tps6598x_debugfs_exit(const struct tps6598x *tps) { }
+
+#endif
 
 static int tps6598x_connect(struct tps6598x *tps, u32 status)
 {
@@ -856,6 +919,7 @@ static int tps6598x_probe(struct i2c_client *client)
 	}
 
 	i2c_set_clientdata(client, tps);
+	tps6598x_debugfs_init(tps);
 
 	return 0;
 
@@ -871,6 +935,7 @@ static int tps6598x_remove(struct i2c_client *client)
 {
 	struct tps6598x *tps = i2c_get_clientdata(client);
 
+	tps6598x_debugfs_exit(tps);
 	tps6598x_disconnect(tps, 0);
 	typec_unregister_port(tps->port);
 	usb_role_switch_put(tps->role_sw);
