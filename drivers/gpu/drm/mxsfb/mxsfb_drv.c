@@ -15,6 +15,7 @@
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
+#include <linux/interconnect.h>
 
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_bridge.h>
@@ -309,6 +310,34 @@ static const struct of_device_id mxsfb_dt_ids[] = {
 };
 MODULE_DEVICE_TABLE(of, mxsfb_dt_ids);
 
+
+static int mxsfb_init_icc(struct platform_device *pdev)
+{
+	struct drm_device *drm = platform_get_drvdata(pdev);
+	struct mxsfb_drm_private *mxsfb = drm->dev_private;
+	int ret;
+
+	/* Optional interconnect request */
+	mxsfb->icc_path = devm_of_icc_get(&pdev->dev, "dram");
+	if (IS_ERR(mxsfb->icc_path)) {
+		ret = PTR_ERR(mxsfb->icc_path);
+		if (ret == -EPROBE_DEFER)
+			return ret;
+
+		mxsfb->icc_path = NULL;
+		dev_dbg(drm->dev,
+			"No interconnect may cause display underflows!\n");
+	}
+
+	ret = icc_set_bw(mxsfb->icc_path, 0, MBps_to_icc(679));
+	if (ret) {
+		dev_err(drm->dev, "%s: icc_set_bw failed: %d\n", __func__, ret);
+		return ret;
+	}
+
+	return 0;
+}
+
 static int mxsfb_probe(struct platform_device *pdev)
 {
 	struct drm_device *drm;
@@ -324,6 +353,10 @@ static int mxsfb_probe(struct platform_device *pdev)
 		return PTR_ERR(drm);
 
 	ret = mxsfb_load(drm, of_id->data);
+	if (ret)
+		goto err_free;
+
+	ret = mxsfb_init_icc(pdev);
 	if (ret)
 		goto err_free;
 

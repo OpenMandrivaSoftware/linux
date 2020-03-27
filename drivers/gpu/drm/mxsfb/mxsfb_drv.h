@@ -41,6 +41,8 @@ struct mxsfb_drm_private {
 	struct drm_encoder		encoder;
 	struct drm_connector		*connector;
 	struct drm_bridge		*bridge;
+
+	struct icc_path 		*icc_path;
 };
 
 static inline struct mxsfb_drm_private *

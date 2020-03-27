@@ -13,6 +13,7 @@
 #include <linux/iopoll.h>
 #include <linux/pm_runtime.h>
 #include <linux/spinlock.h>
+#include <linux/interconnect.h>
 
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
@@ -310,6 +311,12 @@ static void mxsfb_crtc_atomic_enable(struct drm_crtc *crtc,
 	struct mxsfb_drm_private *mxsfb = to_mxsfb_drm_private(crtc->dev);
 	struct drm_device *drm = mxsfb->drm;
 	dma_addr_t paddr;
+	int ret;
+
+	ret = icc_enable(mxsfb->icc_path);
+	if (ret)
+		dev_err_ratelimited(drm->dev, "%s: icc_enable failed: %d\n",
+				    __func__, ret);
 
 	pm_runtime_get_sync(drm->dev);
 	mxsfb_enable_axi_clk(mxsfb);
@@ -334,6 +341,7 @@ static void mxsfb_crtc_atomic_disable(struct drm_crtc *crtc,
 	struct mxsfb_drm_private *mxsfb = to_mxsfb_drm_private(crtc->dev);
 	struct drm_device *drm = mxsfb->drm;
 	struct drm_pending_vblank_event *event;
+	int ret;
 
 	mxsfb_disable_controller(mxsfb);
 
@@ -349,6 +357,11 @@ static void mxsfb_crtc_atomic_disable(struct drm_crtc *crtc,
 
 	mxsfb_disable_axi_clk(mxsfb);
 	pm_runtime_put_sync(drm->dev);
+
+	ret = icc_disable(mxsfb->icc_path);
+	if (ret)
+		dev_err_ratelimited(drm->dev, "%s: icc_disable failed: %d\n",
+				    __func__, ret);
 }
 
 static int mxsfb_crtc_enable_vblank(struct drm_crtc *crtc)
