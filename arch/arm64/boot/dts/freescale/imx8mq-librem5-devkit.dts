@@ -583,9 +583,11 @@
 	};
 
 	proximity-sensor@60 {
-		compatible = "vishay,vcnl4040";
+		compatible = "vishay,vcnl4040", "vishay,vcnl4200";
 		reg = <0x60>;
 		pinctrl-0 = <&pinctrl_prox>;
+		interrupt-parent = <&gpio1>;
+		interrupts = <12 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	accel-gyro@6a {
