@@ -2543,11 +2543,9 @@ int rsi_send_ps_request(struct rsi_hw *adapter, bool enable)
 				       (RSI_WIFI_MGMT_Q << 12));
 	ps->desc_word[1] = cpu_to_le16(WAKEUP_SLEEP_REQUEST);
 	if (enable) {
-		printk("<=====Sending PS Enable request ======>\n");
 		ps->ps_sleep.enable = 1;
 		ps->desc_word[6] = SLEEP_REQUEST;
 	} else {
-		printk("<=====Sending PS Disable request ======>\n");
 		ps->ps_sleep.enable = 0;
 		ps->desc_word[0] |= BIT(15);
 		ps->desc_word[6] = WAKEUP_REQUEST;
@@ -2583,8 +2581,6 @@ int rsi_send_ps_request(struct rsi_hw *adapter, bool enable)
 		ps->ps_listen_interval = 0;
 
 	skb_put(skb, frame_len);
-	rsi_hex_dump(ERR_ZONE, "ps-request",
-		     skb->data, skb->len);
 
 	return rsi_send_internal_mgmt_frame(common, skb);
 }
