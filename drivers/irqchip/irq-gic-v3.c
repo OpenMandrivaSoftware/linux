@@ -1162,6 +1162,9 @@ static void gic_ipi_send_mask(struct irq_data *d, const struct cpumask *mask)
 
 		arm_smccc_smc(FSL_SIP_GPC, FSL_SIP_CONFIG_GPC_CORE_WAKE,
 				*cpumask_bits(mask), 0, 0, 0, 0, 0, &res);
+		/* not supported by firmware. */
+		if ((long)res.a0 < 0)
+			err11171 = false;
 	}
 }
 
