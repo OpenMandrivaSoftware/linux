@@ -1163,6 +1163,9 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
 
 		arm_smccc_smc(FSL_SIP_GPC, FSL_SIP_CONFIG_GPC_CORE_WAKE,
 				*cpumask_bits(mask), 0, 0, 0, 0, 0, &res);
+		/* not supported by firmware. */
+		if ((long)res.a0 < 0)
+			err11171 = false;
 	}
 }
 
