@@ -410,6 +410,7 @@ static int __cdns_dp_probe(struct platform_device *pdev,
 		DRM_ERROR("NO dp FW running\n");
 		return -ENXIO;
 	}
+	cdns_mhdp_read_fw_version(mhdp);
 
 	/* DP PHY init before AUX init */
 	cdns_mhdp_plat_call(mhdp, phy_set);

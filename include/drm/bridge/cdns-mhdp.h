@@ -658,7 +658,7 @@ int cdns_mhdp_audio_stop(struct cdns_mhdp_device *mhdp,
 int cdns_mhdp_audio_mute(struct cdns_mhdp_device *mhdp, bool enable);
 int cdns_mhdp_audio_config(struct cdns_mhdp_device *mhdp,
 			   struct audio_info *audio);
-
+void cdns_mhdp_read_fw_version(struct cdns_mhdp_device *mhdp);
 int cdns_phy_reg_write(struct cdns_mhdp_device *mhdp, u32 addr, u32 val);
 u32 cdns_phy_reg_read(struct cdns_mhdp_device *mhdp, u32 addr);
 

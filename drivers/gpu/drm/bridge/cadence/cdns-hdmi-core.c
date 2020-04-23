@@ -484,6 +484,7 @@ static int __cdns_hdmi_probe(struct platform_device *pdev,
 		dev_err(dev, "NO HDMI FW running\n");
 		return -ENXIO;
 	}
+	cdns_mhdp_read_fw_version(mhdp);
 
 	/* Enable Hotplug Detect thread */
 	irq_set_status_flags(mhdp->irq[IRQ_IN], IRQ_NOAUTOEN);

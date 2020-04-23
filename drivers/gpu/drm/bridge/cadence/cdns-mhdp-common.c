@@ -307,16 +307,7 @@ int cdns_mhdp_load_firmware(struct cdns_mhdp_device *mhdp, const u32 *i_mem,
 		return -EINVAL;
 	}
 
-	reg = cdns_mhdp_bus_read(mhdp, VER_L) & 0xff;
-	mhdp->fw_version = reg;
-	reg = cdns_mhdp_bus_read(mhdp, VER_H) & 0xff;
-	mhdp->fw_version |= reg << 8;
-	reg = cdns_mhdp_bus_read(mhdp, VER_LIB_L_ADDR) & 0xff;
-	mhdp->fw_version |= reg << 16;
-	reg = cdns_mhdp_bus_read(mhdp, VER_LIB_H_ADDR) & 0xff;
-	mhdp->fw_version |= reg << 24;
-
-	DRM_DEV_DEBUG(mhdp->dev, "firmware version: %x\n", mhdp->fw_version);
+	cdns_mhdp_read_fw_version(mhdp);
 
 	return 0;
 }
@@ -680,3 +671,20 @@ u32 cdns_phy_reg_read(struct cdns_mhdp_device *mhdp, u32 addr)
 	return cdns_mhdp_reg_read(mhdp, ADDR_PHY_AFE + (addr << 2));
 }
 EXPORT_SYMBOL(cdns_phy_reg_read);
+
+void cdns_mhdp_read_fw_version(struct cdns_mhdp_device *mhdp)
+{
+	u32 reg;
+
+	reg = cdns_mhdp_bus_read(mhdp, VER_L) & 0xff;
+	mhdp->fw_version = reg;
+	reg = cdns_mhdp_bus_read(mhdp, VER_H) & 0xff;
+	mhdp->fw_version |= reg << 8;
+	reg = cdns_mhdp_bus_read(mhdp, VER_LIB_L_ADDR) & 0xff;
+	mhdp->fw_version |= reg << 16;
+	reg = cdns_mhdp_bus_read(mhdp, VER_LIB_H_ADDR) & 0xff;
+	mhdp->fw_version |= reg << 24;
+
+	DRM_DEV_INFO(mhdp->dev, "firmware version: %x\n", mhdp->fw_version);
+}
+EXPORT_SYMBOL(cdns_mhdp_read_fw_version);
