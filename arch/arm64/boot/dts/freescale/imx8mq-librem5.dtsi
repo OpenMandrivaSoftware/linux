@@ -1049,6 +1049,12 @@
 		>;
 	};
 
+	/* SKHynix YACG4D0C9SHC - 8MP Front-Facing Camera */
+	camera1@20 {
+		reg = <0x20>;
+		status = "disabled";
+	};
+
 	backlight@36 {
 		compatible = "ti,lm36922";
 		reg = <0x36>;
@@ -1084,6 +1090,18 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c4>;
 	status = "okay";
+
+	/* Dongwoon DW9714A - Voice Coil Motor for 13MP Camera */
+	vcm@c {
+		reg = <0x0c>;
+		status = "disabled";
+	};
+
+	/* Samsung S5K3L6XX - 13MP Rear-Facing Camera */
+	camera2@10 {
+		reg = <0x10>;
+		status = "disabled";
+	};
 
 	bat: fuel-gauge@36 {
 		compatible = "maxim,max17055";
