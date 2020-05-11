@@ -286,12 +286,51 @@
 		>;
 	};
 
+	pinctrl_bt: btgrp {
+		fsl,pins = <
+			/* BT_REG_ON */
+			MX8MQ_IOMUXC_SAI3_RXC_GPIO4_IO29	0x83
+		>;
+	};
+
+	pinctrl_charger: chargergrp {
+		fsl,pins = <
+			/* CHG_EN */
+			MX8MQ_IOMUXC_NAND_CE1_B_GPIO3_IO2	0x3
+			/* CHG_OTG_OUT_EN */
+			MX8MQ_IOMUXC_NAND_CE3_B_GPIO3_IO4	0x3
+		>;
+	};
+
 	pinctrl_charger_in: chargeringrp {
 		fsl,pins = <
 			/* CHRG_INT */
 			MX8MQ_IOMUXC_NAND_CE2_B_GPIO3_IO3	0x00
 			/* CHG_STATUS_B */
 			MX8MQ_IOMUXC_NAND_ALE_GPIO3_IO0		0x80
+		>;
+	};
+
+	pinctrl_camera: cameragrp {
+		fsl,pins = <
+			/* CLKO2 cameras */
+			MX8MQ_IOMUXC_GPIO1_IO15_CCMSRCGPCMIX_CLKO2	0x1f
+		>;
+	};
+
+	pinctrl_camera_pwr: camerapwrgrp {
+		fsl,pins = <
+			/* CAMERA_PWR_EN_3V3 */
+			MX8MQ_IOMUXC_GPIO1_IO00_GPIO1_IO0	0x83
+		>;
+	};
+
+	pinctrl_csi: csigrp {
+		fsl,pins = <
+			/* CSI1_NRST */
+			MX8MQ_IOMUXC_ENET_RXC_GPIO1_IO25	0x83
+			/* CSI2_NRST */
+			MX8MQ_IOMUXC_ENET_RD0_GPIO1_IO26	0x83
 		>;
 	};
 
@@ -309,12 +348,37 @@
 		>;
 	};
 
-	pinctrl_ecspi1: ecspigrp {
+	pinctrl_dsirst: dsirstgrp {
+		fsl,pins = <
+			/* DSI_RST */
+			MX8MQ_IOMUXC_ENET_RD3_GPIO1_IO29	0x83
+			/* DSI_TE */
+			MX8MQ_IOMUXC_ENET_RD2_GPIO1_IO28	0x83
+			/* TP_RST */
+			MX8MQ_IOMUXC_ENET_RX_CTL_GPIO1_IO24	0x83
+		>;
+	};
+
+	pinctrl_ecspi1: spi1grp {
 		fsl,pins = <
 			MX8MQ_IOMUXC_ECSPI1_MOSI_ECSPI1_MOSI	0x83
 			MX8MQ_IOMUXC_ECSPI1_MISO_ECSPI1_MISO	0x83
 			MX8MQ_IOMUXC_ECSPI1_SS0_GPIO5_IO9	0x19
 			MX8MQ_IOMUXC_ECSPI1_SCLK_ECSPI1_SCLK	0x83
+		>;
+	};
+
+	pinctrl_flash: flashgrp {
+		fsl,pins = <
+			/* FLASH_STROBE */
+			MX8MQ_IOMUXC_ENET_TD0_GPIO1_IO21	0x83
+		>;
+	};
+
+	pinctrl_flash_pwr: flashpwrgrp {
+		fsl,pins = <
+			/* FLASH_EN */
+			MX8MQ_IOMUXC_ENET_TXC_GPIO1_IO23	0x83
 		>;
 	};
 
@@ -325,10 +389,25 @@
 		>;
 	};
 
+	pinctrl_gnss: gnssgrp {
+		fsl,pins = <
+			/* GPS_RST */
+			MX8MQ_IOMUXC_GPIO1_IO08_GPIO1_IO8	0x83
+		>;
+	};
+
 	pinctrl_gnsspwr: gnsspwrgrp {
 		fsl,pins = <
 			/* GPS3V3_EN */
 			MX8MQ_IOMUXC_NAND_DATA06_GPIO3_IO12	0x83
+		>;
+	};
+
+	/* unused */
+	pinctrl_hall: hallgrp {
+		fsl,pins = <
+			/* HALL */
+			MX8MQ_IOMUXC_ENET_TD3_GPIO1_IO18	0x80
 		>;
 	};
 
@@ -343,6 +422,24 @@
 		fsl,pins = <
 			/* HEADPHONE_DET_1V8 */
 			MX8MQ_IOMUXC_NAND_DATA03_GPIO3_IO9	0x180
+		>;
+	};
+
+	pinctrl_hsw: hswgrp {
+		fsl,pins = <
+			/* HSW_WIFI_STATE */
+			MX8MQ_IOMUXC_SAI1_TXFS_GPIO4_IO10	0x180
+			/* HSW_CA_STATE */
+			MX8MQ_IOMUXC_SAI1_RXC_GPIO4_IO1		0x180
+			/* HSW_4G_STATE */
+			MX8MQ_IOMUXC_SAI1_RXFS_GPIO4_IO0	0x180
+		>;
+	};
+
+	pinctrl_hub_nreset: hubnresetgrp {
+		fsl,pins = <
+			/* HUB_nRESET */
+			MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12	0x83
 		>;
 	};
 
@@ -422,6 +519,16 @@
 		>;
 	};
 
+	/* unused */
+	pinctrl_nfc: nfcgrp {
+		fsl,pins = <
+			/* NFC_EN */
+			MX8MQ_IOMUXC_SAI3_RXFS_GPIO4_IO28	0x83
+			/* NFC_IRQ */
+			MX8MQ_IOMUXC_SAI1_TXC_GPIO4_IO11	0x80
+		>;
+	};
+
 	pinctrl_pmic: pmicgrp {
 		fsl,pins = <
 			/* PMIC_NINT */
@@ -460,12 +567,36 @@
 		>;
 	};
 
+	/* unused */
+	pinctrl_sai3: sai3grp {
+		fsl,pins = <
+			MX8MQ_IOMUXC_SAI3_TXD_SAI3_TX_DATA0	0xd6
+			MX8MQ_IOMUXC_SAI3_TXC_SAI3_TX_BCLK	0xd6
+			MX8MQ_IOMUXC_SAI3_RXD_SAI3_RX_DATA0	0xd6
+			MX8MQ_IOMUXC_SAI3_TXFS_SAI3_TX_SYNC	0xd6
+		>;
+	};
+
 	pinctrl_sai6: sai6grp {
 		fsl,pins = <
 			MX8MQ_IOMUXC_SAI1_RXD5_SAI6_RX_DATA0	0xd6
 			MX8MQ_IOMUXC_SAI1_RXD6_SAI6_RX_SYNC	0xd6
 			MX8MQ_IOMUXC_SAI1_TXD4_SAI6_RX_BCLK	0xd6
 			MX8MQ_IOMUXC_SAI1_TXD5_SAI6_TX_DATA0	0xd6
+		>;
+	};
+
+	pinctrl_sd_pwr: sdpwrgrp {
+		fsl,pins = <
+			/* TF_PWR_3V3_EN */
+			MX8MQ_IOMUXC_GPIO1_IO03_GPIO1_IO3	0x83
+		>;
+	};
+
+	pinctrl_smc: smcgrp {
+		fsl,pins = <
+			/* SMC_PWR_3V3_EN (smrt crd) */
+			MX8MQ_IOMUXC_GPIO1_IO06_GPIO1_IO6	0x83
 		>;
 	};
 
@@ -600,6 +731,49 @@
 			MX8MQ_IOMUXC_SD2_DATA2_USDHC2_DATA2	0xcf
 			MX8MQ_IOMUXC_SD2_DATA3_USDHC2_DATA3	0xcf
 			MX8MQ_IOMUXC_SD2_RESET_B_USDHC2_RESET_B 0xc1
+		>;
+	};
+
+	/* unused */
+	pinctrl_wifi: wifigrp {
+		fsl,pins = <
+			/* SDIO_WAKE (WiFi) */
+			MX8MQ_IOMUXC_SD2_WP_GPIO2_IO20		0x80
+		>;
+	};
+
+	pinctrl_wwan: wwangrp {
+		fsl,pins = <
+			/* 4G_RESET# */
+			MX8MQ_IOMUXC_NAND_CE0_B_GPIO3_IO1	0x83
+			/* 4G_W_DISABLE */
+			MX8MQ_IOMUXC_NAND_READY_B_GPIO3_IO16	0x83
+			/* 4G_W_DIS2 */
+			MX8MQ_IOMUXC_NAND_DATA07_GPIO3_IO13	0x83
+		>;
+	};
+
+	pinctrl_wwan_pwr: wwanpwrgrp {
+		fsl,pins = <
+			/* 4G_PWR_EN */
+			MX8MQ_IOMUXC_NAND_WP_B_GPIO3_IO18	0x83
+		>;
+	};
+
+	/* unused */
+	pinctrl_usb: usbgrp {
+		fsl,pins = <
+			/* HUB_RESET */
+			MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12	0x83
+			/* CHG_USB_DSEL */
+			MX8MQ_IOMUXC_SAI5_RXFS_GPIO3_IO19	0x80
+		>;
+	};
+
+	pinctrl_wifi_pwr: wifipwrgrp {
+		fsl,pins = <
+			/* WIFI3V3_EN */
+			MX8MQ_IOMUXC_NAND_DATA04_GPIO3_IO10	0x83
 		>;
 	};
 
