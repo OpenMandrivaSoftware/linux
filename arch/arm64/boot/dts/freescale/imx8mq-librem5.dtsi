@@ -34,7 +34,7 @@
 	gpio-keys {
 		compatible = "gpio-keys";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_keys>;
+		pinctrl-0 = <&pinctrl_keys>, <&pinctrl_hsw>;
 
 		vol-down {
 			label = "VOL_DOWN";
