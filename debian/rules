@@ -13,6 +13,11 @@ ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
 	BUILD += -j$(NUMJOBS)
 endif
 
+ifeq ($(DEB_SOURCE), linux-librem5)
+	BUILD_LIBC_PKG=1
+	export BUILD_LIBC_PKG
+endif
+
 debian/control: debian/control.in
 	sed -e 's/\%KREL\%/$(KREL)/g' \
 	    -e 's/\%DEB_SOURCE\%/$(DEB_SOURCE)/g' \
