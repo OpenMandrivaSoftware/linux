@@ -84,6 +84,7 @@
 /* bellow registers need access by mailbox */
 
 /* source phy comp */
+#define PHY_DATA_SEL			0x0818
 #define LANES_CONFIG			0x0814
 
 /* source car addr */
@@ -96,6 +97,17 @@
 #define SOURCE_AIF_CAR			0x091c
 #define SOURCE_CIPHER_CAR		0x0920
 #define SOURCE_CRYPTO_CAR		0x0924
+
+/* mhdp tx_top_comp */
+#define SCHEDULER_H_SIZE		0x1000
+#define SCHEDULER_V_SIZE		0x1004
+#define HDTX_SIGNAL_FRONT_WIDTH	0x100c
+#define HDTX_SIGNAL_SYNC_WIDTH	0x1010
+#define HDTX_SIGNAL_BACK_WIDTH	0x1014
+#define HDTX_CONTROLLER			0x1018
+#define HDTX_HPD				0x1020
+#define HDTX_CLOCK_REG_0		0x1024
+#define HDTX_CLOCK_REG_1		0x1028
 
 /* clock meters addr */
 #define CM_CTRL				0x0a00
@@ -333,6 +345,7 @@
 #define GENERAL_READ_REGISTER           0x07
 #define GENERAL_GET_HPD_STATE           0x11
 
+/* DPTX opcode */
 #define DPTX_SET_POWER_MNG			0x00
 #define DPTX_SET_HOST_CAPABILITIES		0x01
 #define DPTX_GET_EDID				0x02
@@ -351,6 +364,17 @@
 #define DPTX_SET_LINK_BREAK_POINT		0x0f
 #define DPTX_FORCE_LANES			0x10
 #define DPTX_HPD_STATE				0x11
+
+/* HDMI TX opcode */
+#define HDMI_TX_READ				0x00
+#define HDMI_TX_WRITE				0x01
+#define HDMI_TX_UPDATE_READ			0x02
+#define HDMI_TX_EDID				0x03
+#define HDMI_TX_EVENTS				0x04
+#define HDMI_TX_HPD_STATUS			0x05
+#define HDMI_TX_DEBUG_ECHO			0xAA
+#define HDMI_TX_TEST				0xBB
+#define HDMI_TX_EDID_INTERNAL		0xF0
 
 #define FW_STANDBY				0
 #define FW_ACTIVE				1
@@ -401,6 +425,34 @@
 
 #define TU_SIZE					30
 #define CDNS_DP_MAX_LINK_RATE	540000
+
+#define F_HDMI_ENCODING(x) (((x) & ((1 << 2) - 1)) << 16)
+#define F_VIF_DATA_WIDTH(x) (((x) & ((1 << 2) - 1)) << 2)
+#define F_HDMI_MODE(x) (((x) & ((1 << 2) - 1)) << 0)
+#define F_GCP_EN(x) (((x) & ((1 << 1) - 1)) << 12)
+#define F_DATA_EN(x) (((x) & ((1 << 1) - 1)) << 15)
+#define F_HDMI2_PREAMBLE_EN(x) (((x) & ((1 << 1) - 1)) << 18)
+#define F_PIC_3D(x) (((x) & ((1 << 4) - 1)) << 7)
+#define F_BCH_EN(x) (((x) & ((1 << 1) - 1)) << 11)
+#define F_SOURCE_PHY_MHDP_SEL(x) (((x) & ((1 << 2) - 1)) << 3)
+#define F_HPD_VALID_WIDTH(x) (((x) & ((1 << 12) - 1)) << 0)
+#define F_HPD_GLITCH_WIDTH(x) (((x) & ((1 << 8) - 1)) << 12)
+#define F_HDMI2_CTRL_IL_MODE(x) (((x) & ((1 << 1) - 1)) << 19)
+#define F_SOURCE_PHY_LANE0_SWAP(x) (((x) & ((1 << 2) - 1)) << 0)
+#define F_SOURCE_PHY_LANE1_SWAP(x) (((x) & ((1 << 2) - 1)) << 2)
+#define F_SOURCE_PHY_LANE2_SWAP(x) (((x) & ((1 << 2) - 1)) << 4)
+#define F_SOURCE_PHY_LANE3_SWAP(x) (((x) & ((1 << 2) - 1)) << 6)
+#define F_SOURCE_PHY_COMB_BYPASS(x) (((x) & ((1 << 1) - 1)) << 21)
+#define F_SOURCE_PHY_20_10(x) (((x) & ((1 << 1) - 1)) << 22)
+#define F_PKT_ALLOC_ADDRESS(x) (((x) & ((1 << 4) - 1)) << 0)
+#define F_ACTIVE_IDLE_TYPE(x) (((x) & ((1 << 1) - 1)) << 17)
+#define F_FIFO1_FLUSH(x) (((x) & ((1 << 1) - 1)) << 0)
+#define F_PKT_ALLOC_WR_EN(x) (((x) & ((1 << 1) - 1)) << 0)
+#define F_DATA_WR(x) (x)
+#define F_WR_ADDR(x) (((x) & ((1 << 4) - 1)) << 0)
+#define F_HOST_WR(x) (((x) & ((1 << 1) - 1)) << 0)
+#define F_TYPE_VALID(x) (((x) & ((1 << 1) - 1)) << 16)
+#define F_PACKET_TYPE(x) (((x) & ((1 << 8) - 1)) << 8)
 
 /* audio */
 #define AUDIO_PACK_EN				BIT(8)
@@ -479,6 +531,12 @@ enum audio_format {
 	AFMT_SPDIF_INT = 1,
 	AFMT_SPDIF_EXT = 2,
 	AFMT_UNUSED,
+};
+
+enum {
+	MODE_DVI,
+	MODE_HDMI_1_4,
+	MODE_HDMI_2_0,
 };
 
 struct audio_info {
@@ -567,6 +625,11 @@ struct cdns_mhdp_device {
 			struct drm_dp_aux aux;
 			u8 dpcd[DP_RECEIVER_CAP_SIZE];
 		} dp;
+		struct _hdmi_data {
+			u32 char_rate;
+			u32 hdmi_type;
+			const struct drm_display_mode *mode_valid;
+		} hdmi;
 	};
 	const struct cdns_plat_data *plat_data;
 
@@ -603,4 +666,10 @@ u32 cdns_phy_reg_read(struct cdns_mhdp_device *mhdp, u32 addr);
 int cdns_dp_bind(struct platform_device *pdev, struct drm_encoder *encoder,
 		struct cdns_mhdp_device *mhdp);
 void cdns_dp_unbind(struct device *dev);
+
+/* HDMI */
+int cdns_hdmi_bind(struct platform_device *pdev, struct drm_encoder *encoder,
+			struct cdns_mhdp_device *mhdp);
+void cdns_hdmi_unbind(struct device *dev);
+
 #endif /* CDNS_MHDP_H_ */
