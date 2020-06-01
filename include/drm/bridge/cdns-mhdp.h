@@ -14,6 +14,7 @@
 
 #define ADDR_IMEM		0x10000
 #define ADDR_DMEM		0x20000
+#define ADDR_PHY_AFE	0x80000
 
 /* APB CFG addr */
 #define APB_CTRL			0
@@ -81,6 +82,10 @@
 #define SOURCE_PIF_SW_RESET		0x30834
 
 /* bellow registers need access by mailbox */
+
+/* source phy comp */
+#define LANES_CONFIG			0x0814
+
 /* source car addr */
 #define SOURCE_HDTX_CAR			0x0900
 #define SOURCE_DPTX_CAR			0x0904
@@ -424,6 +429,16 @@
 /* Reference cycles when using lane clock as reference */
 #define LANE_REF_CYC				0x8000
 
+#define HOTPLUG_DEBOUNCE_MS		200
+
+#define IRQ_IN    0
+#define IRQ_OUT   1
+#define IRQ_NUM   2
+
+#define cdns_mhdp_plat_call(mhdp, operation)			\
+	(!(mhdp) ? -ENODEV : (((mhdp)->plat_data && (mhdp)->plat_data->operation) ?	\
+	 (mhdp)->plat_data->operation(mhdp) : ENOIOCTLCMD))
+
 enum voltage_swing_level {
 	VOLTAGE_LEVEL_0,
 	VOLTAGE_LEVEL_1,
@@ -504,9 +519,29 @@ struct cdns_mhdp_connector {
 	struct cdns_mhdp_bridge *bridge;
 };
 
+struct cdns_plat_data {
+	/* Vendor PHY support */
+	int (*bind)(struct platform_device *pdev,
+			struct drm_encoder *encoder,
+			struct cdns_mhdp_device *mhdp);
+	void (*unbind)(struct device *dev);
+
+	int (*phy_set)(struct cdns_mhdp_device *mhdp);
+	bool (*phy_video_valid)(struct cdns_mhdp_device *mhdp);
+	int (*firmware_init)(struct cdns_mhdp_device *mhdp);
+	void (*pclk_rate)(struct cdns_mhdp_device *mhdp);
+
+	int (*power_on)(struct cdns_mhdp_device *mhdp);
+	int (*power_off)(struct cdns_mhdp_device *mhdp);
+
+	char *plat_name;
+	int lane_mapping;
+};
+
 struct cdns_mhdp_device {
 	struct device *dev;
 	struct cdns_mhdp_connector connector;
+	struct cdns_mhdp_bridge	bridge;
 
 	void __iomem *regs_base;
 	struct reset_control *spdif_rst;
@@ -520,6 +555,11 @@ struct cdns_mhdp_device {
 
 	unsigned int fw_version;
 
+	struct delayed_work hotplug_work;
+	u32 lane_mapping;
+	bool power_up;
+	struct mutex lock;
+	int irq[IRQ_NUM];
 	union {
 		struct _dp_data {
 			u32 rate;
@@ -528,6 +568,8 @@ struct cdns_mhdp_device {
 			u8 dpcd[DP_RECEIVER_CAP_SIZE];
 		} dp;
 	};
+	const struct cdns_plat_data *plat_data;
+
 };
 
 void cdns_mhdp_clock_reset(struct cdns_mhdp_device *mhdp);
@@ -535,7 +577,7 @@ void cdns_mhdp_set_fw_clk(struct cdns_mhdp_device *mhdp, unsigned long clk);
 int cdns_mhdp_load_firmware(struct cdns_mhdp_device *mhdp, const u32 *i_mem,
 			    u32 i_size, const u32 *d_mem, u32 d_size);
 int cdns_mhdp_set_firmware_active(struct cdns_mhdp_device *mhdp, bool enable);
-int cdns_mhdp_set_host_cap(struct cdns_mhdp_device *mhdp, bool flip);
+int cdns_mhdp_set_host_cap(struct cdns_mhdp_device *mhdp);
 int cdns_mhdp_event_config(struct cdns_mhdp_device *mhdp);
 u32 cdns_mhdp_get_event(struct cdns_mhdp_device *mhdp);
 int cdns_mhdp_read_hpd(struct cdns_mhdp_device *mhdp);
@@ -547,10 +589,18 @@ int cdns_mhdp_get_edid_block(void *mhdp, u8 *edid,
 int cdns_mhdp_train_link(struct cdns_mhdp_device *mhdp);
 int cdns_mhdp_set_video_status(struct cdns_mhdp_device *mhdp, int active);
 int cdns_mhdp_config_video(struct cdns_mhdp_device *mhdp);
+bool cdns_mhdp_check_alive(struct cdns_mhdp_device *mhdp);
 int cdns_mhdp_audio_stop(struct cdns_mhdp_device *mhdp,
 			 struct audio_info *audio);
 int cdns_mhdp_audio_mute(struct cdns_mhdp_device *mhdp, bool enable);
 int cdns_mhdp_audio_config(struct cdns_mhdp_device *mhdp,
 			   struct audio_info *audio);
 
+int cdns_phy_reg_write(struct cdns_mhdp_device *mhdp, u32 addr, u32 val);
+u32 cdns_phy_reg_read(struct cdns_mhdp_device *mhdp, u32 addr);
+
+/* DP  */
+int cdns_dp_bind(struct platform_device *pdev, struct drm_encoder *encoder,
+		struct cdns_mhdp_device *mhdp);
+void cdns_dp_unbind(struct device *dev);
 #endif /* CDNS_MHDP_H_ */
