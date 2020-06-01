@@ -23,4 +23,18 @@ int cdns_mhdp_reg_write_bit(struct cdns_mhdp_device *mhdp, u16 addr,
 /* Audio */
 int cdns_mhdp_register_audio_driver(struct device *dev);
 void cdns_mhdp_unregister_audio_driver(struct device *dev);
+
+/* HDMI */
+int cdns_hdmi_scdc_write(struct cdns_mhdp_device *mhdp, u8 addr, u8 value);
+void cdns_mhdp_infoframe_set(struct cdns_mhdp_device *mhdp,
+					u8 entry_id, u8 packet_len, u8 *packet, u8 packet_type);
+int cdns_hdmi_ctrl_init(struct cdns_mhdp_device *mhdp,
+					int protocol, u32 char_rate);
+int cdns_hdmi_enable_gcp(struct cdns_mhdp_device *mhdp);
+int cdns_hdmi_disable_gcp(struct cdns_mhdp_device *mhdp);
+int cdns_hdmi_mode_config(struct cdns_mhdp_device *mhdp,
+			struct drm_display_mode *mode, struct video_info *video_info);
+int cdns_hdmi_get_edid_block(void *data, u8 *edid,
+			  u32 block, size_t length);
+
 #endif
