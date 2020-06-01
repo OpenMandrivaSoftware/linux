@@ -2,6 +2,9 @@
 /*
  * Copyright (C) Fuzhou Rockchip Electronics Co.Ltd
  * Author: Chris Zhong <zyw@rock-chips.com>
+ *
+ * Cadence MHDP Audio driver
+ *
  */
 #include <linux/clk.h>
 #include <linux/reset.h>
@@ -196,3 +199,100 @@ err_audio_config:
 	return ret;
 }
 EXPORT_SYMBOL(cdns_mhdp_audio_config);
+
+static int audio_hw_params(struct device *dev,  void *data,
+				  struct hdmi_codec_daifmt *daifmt,
+				  struct hdmi_codec_params *params)
+{
+	struct cdns_mhdp_device *mhdp = dev_get_drvdata(dev);
+	struct audio_info audio = {
+		.sample_width = params->sample_width,
+		.sample_rate = params->sample_rate,
+		.channels = params->channels,
+		.connector_type = mhdp->connector.base.connector_type,
+	};
+	int ret;
+
+	switch (daifmt->fmt) {
+	case HDMI_I2S:
+		audio.format = AFMT_I2S;
+		break;
+	case HDMI_SPDIF:
+		audio.format = AFMT_SPDIF_EXT;
+		break;
+	default:
+		DRM_DEV_ERROR(dev, "Invalid format %d\n", daifmt->fmt);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	ret = cdns_mhdp_audio_config(mhdp, &audio);
+	if (!ret)
+		mhdp->audio_info = audio;
+
+out:
+	return ret;
+}
+
+static void audio_shutdown(struct device *dev, void *data)
+{
+	struct cdns_mhdp_device *mhdp = dev_get_drvdata(dev);
+	int ret;
+
+	ret = cdns_mhdp_audio_stop(mhdp, &mhdp->audio_info);
+	if (!ret)
+		mhdp->audio_info.format = AFMT_UNUSED;
+}
+
+static int audio_digital_mute(struct device *dev, void *data,
+				     bool enable)
+{
+	struct cdns_mhdp_device *mhdp = dev_get_drvdata(dev);
+	int ret;
+
+	ret = cdns_mhdp_audio_mute(mhdp, enable);
+
+	return ret;
+}
+
+static int audio_get_eld(struct device *dev, void *data,
+				u8 *buf, size_t len)
+{
+	struct cdns_mhdp_device *mhdp = dev_get_drvdata(dev);
+
+	memcpy(buf, mhdp->connector.base.eld,
+	       min(sizeof(mhdp->connector.base.eld), len));
+
+	return 0;
+}
+
+static const struct hdmi_codec_ops audio_codec_ops = {
+	.hw_params = audio_hw_params,
+	.audio_shutdown = audio_shutdown,
+	.digital_mute = audio_digital_mute,
+	.get_eld = audio_get_eld,
+};
+
+int cdns_mhdp_register_audio_driver(struct device *dev)
+{
+	struct cdns_mhdp_device *mhdp = dev_get_drvdata(dev);
+	struct hdmi_codec_pdata codec_data = {
+		.i2s = 1,
+		.spdif = 1,
+		.ops = &audio_codec_ops,
+		.max_i2s_channels = 8,
+	};
+
+	mhdp->audio_pdev = platform_device_register_data(
+			      dev, HDMI_CODEC_DRV_NAME, 1,
+			      &codec_data, sizeof(codec_data));
+
+	return PTR_ERR_OR_ZERO(mhdp->audio_pdev);
+}
+
+void cdns_mhdp_unregister_audio_driver(struct device *dev)
+{
+	struct cdns_mhdp_device *mhdp = dev_get_drvdata(dev);
+
+	platform_device_unregister(mhdp->audio_pdev);
+}

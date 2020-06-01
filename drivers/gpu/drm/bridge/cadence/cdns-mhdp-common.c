@@ -357,36 +357,6 @@ err_set_firmware_active:
 }
 EXPORT_SYMBOL(cdns_mhdp_set_firmware_active);
 
-int cdns_mhdp_set_host_cap(struct cdns_mhdp_device *mhdp, bool flip)
-{
-	u8 msg[8];
-	int ret;
-
-	msg[0] = drm_dp_link_rate_to_bw_code(mhdp->dp.rate);
-	msg[1] = mhdp->dp.num_lanes | SCRAMBLER_EN;
-	msg[2] = VOLTAGE_LEVEL_2;
-	msg[3] = PRE_EMPHASIS_LEVEL_3;
-	msg[4] = PTS1 | PTS2 | PTS3 | PTS4;
-	msg[5] = FAST_LT_NOT_SUPPORT;
-	msg[6] = flip ? LANE_MAPPING_FLIPPED : LANE_MAPPING_NORMAL;
-	msg[7] = ENHANCED;
-
-	ret = cdns_mhdp_mailbox_send(mhdp, MB_MODULE_ID_DP_TX,
-				     DPTX_SET_HOST_CAPABILITIES,
-				     sizeof(msg), msg);
-	if (ret)
-		goto err_set_host_cap;
-
-	ret = cdns_mhdp_reg_write(mhdp, DP_AUX_SWAP_INVERSION_CONTROL,
-					AUX_HOST_INVERT);
-
-err_set_host_cap:
-	if (ret)
-		DRM_DEV_ERROR(mhdp->dev, "set host cap failed: %d\n", ret);
-	return ret;
-}
-EXPORT_SYMBOL(cdns_mhdp_set_host_cap);
-
 int cdns_mhdp_event_config(struct cdns_mhdp_device *mhdp)
 {
 	u8 msg[5];
@@ -698,3 +668,15 @@ err_config_video:
 	return ret;
 }
 EXPORT_SYMBOL(cdns_mhdp_config_video);
+
+int cdns_phy_reg_write(struct cdns_mhdp_device *mhdp, u32 addr, u32 val)
+{
+	return cdns_mhdp_reg_write(mhdp, ADDR_PHY_AFE + (addr << 2), val);
+}
+EXPORT_SYMBOL(cdns_phy_reg_write);
+
+u32 cdns_phy_reg_read(struct cdns_mhdp_device *mhdp, u32 addr)
+{
+	return cdns_mhdp_reg_read(mhdp, ADDR_PHY_AFE + (addr << 2));
+}
+EXPORT_SYMBOL(cdns_phy_reg_read);

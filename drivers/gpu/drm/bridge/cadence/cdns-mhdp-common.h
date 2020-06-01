@@ -20,4 +20,7 @@ int cdns_mhdp_reg_write(struct cdns_mhdp_device *mhdp, u32 addr, u32 val);
 int cdns_mhdp_reg_write_bit(struct cdns_mhdp_device *mhdp, u16 addr,
 				   u8 start_bit, u8 bits_no, u32 val);
 
+/* Audio */
+int cdns_mhdp_register_audio_driver(struct device *dev);
+void cdns_mhdp_unregister_audio_driver(struct device *dev);
 #endif
