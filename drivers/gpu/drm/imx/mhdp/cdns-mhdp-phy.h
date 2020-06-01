@@ -143,4 +143,6 @@
 #define PHY_PMA_ISO_RX_DATA_HI          0xCC17
 
 int cdns_dp_phy_set_imx8mq(struct cdns_mhdp_device *hdp);
+int cdns_hdmi_phy_set_imx8mq(struct cdns_mhdp_device *mhdp);
+bool cdns_hdmi_phy_mode_valid_imx8mq(struct cdns_mhdp_device *mhdp);
 #endif /* _CDNS_MHDP_PHY_H */

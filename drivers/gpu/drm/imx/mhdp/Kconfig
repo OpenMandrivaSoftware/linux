@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 config DRM_IMX_CDNS_MHDP
-	tristate "NXP i.MX MX8 DRM DP"
+	tristate "NXP i.MX MX8 DRM DP/HDMI"
 	select DRM_CDNS_MHDP
 	select DRM_CDNS_DP
+	select DRM_CDNS_HDMI
 	help
-	  Choose this if you want to use Displayport on i.MX8.
+	  Choose this if you want to use Displayport/HDMI on i.MX8.

@@ -23,6 +23,15 @@ static const struct drm_encoder_funcs cdns_mhdp_imx_encoder_funcs = {
 	.destroy = drm_encoder_cleanup,
 };
 
+static struct cdns_plat_data imx8mq_hdmi_drv_data = {
+	.plat_name = "imx8mq-hdmi",
+	.bind	= cdns_hdmi_bind,
+	.unbind	= cdns_hdmi_unbind,
+	.phy_set = cdns_hdmi_phy_set_imx8mq,
+	.phy_video_valid = cdns_hdmi_phy_mode_valid_imx8mq,
+	.lane_mapping = 0xe4,
+};
+
 static struct cdns_plat_data imx8mq_dp_drv_data = {
 	.plat_name = "imx8mq-dp",
 	.bind	= cdns_dp_bind,
@@ -32,6 +41,9 @@ static struct cdns_plat_data imx8mq_dp_drv_data = {
 };
 
 static const struct of_device_id cdns_mhdp_imx_dt_ids[] = {
+	{ .compatible = "nxp,imx8mq-cdns-hdmi",
+	  .data = &imx8mq_hdmi_drv_data
+	},
 	{ .compatible = "nxp,imx8mq-cdns-dp",
 	  .data = &imx8mq_dp_drv_data
 	},
