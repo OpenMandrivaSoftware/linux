@@ -226,6 +226,13 @@ static irqreturn_t edt_ft5x06_ts_isr(int irq, void *dev_id)
 	if (error) {
 		dev_err_ratelimited(dev, "Unable to fetch data, error: %d\n",
 				    error);
+		// HACK: empty all slots on error
+		for (i = 0; i < tsdata->max_support_points; i++) {
+			input_mt_slot(tsdata->input, i);
+			input_mt_report_slot_state(tsdata->input, MT_TOOL_FINGER,
+					       false);
+		}
+		input_sync(tsdata->input);
 		goto out;
 	}
 
