@@ -2197,7 +2197,7 @@ void rsi_validate_bgscan_channels(struct rsi_hw *adapter,
 			num_valid_chs++;
 		} else if (common->band == NL80211_BAND_5GHZ && ch_num > 14) {
 			params->channels2scan[num_valid_chs] = ch_num;
-			redpine_dbg(ERR_ZONE, "%d ", ch_num);
+			redpine_dbg(INFO_ZONE, "%d ", ch_num);
 			if ((ch->flags & IEEE80211_CHAN_NO_IR) ||
 				(ch->flags & IEEE80211_CHAN_RADAR)) {
 				if ((ch->flags & IEEE80211_CHAN_RADAR)) {
