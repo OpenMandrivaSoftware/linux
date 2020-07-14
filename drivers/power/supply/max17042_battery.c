@@ -937,6 +937,8 @@ max17042_get_of_pdata(struct max17042_chip *chip)
 		pdata->vmin = INT_MIN;
 	if (of_property_read_s32(np, "maxim,over-volt", &pdata->vmax))
 		pdata->vmax = INT_MAX;
+	if (of_property_read_bool(np, "maxim,vchg-4V2"))
+		pdata->vchg=MAX17055_VCHG_4V2;
 
 	return pdata;
 }
@@ -987,6 +989,7 @@ max17042_get_default_pdata(struct max17042_chip *chip)
 	pdata->vmax = MAX17042_DEFAULT_VMAX;
 	pdata->temp_min = MAX17042_DEFAULT_TEMP_MIN;
 	pdata->temp_max = MAX17042_DEFAULT_TEMP_MAX;
+	pdata->vchg = MAX17055_VCHG_4V3;
 
 	return pdata;
 }
@@ -1052,6 +1055,7 @@ static int max17042_probe(struct i2c_client *client,
 	int ret;
 	int i;
 	u32 val;
+	u16 mask, bits;
 
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
 		return -EIO;
@@ -1104,6 +1108,14 @@ static int max17042_probe(struct i2c_client *client,
 		regmap_write(chip->regmap, MAX17042_CGAIN, 0x0000);
 		regmap_write(chip->regmap, MAX17042_MiscCFG, 0x0003);
 		regmap_write(chip->regmap, MAX17042_LearnCFG, 0x0007);
+	}
+
+	if (chip->chip_type &&
+	    (chip->chip_type == MAXIM_DEVICE_TYPE_MAX17055)) {
+		mask = MAX17055_VCHG_BIT | MAX17055_REFRESH_BIT;
+		bits = MAX17055_REFRESH_BIT | (chip->pdata->vchg ?
+					       MAX17055_VCHG_BIT : 0 );
+		regmap_write_bits(chip->regmap, MAX17055_ModelCfg, mask, bits);
 	}
 
 	chip->battery = devm_power_supply_register(&client->dev, max17042_desc,
