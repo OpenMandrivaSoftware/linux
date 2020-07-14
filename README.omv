@@ -1,0 +1,4 @@
+The Nexus 5X kernel has been taken from Halium
+https://github.com/Halium/android_kernel_lge_bullhead.git halium-7.1 branch
+
+and extended to build with current host toolchains.
