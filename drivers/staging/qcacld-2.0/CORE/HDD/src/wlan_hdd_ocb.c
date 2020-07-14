@@ -785,6 +785,7 @@ static const struct nla_policy  qca_wlan_vendor_ocb_stop_timing_advert_policy[
 	},
 };
 
+#if 0 // not used
 static const struct nla_policy qca_wlan_vendor_ocb_get_tsf_timer_resp[] = {
 	[QCA_WLAN_VENDOR_ATTR_OCB_GET_TSF_RESP_TIMER_HIGH] = {
 		.type = NLA_U32
@@ -793,6 +794,7 @@ static const struct nla_policy qca_wlan_vendor_ocb_get_tsf_timer_resp[] = {
 		.type = NLA_U32
 	},
 };
+#endif
 
 static const struct nla_policy qca_wlan_vendor_dcc_get_stats[] = {
 	[QCA_WLAN_VENDOR_ATTR_DCC_GET_STATS_CHANNEL_COUNT] = {
@@ -803,6 +805,7 @@ static const struct nla_policy qca_wlan_vendor_dcc_get_stats[] = {
 	},
 };
 
+#if 0 // not used
 static const struct nla_policy qca_wlan_vendor_dcc_get_stats_resp[] = {
 	[QCA_WLAN_VENDOR_ATTR_DCC_GET_STATS_RESP_CHANNEL_COUNT] = {
 		.type = NLA_U32
@@ -811,6 +814,7 @@ static const struct nla_policy qca_wlan_vendor_dcc_get_stats_resp[] = {
 		.type = NLA_BINARY
 	},
 };
+#endif
 
 static const struct nla_policy qca_wlan_vendor_dcc_clear_stats[] = {
 	[QCA_WLAN_VENDOR_ATTR_DCC_CLEAR_STATS_BITMAP] = {

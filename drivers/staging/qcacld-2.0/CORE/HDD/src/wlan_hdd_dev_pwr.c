@@ -65,6 +65,7 @@
 /*-------------------------------------------------------------------------
  * Local variables.
  *-------------------------------------------------------------------------*/
+#if 0 /* not actually used... */
 /* Reference VoIP, 100msec delay make disconnect.
  * So TX sleep must be less than 100msec
  * Every 20msec TX frame will goes out.
@@ -84,6 +85,7 @@ static const hdd_tmLevelAction_t thermalMigrationAction[WLAN_HDD_TM_LEVEL_MAX] =
    /* TM Level 4, MAX TM level, enter IMPS */
    {0, 1, 1000, 500, 10}
 };
+#endif
 #ifdef HAVE_WCNSS_SUSPEND_RESUME_NOTIFY
 static bool suspend_notify_sent;
 #endif
