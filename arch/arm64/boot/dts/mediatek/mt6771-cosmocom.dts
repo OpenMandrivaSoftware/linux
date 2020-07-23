@@ -76,12 +76,22 @@
 
 	framebuffer0: framebuffer@7df70000 {
 		compatible = "simple-framebuffer";
-		reg = <0 0x7df70000 0x1f90000>;
+		reg = <0 0x7df70000 0 0x1f90000>;
 		width = <1080>;
 		height = <2160>;
 		stride = <(1080 * 4)>;
 		format = "a8r8g8b8";
 		status = "okay";
+	};
+
+	scp: scp@10500000 {
+		// This node is required by MediaTek's LK bootloader
+		compatible = "mediatek,mt8183-scp", "mediatek,scp";
+		status = "okay";
+		reg =   <0 0x10500000 0 0x80000>,	/* sram */
+			<0 0x105c0000 0 0x3000>,	/* cfgreg */
+			<0 0x105c4000 0 0x1000>;	/* clkctrl */
+		interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_HIGH>;
 	};
 };
 
