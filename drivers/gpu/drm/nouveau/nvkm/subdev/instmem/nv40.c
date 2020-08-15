@@ -253,8 +253,13 @@ nv40_instmem_new(struct nvkm_device *device, int index,
 	else
 		bar = 3;
 
+#ifdef CONFIG_X86
 	imem->iomem = ioremap_wc(device->func->resource_addr(device, bar),
 				 device->func->resource_size(device, bar));
+#else
+	imem->iomem = ioremap(device->func->resource_addr(device, bar),
+			      device->func->resource_size(device, bar));
+#endif
 	if (!imem->iomem) {
 		nvkm_error(&imem->base.subdev, "unable to map PRAMIN BAR\n");
 		return -EFAULT;
