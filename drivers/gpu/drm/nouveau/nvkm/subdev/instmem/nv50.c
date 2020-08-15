@@ -171,7 +171,11 @@ nv50_instobj_kmap(struct nv50_instobj *iobj, struct nvkm_vmm *vmm)
 
 	/* Make the mapping visible to the host. */
 	iobj->bar = bar;
+#ifdef CONFIG_X86
 	iobj->map = ioremap_wc(device->func->resource_addr(device, 3) +
+#else
+	iobj->map = ioremap(device->func->resource_addr(device, 3) +
+#endif
 			       (u32)iobj->bar->addr, size);
 	if (!iobj->map) {
 		nvkm_warn(subdev, "PRAMIN ioremap failed\n");
