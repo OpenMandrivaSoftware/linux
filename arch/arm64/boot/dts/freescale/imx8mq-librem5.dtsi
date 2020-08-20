@@ -609,7 +609,6 @@
 		>;
 	};
 
-	/* unused */
 	pinctrl_dsirst: dsirstgrp {
 		fsl,pins = <
 			/* DSI_RST */
@@ -1429,6 +1428,40 @@
 		ti,use-vinmin-threshold = <1>; /* enable VINDPM */
 		ti,vinmin-threshold = <3900000>; /* uV */
 		monitored-battery = <&bat>;
+	};
+};
+
+&lcdif {
+	status = "okay";
+};
+
+&mipi_dsi {
+	status = "okay";
+
+	panel@0 {
+		compatible = "mantix,mlaf057we51-x";
+		reg = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_dsirst>;
+		avdd-supply = <&reg_lcd_avdd>;
+		avee-supply = <&reg_lcd_avee>;
+		vddi-supply = <&reg_lcd_1v8>;
+		backlight = <&backlight_dsi>;
+		reset-gpios = <&gpio1 29 GPIO_ACTIVE_LOW>;
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&mipi_dsi_out>;
+			};
+		};
+	};
+
+	ports {
+		port@1 {
+			reg = <1>;
+			mipi_dsi_out: endpoint {
+				remote-endpoint = <&panel_in>;
+			};
+		};
 	};
 };
 
