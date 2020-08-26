@@ -3648,6 +3648,8 @@ static int sd_resume(struct device *dev)
 	if (!sdkp)	/* E.g.: runtime resume at the start of sd_probe() */
 		return 0;
 
+	sdkp->device->expecting_media_change = 1;
+
 	if (!sdkp->device->manage_start_stop)
 		return 0;
 
