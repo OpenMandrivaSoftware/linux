@@ -7,6 +7,7 @@
 
 #include "dt-bindings/input/input.h"
 #include <dt-bindings/interrupt-controller/irq.h>
+#include "dt-bindings/leds/common.h"
 #include "dt-bindings/pwm/pwm.h"
 #include "dt-bindings/usb/pd.h"
 #include "imx8mq.dtsi"
@@ -77,11 +78,10 @@
 	leds {
 		compatible = "gpio-leds";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_flash>, <&pinctrl_hub_nreset>,
+		pinctrl-0 = <&pinctrl_hub_nreset>,
 			<&pinctrl_sd_pwr>, <&pinctrl_charger>
 			, <&pinctrl_smc>,
 			<&pinctrl_gnss>,
-			<&pinctrl_flash_pwr>,
 			<&pinctrl_wwan_pwr>, <&pinctrl_wifi_pwr>,
 			<&pinctrl_wwan>,
 			<&pinctrl_camera_pwr>,
@@ -106,13 +106,6 @@
 			default-state = "off";
 		};
 
-		flash-strobe {
-			label = "flash_strobe";
-			gpios = <&gpio1 21 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
-			linux,default-trigger = "flash";
-		};
-
 		hub-nreset {
 			label = "hub_nreset";
 			gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
@@ -129,12 +122,6 @@
 			label = "bt_reg_on";
 			gpios = <&gpio4 29 GPIO_ACTIVE_HIGH>;
 			default-state = "on";
-		};
-
-		flash-en {
-			label = "flash_en";
-			gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
 		};
 
 		gnss-nreset {
@@ -529,11 +516,6 @@
 		fsl,pins = <
 			/* FLASH_STROBE */
 			MX8MQ_IOMUXC_ENET_TD0_GPIO1_IO21	0x83
-		>;
-	};
-
-	pinctrl_flash_pwr: flashpwrgrp {
-		fsl,pins = <
 			/* FLASH_EN */
 			MX8MQ_IOMUXC_ENET_TXC_GPIO1_IO23	0x83
 		>;
@@ -1175,24 +1157,24 @@
 	};
 
 	flash@53 {
-		compatible = "lm3560";
-		reg = <0x53>; /* A6 ?? */
+		compatible = "ti,lm3560";
+		pinctrl-0 = <&pinctrl_flash>;
+		pinctrl-names = "default";
 		#address-cells = <1>;
 		#size-cells = <0>;
-		flash@0 {
-			reg = <0x0>;
-			flash-timeout-us = <150000>;
-			flash-max-microamp = <320000>;
-			led-max-microamp = <60000>;
-			label = "lm3560:flash";
+		reg = <0x53>;
+		enable-gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
+		/* TODO */
+		//strobe-gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>;
+		vin-supply = <&reg_vsys_3v4>;
+		torch: led@0 {
+			reg = <1>;
+			function = LED_FUNCTION_TORCH;
+			color = <LED_COLOR_ID_WHITE>;
+			led-max-microamp = <93750>;
+			flash-max-microamp = <875000>;
+			flash-max-timeout-us = <1024000>;
 		};
-
-		torch@1 {
-			reg = <0x1>;
-			led-max-microamp = <10000>;
-			label = "lm3560:torch";
-		};
-
 	};
 
 	proximity: prox@60 {
