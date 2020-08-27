@@ -1389,7 +1389,7 @@
 	status = "okay";
 
 	/* Dongwoon DW9714A - Voice Coil Motor for 13MP Camera */
-	vcm@0c {
+	vcm@c {
 		reg = <0x0c>;
 		status = "disabled";
 	};
