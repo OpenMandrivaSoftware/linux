@@ -142,6 +142,7 @@ struct nwl_dsi {
 
 	struct nwl_dsi_transfer *xfer;
 	struct list_head valid_modes;
+	u32 clk_drop_lvl;
 };
 
 static const struct regmap_config nwl_dsi_regmap_config = {
@@ -840,13 +841,14 @@ static unsigned long nwl_dsi_get_lcm(unsigned long a, unsigned long b)
 
 	return ((unsigned long long)a * b) / gcf;
 }
-
 /*
  * This function tries to adjust the crtc_clock for a DSI device in such a way
  * that the video pll will be able to satisfy both Display Controller pixel
  * clock (feeding out DPI interface) and our input phy_ref clock.
+ * Also, the DC pixel clock must be lower than the actual clock in order to
+ * have enough blanking space to send DSI commands, if the device is a panel.
  */
-static void nwl_dsi_setup_pll_config(struct mode_config *config)
+static void nwl_dsi_setup_pll_config(struct mode_config *config, u32 lvl)
 {
 	unsigned long pll_rate;
 	int div;
@@ -905,7 +907,6 @@ static void nwl_dsi_setup_pll_config(struct mode_config *config)
 		}
 	}
 }
-
 
 /*
  * This function will try the required phy speed for current mode
@@ -1101,7 +1102,7 @@ nwl_dsi_bridge_mode_valid(struct drm_bridge *bridge,
 
 	pll_rate = config->pll_rates[config->phy_rate_idx];
 	if (dsi->pll_clk && !pll_rate)
-		nwl_dsi_setup_pll_config(config);
+		nwl_dsi_setup_pll_config(config, dsi->clk_drop_lvl);
 
 	return MODE_OK;
 }
@@ -1246,6 +1247,7 @@ static const struct drm_bridge_funcs nwl_dsi_bridge_funcs = {
 static int nwl_dsi_parse_dt(struct nwl_dsi *dsi)
 {
 	struct platform_device *pdev = to_platform_device(dsi->dev);
+	struct device_node *np = dsi->dev->of_node;
 	struct clk *clk;
 	void __iomem *base;
 	int ret;
@@ -1361,6 +1363,8 @@ static int nwl_dsi_parse_dt(struct nwl_dsi *dsi)
 			      PTR_ERR(dsi->rst_dpi));
 		return PTR_ERR(dsi->rst_dpi);
 	}
+
+	of_property_read_u32(np, "fsl,clock-drop-level", &dsi->clk_drop_lvl);
 
 	INIT_LIST_HEAD(&dsi->valid_modes);
 
