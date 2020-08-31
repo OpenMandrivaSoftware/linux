@@ -4,7 +4,7 @@ include /usr/share/dpkg/pkg-info.mk
 
 srctree ?= .
 
-KREL=5.8.0-1-librem5
+KREL=5.9.0-1-librem5
 KREL_MAJOR=$(shell echo "${KREL}" | sed 's/\([0-9].[0-9]\+\).*/\1/')
 BUILD=$(MAKE) KERNELRELEASE=$(KREL) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
 

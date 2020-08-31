@@ -21,7 +21,7 @@ Homepage: https://source.puri.sm/Librem5/linux-next
 Vcs-Git: https://source.puri.sm/Librem5/linux-next.git
 Vcs-Browser: https://source.puri.sm/Librem5/linux-next
 
-Package: linux-image-5.8.0-1-librem5
+Package: linux-image-5.9.0-1-librem5
 Architecture: arm64
 Depends:
  flash-kernel,
@@ -29,11 +29,11 @@ Depends:
  kmod,
  linux-base,
 Breaks: librem5-devkit-base (<< 0.0.10)
-Description: Linux 5.8 for the Librem 5 and its devkit
+Description: Linux 5.9 for the Librem 5 and its devkit
   The linux kernel, modules and corresponding other files for the Librem 5 and
   the Librem 5 devkit.
 
-Package: linux-headers-5.8.0-1-librem5
+Package: linux-headers-5.9.0-1-librem5
 Architecture: arm64
 Description: Linux kernel headers for librem5 on arm64
  This package provides kernel header files for the Librem5 kernel.
@@ -49,7 +49,7 @@ Description: Linux support headers for userspace development
  are used by the installed headers for GNU glibc and other system libraries.
 Multi-Arch: same
 
-Package: linux-image-5.8.0-1-librem5-dbg
+Package: linux-image-5.9.0-1-librem5-dbg
 Section: debug
 Architecture: arm64
 Description: Linux kernel debugging symbols for librem5
@@ -60,7 +60,7 @@ Package: linux-image-librem5
 Architecture: arm64
 Section: kernel
 Depends:
- linux-image-5.8.0-1-librem5 (>= ${binary:Version}),
+ linux-image-5.9.0-1-librem5 (>= ${binary:Version}),
 Description: Linux kernel for the Librem 5 and its devkit
  This packages sole purpose is to depend on the latest Linux kernel and modules
  for use on the Librem5 and the Librem5 devkit.

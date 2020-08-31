@@ -1,3 +1,10 @@
+linux-next-librem5 (5.9.0~rc3+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.9-rc3
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 31 Aug 2020 10:51:56 +0200
+
 linux-librem5 (5.7.14+librem5.2) amber-phone; urgency=medium
 
   [ Guido Günther ]
