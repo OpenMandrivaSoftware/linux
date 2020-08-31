@@ -58,7 +58,7 @@ enum RSI_FSM_STATES {
 	NUM_FSM_STATES
 };
 
-extern u32 rsi_zone_enabled;
+extern u16 rsi_zone_enabled;
 extern __printf(2, 3) void rsi_dbg(u32 zone, const char *fmt, ...);
 
 #define RSI_MAX_VIFS                    3
@@ -299,6 +299,12 @@ struct rsi_common {
 	u8 obm_ant_sel_val;
 	int tx_power;
 	u8 ant_in_use;
+	u8 load_flash_fw;
+	u16 ext_opt;
+	u8 host_intf_on_demand;
+	u8 crystal_as_sleep_clk;
+	u16 feature_bitmap_9116;
+
 	/* Mutex used for writing packet to bus */
 	struct mutex tx_bus_mutex;
 	bool hibernate_resume;

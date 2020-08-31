@@ -842,7 +842,6 @@ static int rsi_hal_prepare_fwload(struct rsi_hw *adapter)
 	int status;
 
 	bl_start_cmd_timer(adapter, BL_CMD_TIMEOUT);
-
 	while (!adapter->blcmd_timer_expired) {
 		status = hif_ops->master_reg_read(adapter, SWBL_REGOUT,
 						  &regout_val,
@@ -996,6 +995,98 @@ fail:
 	return status;
 }
 
+static int rsi_load_9116_flash_fw(struct rsi_hw *adapter)
+{
+	struct rsi_host_intf_ops *hif_ops = adapter->host_intf_ops;
+	struct rsi_common *common = adapter->priv;
+	u8 *fw_p;
+	u8 flash_read[RSI_MAX_FLASH_OFFSET_SIZE];
+	int status;
+	int image_type;
+
+	status = hif_ops->master_reg_write(adapter, MEM_ACCESS_CTRL_FROM_HOST,
+					   RAM_384K_ACCESS_FROM_TA,
+					   RSI_9116_REG_SIZE);
+	if (status < 0) {
+		rsi_dbg(ERR_ZONE, "%s: Unable to access full RAM memory\n",
+			__func__);
+		return status;
+	}
+
+	rsi_dbg(INIT_ZONE, "%s: loading firmware from flash\n", __func__);
+
+	if (adapter->priv->coex_mode == 2 || adapter->priv->coex_mode == 4)
+		image_type = RSI_FLASH_READ_COEX_IMAGE;
+	else
+		image_type = RSI_FLASH_READ_WLAN_IMAGE;
+
+	status = hif_ops->master_reg_read(adapter,
+					image_type,
+					(int *)flash_read,
+					2);
+	if (status < 0) {
+		rsi_dbg(ERR_ZONE,
+			"%s: RSI_FLASH_READ failed\n", __func__);
+		return status;
+	}
+	fw_p = flash_read;
+
+	if (*(u16 *)fw_p == RSI_9116_FW_MAGIC_WORD) {
+		rsi_dbg(ERR_ZONE, "***** Loading Firmware from Flash *****\n");
+		if ((hif_ops->master_reg_write(adapter, MEM_ACCESS_CTRL_FROM_HOST,
+					       RAM_384K_ACCESS_FROM_TA, 4)) < 0) {
+			rsi_dbg(ERR_ZONE, "%s: Unable to access full RAM memory\n",
+				    __func__);
+			return -EIO;
+		}
+		if ((bl_cmd(adapter, LOAD_HOSTED_FW, LOADING_INITIATED,
+			    "LOAD_HOSTED_FW")) < 0){
+			rsi_dbg(ERR_ZONE, "%s: FW_LOAD_BL_CMD failed\n", __func__);
+			return -EIO;
+		}
+		//status = rsi_load_9116_flash_fw(adapter);
+		mdelay(3000);
+		status = hif_ops->master_reg_read(adapter,
+				RSI_FLASH_READ_FW_VER,
+				(int *)fw_p, 4);
+		if (status < 0) {
+			rsi_dbg(ERR_ZONE,
+				    "%s: RSI_FLASH_READ_FW_VER failed\n", __func__);
+			return status;
+		}
+		common->lmac_ver.major = fw_p[2];
+		common->lmac_ver.minor = fw_p[3];
+		status = hif_ops->master_reg_read(adapter,
+				RSI_FLASH_READ_FW_VER1,
+				(int *)fw_p, 4);
+		if (status < 0) {
+			rsi_dbg(ERR_ZONE,
+				    "%s: RSI_FLASH_READ_FW_VER1 failed\n", __func__);
+			return status;
+		}
+		common->lmac_ver.release_num = fw_p[0];
+		common->lmac_ver.patch_num = fw_p[2];
+		rsi_print_version(common);
+		if (adapter->rsi_host_intf == RSI_HOST_INTF_USB) {
+			if (bl_cmd(adapter, POLLING_MODE,
+				   CMD_PASS, "POLLING_MODE") < 0) {
+				rsi_dbg(ERR_ZONE,
+					    "%s: USB POLLING_MODE failed\n",
+					    __func__);
+			}
+		}
+	}
+	else
+	{
+		rsi_dbg(ERR_ZONE, "Flash firmware load failed - incorrect magic\n");
+		return -EIO;
+	}
+
+	rsi_dbg(ERR_ZONE, "***** Loaded Firmware to RAM - Waiting for Card Ready *****\n");
+
+	return status;
+}
+
 static int rsi_load_9116_firmware(struct rsi_hw *adapter)
 {
 	struct rsi_common *common = adapter->priv;
@@ -1144,7 +1235,13 @@ int rsi_hal_device_init(struct rsi_hw *adapter)
 		status = rsi_hal_prepare_fwload(adapter);
 		if (status < 0)
 			return status;
-		if (rsi_load_9116_firmware(adapter)) {
+
+		if (common->load_flash_fw)
+			status = rsi_load_9116_flash_fw(adapter);
+		else
+			status = rsi_load_9116_firmware(adapter);
+
+		if (status) {
 			rsi_dbg(ERR_ZONE,
 				"%s: Failed to load firmware to 9116 device\n",
 				__func__);
