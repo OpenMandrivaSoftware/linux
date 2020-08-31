@@ -1,0 +1,55 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/pkg-info.mk
+
+srctree ?= .
+
+KREL=5.8.0-1-librem5
+KREL_MAJOR=$(shell echo "${KREL}" | sed 's/\([0-9].[0-9]\+\).*/\1/')
+BUILD=$(MAKE) KERNELRELEASE=$(KREL) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
+
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+	NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+	BUILD += -j$(NUMJOBS)
+endif
+
+ifeq ($(DEB_SOURCE), linux-librem5)
+	BUILD_LIBC_PKG=1
+	export BUILD_LIBC_PKG
+endif
+
+debian/control: debian/control.in
+	sed -e 's/\%KREL\%/$(KREL)/g' \
+	    -e 's/\%DEB_SOURCE\%/$(DEB_SOURCE)/g' \
+	    -e 's/\%KREL_MAJOR\%/$(KREL_MAJOR)/g' \
+		debian/control.in > debian/control.tmp
+	mv debian/control.tmp debian/control
+
+.config: arch/arm64/configs/librem5_defconfig
+	$(BUILD) librem5_defconfig
+
+build: .config
+	$(BUILD) -f $(srctree)/Makefile
+
+binary-indep:
+
+binary-arch: debian/control
+	$(BUILD) -f $(srctree)/Makefile intdeb-pkg
+ifeq ($(DEB_SOURCE), linux-librem5)
+	dh_installdeb -plinux-image-librem5
+	dh_gencontrol -plinux-image-librem5
+	dh_install -plinux-image-librem5
+	dh_installdocs -plinux-image-librem5
+	dh_installchangelogs -plinux-image-librem5
+	dh_compress -plinux-image-librem5
+	dh_builddeb -plinux-image-librem5
+endif
+
+clean: debian/control
+ifeq ($(DEB_SOURCE), linux-librem5)
+	dh_clean -plinux-image-librem5
+endif
+	rm -rf debian/*tmp debian/files
+	$(MAKE) clean
+
+binary: binary-arch

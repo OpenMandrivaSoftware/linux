@@ -1,0 +1,687 @@
+linux-librem5 (5.7.14+librem5.2) amber-phone; urgency=medium
+
+  [ Guido Günther ]
+  * drm/mxsfb: Make supported modifiers explicit.
+    In contrast to other display controllers on imx like DCSS and ipuv3
+    lcdif/mxsfb does not support detiling e.g. vivante tiled layouts.
+    Since mesa might assume otherwise make it explicit that only
+    DRM_FORMAT_MOD_LINEAR is supported.
+    (cherry picked from commit f4b29bf77319df18348b56e9fd87bc7d4266220e)
+    This allows us to drop a downstream wlroots patch.
+  * arm64: dts: imx8mq-librem5-r2: Sort alphabetically
+  * arm64: dts: imx8mq-librem5-r3: Sort alphabetically
+  * dt-bindings: iio: vcnl4000: convert bindings to YAML format.
+    Convert the vcnl4000 device tree bindings to the new YAML format.
+    (cherry picked from commit c194e2389d99be2fc69811693775b81f9ab88f6c)
+  * dt-bindings: iio: Introduce common properties for iio sensors.
+    Introduce a file for common properties of iio sensors. So far this
+    contains the new proximity-near-level property for proximity sensors
+    that indicates when an object should be considered near.
+    (cherry picked from commit 445b16fb6bdc2cd3086a8d9018b4f325c89faa24)
+  * dt-bindings: iio: light: vcnl4000: Add proximity-near-level.
+    This value indicates when userspace should consider an object
+    near to the sensor/device.
+    (cherry picked from commit 138986062b50e7e24404e279d2e2c79c0291dac3)
+  * Documentation: ABI: document IIO in_proximity_nearlevel file.
+    The vcnl4000 IIO driver introduced a new attribute
+    "in_proximity_nearlevel".  This adds it to the list of documented ABI
+    for sysfs-bus-iio.
+    (cherry picked from commit aa8cb0485594d8b3c9bfe7f4427b3ae26187c861)
+  * iio: vcnl4000: Export near level property for proximity sensor.
+    When an object can be considered close to the sensor is hardware
+    dependent. Allowing to configure the property via device tree
+    allows to configure this device specific value.
+    This is useful for e.g. iio-sensor-proxy to indicate to userspace
+    if an object is close to the sensor.
+    (cherry picked from commit f5a98e1fca15cbf79f50098ea30e84ce33da2fd6)
+  * arm64: dts: imx8mq-librem5.dtsi: Add alias for proximity sensor
+  * arm64: dts: imx8mq-librem5-r3: Set proximity near level.
+    This allows userspace to decide when an object is close.
+  * arm64: dts: imx8mq-librem5-r2: Set proximity near level.
+    This allows userspace to decide when an object is close.
+
+  [ Martin Kepplinger ]
+  * arm64: dts: imx8mq-librem5-r3: fix camera_pwr gpio
+  * arm64: dts: imx8mq-librem5: camera1: add more useful comment.
+    It's obviously a placeholder and disabled, no need to write that down.
+  * arm64: dts: imx8mq-librem5: camera2: fix i2c address and add VCM.
+    The rear facing camera is at 0x10 on the bus, not 0x2d. Also, descibe
+    the voice coil motor we have.
+
+ -- Guido Günther <agx@sigxcpu.org>  Tue, 18 Aug 2020 12:14:44 +0200
+
+linux-librem5 (5.7.14+librem5.1) amber-phone; urgency=high
+
+  [ Martin Kepplinger ]
+  * [e6d49ae] Revert "hack: scsi: sd: set expecting_media_change flag in
+              sd_resume_runtime()"
+  * [c9c0a69] Revert "scsi: core: add expecting_media_change flag"
+  * [038a741] hack: scsi: add expecting_media_change flag to fix runtime PM
+  * [818e454] Merge tag 'v5.7.14' into stable/5.7.14
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 10 Aug 2020 09:20:08 +0200
+
+linux-next-librem5 (5.8.0+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.8
+  * Revert: "arm64: dts: imx8mq-librem5-r3: set i2c1 clk freq to 100khz"
+  * add hack for working around error in rmmod g_multi
+  * fix the scsi expecting_media_change handling
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Sun, 09 Aug 2020 10:51:56 +0200
+
+linux-librem5 (5.7.12+librem5.2) amber-phone; urgency=medium
+
+  * imx8mq-librem5-r3: Set the CPU voltage to 1.0V when running at 1GHz on Dogwood
+
+ -- Sebastian Krzyszkowiak <sebastian.krzyszkowiak@puri.sm>  Tue, 04 Aug 2020 21:01:54 +0200
+
+linux-librem5 (5.7.12+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * arm64: dts: imx8mq-librem5-r3: remove gpu voltage override
+  * Revert "scsi: sd: add runtime pm to open / release"
+  * scsi: core: add expecting_media_change flag
+  * hack: scsi: sd: set expecting_media_change flag in sd_resume_runtime()
+    (fixes runtime suspend/resume while SD card is mounted)
+  * merge the v5.7.12 upstream stable release
+
+  [ Sebastian Krzyszkowiak ]
+  * Revert "mmc: sdhci-esdhc-imx: clear DMA_SEL when disable DMA mode"
+    (works around mmc0 timeouts during boot)
+
+  [ Alan Stern ]
+  * block: fix runtime pm
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Sun, 02 Aug 2020 13:13:21 +0200
+
+linux-next-librem5 (5.8.0~rc7+librem5.1) amber-phone; urgency=medium
+
+  [ Angus Ainslie (Purism) ]
+  * power: supply: max17042_battery: enable vchg configuration
+  * power: supply: bq25890_charger: set CONV_RATE
+  * arm64: dts: imx8mq-librem5: set the max17055 charge voltage bit
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.8-rc7
+  * arm64: dts: imx8mq-librem5-r3: set i2c1 clk freq to 100khz
+  * Revert "librem5: Set gpu voltage back to 1.0V"
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 27 Jul 2020 11:50:23 +0200
+
+linux-librem5 (5.7.10+librem5.1) amber-phone; urgency=medium
+
+  [ Guido Günther ]
+  * debian: Simplify release generation
+  * librem5: Set gpu voltage back to 1.0V
+
+  [ Martin Kepplinger ]
+  * merge the v5.7.10 upstream stable release
+
+  [ Angus Ainslie ]
+  * arm64: dts: imx8mq-librem5-r3: enable power control for the 8MP camera
+  * arm64: dts: imx8mq-librem5-r3: Connect the SMC_BOOT pin
+  * arm64: dts: imx8mq-librem5: fix the boost current
+  * power: supply: max17042_battery: enable vchg configuration
+  * arm64: dts: imx8mq-librem5: Disable the pull up on CHG_INT
+  * power: supply: bq25890_charger: set CONV_RATE
+  * arm64: dts: imx8mq-librem5: set the max17055 charge voltage bit
+  * arm64: dts: imx8mq-librem5: correct the input pin definitions
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Sat, 25 Jul 2020 09:57:09 +0200
+
+linux-next-librem5 (5.8.0~rc6+librem5.1) amber-phone; urgency=medium
+
+  [ Angus Ainslie (Purism) ]
+  * arm64: dts: imx8mq-librem5-r3: enable power control for the 8MP camera
+  * arm64: dts: imx8mq-librem5-r3: Connect the SMC_BOOT pin
+  * arm64: dts: imx8mq-librem5: fix the boost current
+  * arm64: dts: imx8mq-librem5: Disable the pull up on CHG_INT
+  * arm64: dts: imx8mq-librem5: correct the input pin definitions
+
+  [ Guido Günther ]
+  * drm/mxsfb: Make supported modifiers explicit
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.8-rc6
+
+  [ Sebastian Krzyszkowiak ]
+  * librem5_defconfig: Enable ZRAM and ZSWAP
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Tue, 21 Jul 2020 17:53:35 +0200
+
+linux-librem5 (5.7.9+librem5.1) amber-phone; urgency=medium
+
+  [ Guido Günther ]
+  * arm64: dts: imx8mq-librem5: Use 'compatible' instead of comment
+  * arm64: dts: imx8mq-librem5: Add an alias for the charge controller
+  * arm64: dts: Make Librem 5 device tree a dtsi
+  * arm64: librem5: Make battery settings revision specific
+  * arm64: dts: Add a devicetree for Librem 5 Dogwood
+
+  [ Martin Kepplinger ]
+  * arm64: dts: librem5: make imu mount matrix revision specific
+  * merge the v5.7.9 upstream stable release
+
+  [ Guido Günther ]
+  * librem5: Disable DRIVER_DEBUG (Closes: #205)
+
+  [ Sebastian Krzyszkowiak ]
+  * gitlab-ci: Update dtb artifacs paths
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Tue, 21 Jul 2020 15:04:27 +0200
+
+linux-next-librem5 (5.8.0~rc5+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.8-rc5
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 13 Jul 2020 09:06:01 +0200
+
+linux-librem5 (5.7.8+librem5.1) amber-phone; urgency=medium
+
+  [ Angus Ainslie (Purism) ]
+  * rsi_91x_mgmt.c: quiet down the redpine driver
+  * usb: gadget: u_serial: flush the delayed work queue instead of cancelling
+
+  [ Guido Günther ]
+  * arm64: dts: imx8mq-librem5: Bump initial backlight brightness
+
+  [ Martin Kepplinger ]
+  * merge the v5.7.8 upstream stable release
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Thu, 09 Jul 2020 12:03:18 +0200
+
+linux-next-librem5 (5.8.0~rc4+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.8-rc4
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 06 Jul 2020 08:39:54 +0200
+
+linux-librem5 (5.7.7+librem5.1) amber-phone; urgency=medium
+
+  [ Sebastian Krzyszkowiak ]
+  * edt-ft5x06: Empty all slots when unable to fetch data
+
+  [ Martin Kepplinger ]
+  * arm64: dts: imx8mq-librem5: add hard wired USB2642 to description
+  * merge the v5.7.7 upstream stable release
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Wed, 01 Jul 2020 21:12:16 +0200
+
+linux-next-librem5 (5.8.0~rc3+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.8-rc3
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 29 Jun 2020 08:16:24 +0200
+
+linux-librem5 (5.7.5+librem5.2) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * scripts: builddeb: only check if BUILD_LIBC_PKG is set
+  * scsi: sd: add runtime pm to open / release
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Tue, 23 Jun 2020 20:31:53 +0200
+
+linux-next-librem5 (5.8.0~rc2+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.8-rc2
+  * enable RANDOMIZE_BASE
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 22 Jun 2020 09:16:01 +0200
+
+linux-librem5 (5.7.0+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.7
+  * debian/control: make the 5.7 tree the default kernel
+  * librem5_defconfig: Enable support for some USB Ethernet adapters
+  * debian: build libc headers package only for linux-librem5
+
+  [ Kyle Evans ]
+  * arm64: librem5_defconfig: enable NFS_V4_2 & NFS_SWAP
+
+  [ Sebastian Krzyszkowiak ]
+  * librem5_defconfig: Remove CONFIG_RT_GROUP_SCHED
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Tue, 02 Jun 2020 19:01:34 +0200
+
+linux-next-librem5 (5.7.0~rc7+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.7-rc7
+  * disable UEFI from kernel config
+  * only build the linux-image binary package from linux-next-librem5
+
+  [ Sebastian Krzyszkowiak ]
+  * librem5_defconfig: Enable CONFIG_SCHED_THERMAL_PRESSURE
+  * redpine: Silence PS request messages
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Thu, 28 May 2020 19:58:02 +0200
+
+linux-librem5 (5.6.14+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * include the upstream v5.6.14 stable release
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 25 May 2020 07:49:53 +0200
+
+linux-librem5 (5.6.13+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * debian: add KREL_MAJOR variable to use for text substitutions
+  * hack: irqchip: irq-gic-v3: support mainline atf
+  * include the upstream v5.6.13 stable release
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 18 May 2020 09:16:26 +0200
+
+linux-next-librem5 (5.7.0~rc6+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.7-rc6
+  * arm64: dts: imx8mq-librem5.dts: devicetree cleanups
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 18 May 2020 09:11:45 +0200
+
+linux-next-librem5 (5.7.0~rc5+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.7-rc5
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 11 May 2020 11:28:11 +0200
+
+linux-next-librem5 (5.7.0~rc4+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.7-rc4
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 04 May 2020 10:01:25 +0200
+
+linux-librem5 (5.6.10+librem5.1) amber-phone; urgency=medium
+
+  [ Guido Günther ]
+  * debian: control.in back in line with control
+
+  [ Martin Kepplinger ]
+  * Input: edt-ft5x06 - add fw_version debugfs file to read
+  * merge in upstream v5.6.10 stable release
+  * imx8mq-librem5.dts cleanups
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 04 May 2020 10:36:09 +0200
+
+linux-librem5 (5.6.5+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * merge in the v5.6.5 stable release
+
+  [ Eric Kuzmenko ]
+  * arm64: dts: librem5: Adjust DSE, SRE, and PUE for each I2C bus
+  * arm64: dts: librem5: Make I2C1 operate at 387kHz
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Sat, 18 Apr 2020 09:52:06 +0200
+
+linux-librem5 (5.6.0+librem5.2) amber-phone; urgency=medium
+
+  * Make 5.6 the default kernel
+
+ -- Guido Günther <agx@sigxcpu.org>  Thu, 09 Apr 2020 12:54:28 +0200
+
+linux-next-librem5 (5.6.0+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * based everything on the v5.6 mainline release
+  * remove USB data role switching (regression on few devices)
+  * make sure no librem5-devkit-base 0.0.9 or older is installed
+  * debian: package names: increment the ABI version number
+    because the userspace ABI changed in the devfreq subsystem
+
+  [ Sebastian Krzyszkowiak ]
+  * librem5_defconfig: Enable crypto options required by iwd
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Thu, 02 Apr 2020 19:34:06 +0200
+
+linux-next-librem5 (5.6.0~rc7+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * based everything on the v5.6-rc7 mainline release
+  * librem5_defconfig: enable WQ_POWER_EFFICIENT_DEFAULT
+  * librem5_defconfig: remove CONFIG_PM_TEST_SUSPEND
+
+  [ Angus Ainslie (Purism) ]
+  * arm64: dts: librem5: add gnss stanzas
+    (fix regression by Martin)
+
+  [ Sebastian Krzyszkowiak ]
+  * librem5_defconfig: Enable WireGuard VPN support
+  * arm64: dts: librem5: Mark touchscreen as compatible with edt,edt-ft5506
+    (increases available touch points to 10)
+  * redpine: Always go into Mimic-UAPSD branch of power management
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 23 Mar 2020 12:21:54 +0100
+
+linux-next-librem5 (5.6.0~rc6+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * based everything on v5.6-rc6 mainline release
+
+  [ Sebastian Krzyszkowiak ]
+  * librem5_defconfig: Enable binfmt_misc support
+  * gitlab-ci: Don't accumulate old packages in job artifacts
+
+  [ Guido Günther ]
+  * gitlab-ci: Make sure debian/control is current
+  * Add README.source
+  * Generate debian/control
+  * debian: Build meta package when we're building 'linux-librem5'
+  * Use a single source package name per branch
+  * phy: fsl-imx8-mipi-dphy: Hook into runtime pm
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Tue, 17 Mar 2020 12:18:26 +0100
+
+linux-next-librem5 (5.6.0~rc5+librem5.1) amber-phone; urgency=medium
+
+  [ Martin Kepplinger ]
+  * The Librem 5 kernel rebased on v5.6-rc5 which means it includes all
+    security updates, bugfixes and new features from the mainline kernel.
+    It offers the same functionality for the Librem 5 as the previous
+    release, with a few additions:
+
+  [ Guido Günther ]
+  * Add support for the whole display stack on newer kernels and keep
+    working on integrating it into the mainline.
+  * Add HDMI support for the devkit
+  * Various Debian packaging and build fixes
+
+  [ Angus Ainslie (Purism) ]
+  * Add USB role switching
+  * Preliminary support for using the mainline redpine WiFi driver
+    This is an extra option for users to try and test. For details, see
+    /etc/modprobe.d/librem5-devkit.conf (librem5-devkit-base debian package)
+    on your Librem 5.
+
+  [ Martin Kepplinger ]
+  * Drop the debian package name postfix -h1
+  * Depend on librem5-devkit-base 0.0.9 or newer
+  * Support S3 suspend/resume in Linux (ATF and HW-verification is missing)
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Thu, 12 Mar 2020 08:48:10 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.12) amber-phone; urgency=medium
+
+  * drm/etnaviv: Update idle bits.
+    Update the state HI and common header from rnndb commit
+    commit 19280a95a (rnndb: Update idle bits)
+  * drm/etnaviv: Consider all kwnown idle bits in debugfs.
+    We were missing out on some bits the vendor kernel driver knows about.
+  * drm/etnaviv: Ignore MC when checking runtime suspend idleness.
+    Without that runtime suspend is often blocked like
+       [ 280.159111] etnaviv-gpu 38000000.gpu: genpd_runtime_suspend()
+       ...
+    Idle mask is 0x7fffbffe
+       ...
+       [  418.893082] etnaviv-gpu 38000000.gpu: genpd_runtime_suspend()
+    Idle mask flips to 0x7ffffffe, suspend happens:
+      [  418.926765] etnaviv-gpu 38000000.gpu: suspend latency exceeded,
+                     33667107 ns
+      [  418.926862] PM: gpu: Power-off latency exceeded, new value 80280 ns
+    This can sometimes be reproduced by hitting CTRL-C in kmscube but it
+    also happens during normal operation.
+    Tested on GC7000.
+  * drm/etnaviv: Warn when GPU doesn't idle fast enough.
+    If the GPU isn't idle after signalling pm_runtime_mark_last_busy() plus
+    waiting for the autosuspend delay there's likely something wrong with
+    the way we check idleness so warn about that.
+
+ -- Guido Günther <agx@sigxcpu.org>  Wed, 04 Mar 2020 09:49:42 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.11) amber-phone; urgency=medium
+
+  * arm64: dts: librem5-devkit: Drop opp points.
+    They're already set in imx8mq.dtsi
+  * arm64: dts: librem5: Add bucket to opp points table.
+    Only with that the we can reduce VDD_ARM to 0.9V at runtime
+    which helps battery life.
+
+ -- Guido Günther <agx@sigxcpu.org>  Sun, 23 Feb 2020 14:38:17 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.10) amber-phone; urgency=medium
+
+  [ Angus Ainslie (Purism) ]
+  * arm64: dts: librem5: add the USB 2 phy for otg mode.
+    The phy can notify the charge control when it's gone to otg mode.
+  * arm64: dts: librem5: Remove duplicate CHG_OTG_EN
+
+  [ Guido Günther ]
+  * drm: mxsfb: Don't print error on -EPROBE_DEFER.
+    This got people confused.
+  * librem5: Drop unused typec connector config.
+    The properties there are parsed by the tcpm and wcove drivers
+    but currently not by the tps6598x.
+  * drm: etnaviv: Enter runtime suspend faster.
+    Three frames are enough. Runtime PM moves us to longer
+    delays if necessary.
+  * arm64: dts: imx8mq-librem5-devkit: Run GPU at 0.9V.
+    According to the imx8mq data sheet running VDD_GPU at 0.9V is enough
+    when not overclocking to 1GHz (which we currently don't do).
+  * arm64: dts: imx8mq-librem5: Run GPU at 0.9V.
+    According to the imx8mq data sheet running VDD_GPU at 0.9V is enough
+    when not overclocking to 1GHz (which we currently don't do).
+
+  [ Martin Kepplinger ]
+  * net: wireless: redpine: fix switch case fall through in mgmt pkt rx
+    at least this is how the mainline driver implements this logic.
+  * iio: st_lsm6dsx: update driver to mainline version of v5.6
+    this simply backports the v5.6 mainline driver to our tree.
+  * arm64: dts: librem5/devkit: update accelerometer description
+    update the accel/gyro hardware description to use the mainline driver
+    and apply the respectively correct mount matrix.
+
+  [ Sebastian Krzyszkowiak ]
+  * librem5_defconfig: Enable btrfs, overlayfs and ext4 security support
+  * librem5_defconfig: Enable nftables support
+  * librem5_defconfig: Enable bunch of options needed by Docker
+  * librem5_defconfig: Enable CONFIG_CFG80211_WEXT
+  * librem5_defconfig: Enable BPF/cgroup based firewalling.
+    This is needed for IP firewalling in systemd
+  * librem5_defconfig: Enable CONFIG_NETFILTER_XT_MATCH_COMMENT.
+    This is needed by anbox-bridge
+  * librem5_defconfig: Enable xattr support and additional compression algos
+    for SquashFS
+  * librem5_defconfig: Enable more LED triggers
+  * librem5_defconfig: Compile heartbeat and gpio LED triggers as modules
+
+  [ Eric Kuzmenko ]
+  * Make the dev kit's VSYS_MIN=3.5V, fixes #106
+
+ -- Guido Günther <agx@sigxcpu.org>  Thu, 20 Feb 2020 17:04:12 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.9) amber-phone; urgency=medium
+
+  [ Angus Ainslie (Purism) ]
+  * arm64: dts: librem5: use the correct interrupt for the charge controller.
+    The BQ25895 is on gpio bank 3 io 3 for it's interrupt.
+  * arm64: configs: librem5: enable gnss serial drivers.
+    The gnss drivers can control the regulator for the gnss chip.
+  * arm64: dts: librem5: add gnss stanzas.
+    Rename the gps stanzas to gnss.
+    Add a gnss regulator to control power for the gnss module.
+    Add the gnss node to uart2 and use the regulator.
+    Drop rfkill for the gnss gpio.
+  * power: supply: bq25890_charger: only report capacity for monitored-battery.
+    If there's no monitored battery present the driver should not report
+    capacity information.
+  * arm64: dts: librem5: Drop monitored battery.
+    As the librem5 has a fuel gauge don't use the monitored-battery property.
+
+  [ Sebastian Krzyszkowiak ]
+  * CI: Build Debian packages using an arm64 runner.  This makes linux-headers
+    package usable on the device for things like dkms.
+  * debian/rules: Handle parallel builds
+
+  [ Guido Günther ]
+  * gitlab-ci: Use a shallow clone.
+    No need to pull all tags, branches and history. This makes cloning take
+    1.5 minutes (and even on a loaded system it goes down to 5m while we've
+    seen 30m before).
+  * arm64: dts: librem5: Drop dcss device tree parts.
+    They'll look different for DP out and are just confusing.
+  * arm64: dts: librem5: Remove commented out values.
+    The're currently configured at the panel.
+  * arm64: dts: librem5: Use edge triggered irq for touch.
+    The touch controller supports two modes but default seemds to be
+    edge. (Closes: #136) and helps #125 and #133
+
+ -- Guido Günther <agx@sigxcpu.org>  Sat, 25 Jan 2020 09:46:28 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.8) amber-phone; urgency=medium
+
+  [ Angus Ainslie (Purism) ]
+  * arm64: dts: librem5: undo regulator suspend optimizations.
+    Allowing some of the regulators to turn of in suspend breaks the power
+    button so undo the changes
+    Fixes https://source.puri.sm/Librem5/linux-next/issues/109
+  * power: supply: max17042_battery: Allow the battery capacity to be set.
+    Make PROP_CHARGE_FULL_DESIGN and PROP_CHARGE_FULL writable so that we can
+    set the battery capacity from userspace.
+
+  [ Eric Kuzmenko ]
+  * Configure NWDOG to fix Rebooting
+
+  [ Guido Günther ]
+  * librem5: Fix tps65982 IRQ configuration.
+    Enable LVTTL and pull up since otherwise the level low IRQ is always
+    detected as firering. (Closes: #134)
+
+ -- Guido Günther <agx@sigxcpu.org>  Tue, 07 Jan 2020 10:08:43 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.7) amber-phone; urgency=medium
+
+  [ Guido Günther ]
+  * librem5: Set maximum led current
+  * leds: lm3692x: Make sure we don't exceed the maximum led current.
+    The current is given by the formular from page 12 of
+    https://www.ti.com/lit/ds/symlink/lm36922.pdf. We use this to limit the
+    max_brightness property using the led-max-microamp property.
+  * leds: lm3692x: Drop led current hack.
+    The previous patch introduced a proper calcultion from DT.
+    Partially reverts 9aef2ef5de497d5fa633a6ac22a966713ee12293.
+    The rest was already reverted when switching to DT parsing
+    for OVP.
+  * leds: ledtrig-backlight: Properly pass on max_brightness property.
+    We had that hardcoded to LED_FULL (which did not matter until
+    now).
+  * usb: tps6598x: Export some power supply properties
+    This unbreaks charger detection.
+
+  [ Sebastian Krzyszkowiak ]
+  * redpine: Handle PN number properly to avoid dropping of packets.
+    Imported patch from Redpine
+
+ -- Guido Günther <agx@sigxcpu.org>  Fri, 03 Jan 2020 21:43:48 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.6) amber-phone; urgency=medium
+
+  [ Guido Günther ]
+  * leds: lm3692x: turn off regulator when brightness goes to 0.
+    This saves additional power and makes sure it's really off.
+  * librem5: compile in power key.
+    Eases testing and we have it on all boards anyway.
+  * rtc: m41t80: Clear oscillator fault bit during probe.
+    This make sure we don't read a bad value later on.
+  * librem5: Disable imx8mq's rtc.
+    This makes sure the system uses the right one.
+  * d/control: Clarify package description
+  * iio: light: vcnl4000: Fix integration interval for vcnl4040.
+    According to the data sheet it's 0.12 lux/step, not 0.024 lux/step as
+    with the vcnl4200.
+    See p. 8 in https://www.vishay.com/docs/84307/designingvcnl4040.pdf
+
+  [ Sebastian Krzyszkowiak ]
+  * librem5: Enable hidraw and uhid
+
+ -- Guido Günther <agx@sigxcpu.org>  Tue, 24 Dec 2019 15:09:34 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.5) amber-phone; urgency=medium
+
+  [ Guido Günther ]
+  * librem5: Restrict dmesg access.
+    This brings us in line with modern distros
+  * Librem5: Enable tmpfs ACLs.
+    This avoids having to add the `purism` user to lots of groups since
+    logind can do it's job
+  * librem5: Use exponential brightness mapping
+
+  [ Martin Kepplinger ]
+  * thermal: cpu_cooling: remove set_freezable() when suspend not implemented.
+    The cpu_cooling driver prevents system suspend due to one hung task per
+    cpu. This is because it is "set freezable" by accident. That's a bug.
+    Note: In newer kernels, this issue goes away because of a different
+    implementation altogether and system suspend will work there.
+
+ -- Guido Günther <agx@sigxcpu.org>  Wed, 18 Dec 2019 15:15:06 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.4) amber-phone; urgency=medium
+
+  [ Guido Günther ]
+  * Librem5: Round trip defconfig to reduce noise
+  * Librem5: Enable apparmor.
+    This was enabled before but got list. See
+    https://source.puri.sm/Librem5/linux-next/merge_requests/17
+  * gitlab-ci: Build a kernel deb as well.
+    We add the current topmost commit to the changelog and add +gitlabci1 to
+    the version number so it becomes easy to identify.
+  * d/control: Add missing build-deps.
+    This allows us to build in a clean environment.
+  * drm: panel: mantix: Speed up display init.
+    Use a timeout value closer to the data sheet rather than
+    the vendor code. This saves off almost a second.
+
+  [ Angus Ainslie (Purism) ]
+  * arm64: dts: librem5-devkit: increase the VBUS current in the kernel.
+    The poly fuses can handle 6V 4Amps so incease the kernel limts to 5V
+    3.5Amps.
+  * arm64: dts: librem5: update the PD power settings.
+    Increase the limts in kernel for power delivery
+
+ -- Guido Günther <agx@sigxcpu.org>  Fri, 13 Dec 2019 21:42:00 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.3) amber-phone; urgency=medium
+
+  * debian: Add gbp.conf.
+    This simplifies tagging and changelog generation
+  * debian: Use kernel team as maintainer address.
+    Set uploaders to the individual team members, sorted alphabetically.
+  * d/control: Fix indentation
+  * d/control: Add depends.
+    We have these in the base system but let's not rely on that.
+  * d/control: Sort build-deps
+  * debian: Add kernel meta package.
+    This is simpler than having to update the librem5-base pacakge
+    as well.
+
+ -- Guido Günther <agx@sigxcpu.org>  Sun, 08 Dec 2019 14:18:13 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.2) amber-phone; urgency=medium
+
+  [ Angus Ainslie (Purism) ]
+  * arm64: dts: librem5: allow the 25MHz DDR clock.  As we're using the
+    userspace govenor to set the devfreq allow 25MHz for testing
+  * sound: codec: gtm601: the BM818 uses stereo channels
+  * arm64: dts: librem5: set the correct sai6 <-> BM818 parameters
+
+  [ Guido Günther ]
+  * Revert "HACK etnaviv: allow to have relocs for BOs as well"
+    We have per process address spaces/softpin now.
+    This reverts commit e796f766041e1d91217dfb3044caddc6925826cf.
+
+ -- Guido Günther <agx@sigxcpu.org>  Sat, 07 Dec 2019 18:51:24 +0100
+
+linux-5.3.0-librem5-h1 (5.3.0+librem5.1) amber-phone; urgency=low
+
+  * Initial release of the Librem 5 kernel
+
+ -- Guido Günther <agx@sigxcpu.org>  Fri, 29 Nov 2019 20:37:46 +0100

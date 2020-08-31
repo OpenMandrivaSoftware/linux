@@ -73,7 +73,8 @@ modules.order
 #
 # Debian directory (make deb-pkg)
 #
-/debian/
+/debian/*tmp/
+/debian/files
 
 #
 # Snap directory (make snap-pkg)
