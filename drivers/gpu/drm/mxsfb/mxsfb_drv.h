@@ -32,15 +32,14 @@ struct mxsfb_drm_private {
 	struct drm_panel		*panel;
 	struct drm_bridge		*bridge;
 
+	u32				max_bw;
+
 	struct icc_path 		*icc_path;
 	s32				icc_path_bw;
 };
 
 int mxsfb_setup_crtc(struct drm_device *dev);
 int mxsfb_create_output(struct drm_device *dev);
-
-void mxsfb_enable_axi_clk(struct mxsfb_drm_private *mxsfb);
-void mxsfb_disable_axi_clk(struct mxsfb_drm_private *mxsfb);
 
 void mxsfb_crtc_enable(struct mxsfb_drm_private *mxsfb);
 void mxsfb_crtc_disable(struct mxsfb_drm_private *mxsfb);
