@@ -459,7 +459,8 @@ static int multi_unbind(struct usb_composite_dev *cdev)
 #ifdef USB_ETH_RNDIS
 	usb_put_function(f_acm_rndis);
 #endif
-	usb_put_function_instance(fi_acm);
+	/* FIXME the following hangs during rmmod */
+	// usb_put_function_instance(fi_acm);
 #ifdef USB_ETH_RNDIS
 	usb_put_function(f_rndis);
 	usb_put_function_instance(fi_rndis);

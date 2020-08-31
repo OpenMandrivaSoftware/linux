@@ -1187,7 +1187,7 @@ static int gs_closed(struct gs_port *port)
 
 static void gserial_free_port(struct gs_port *port)
 {
-	cancel_delayed_work_sync(&port->push);
+	flush_delayed_work(&port->push);
 	/* wait for old opens to finish */
 	wait_event(port->close_wait, gs_closed(port));
 	WARN_ON(port->port_usb != NULL);

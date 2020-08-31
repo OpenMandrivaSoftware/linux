@@ -18,6 +18,11 @@
 #define MAX17042_DEFAULT_TEMP_MIN	(0)    /* For sys without temp sensor */
 #define MAX17042_DEFAULT_TEMP_MAX	(700)  /* 70 degrees Celcius */
 
+#define MAX17055_VCHG_4V2		0
+#define MAX17055_VCHG_4V3		1
+#define MAX17055_VCHG_BIT		BIT(10)
+#define MAX17055_REFRESH_BIT		BIT(15)
+
 /* Consider RepCap which is less then 10 units below FullCAP full */
 #define MAX17042_FULL_THRESHOLD		10
 
@@ -259,6 +264,7 @@ struct max17042_platform_data {
 	int         vmax;	/* in millivolts */
 	int         temp_min;	/* in tenths of degree Celsius */
 	int         temp_max;	/* in tenths of degree Celsius */
+	int         vchg;       /* charge voltage, 1 = >4.25V, 0 = 4.2V */
 };
 
 #endif /* __MAX17042_BATTERY_H_ */

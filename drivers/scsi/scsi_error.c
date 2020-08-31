@@ -565,6 +565,18 @@ int scsi_check_sense(struct scsi_cmnd *scmd)
 				return NEEDS_RETRY;
 			}
 		}
+		if (scmd->device->expecting_media_change) {
+			if (sshdr.asc == 0x28 && sshdr.ascq == 0x00) {
+				/*
+				 * clear the expecting_media_change in
+				 * scsi_decide_disposition() because we
+				 * need to catch possible "fail fast" overrides
+				 * that block readahead can cause.
+				 */
+				return NEEDS_RETRY;
+			}
+		}
+
 		/*
 		 * we might also expect a cc/ua if another LUN on the target
 		 * reported a UA with an ASC/ASCQ of 3F 0E -
@@ -1944,9 +1956,22 @@ maybe_retry:
 	 * the request was not marked fast fail.  Note that above,
 	 * even if the request is marked fast fail, we still requeue
 	 * for queue congestion conditions (QUEUE_FULL or BUSY) */
-	if ((++scmd->retries) <= scmd->allowed
-	    && !scsi_noretry_cmd(scmd)) {
-		return NEEDS_RETRY;
+	if ((++scmd->retries) <= scmd->allowed) {
+		/* but scsi_noretry_cmd() cannot override the
+		 * expecting_media_change flag.
+		 */
+		if (!scsi_noretry_cmd(scmd) ||
+		    scmd->device->expecting_media_change) {
+			scmd->device->expecting_media_change = 0;
+			return NEEDS_RETRY;
+		} else {
+			/* Not marked fail fast, or marked but not expected.
+			 * Clear the flag too because it's meant for the
+			 * next UA only.
+			 */
+			scmd->device->expecting_media_change = 0;
+			return SUCCESS;
+		}
 	} else {
 		/*
 		 * no more retries - report this one back to upper level.

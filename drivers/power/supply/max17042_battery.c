@@ -433,9 +433,28 @@ static int max17042_set_property(struct power_supply *psy,
 	struct regmap *map = chip->regmap;
 	int ret = 0;
 	u32 data;
+	u64 data64;
 	int8_t temp;
 
 	switch (psp) {
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+		ret = regmap_read(map, MAX17042_DesignCap, &data);
+		if (ret < 0)
+			return ret;
+
+		data64 = (u64)val->intval * chip->pdata->r_sns;
+		do_div(data64, 5000000ll);
+		ret = regmap_write(map, MAX17042_DesignCap, (u32)data64);
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+		ret = regmap_read(map, MAX17042_FullCAP, &data);
+		if (ret < 0)
+			return ret;
+
+		data64 = (u64)val->intval * chip->pdata->r_sns;
+		do_div(data64, 5000000ll);
+		ret = regmap_write(map, MAX17042_FullCAP, (u32)data64);
+		break;
 	case POWER_SUPPLY_PROP_TEMP_ALERT_MIN:
 		ret = regmap_read(map, MAX17042_TALRT_Th, &data);
 		if (ret < 0)
@@ -477,6 +496,8 @@ static int max17042_property_is_writeable(struct power_supply *psy,
 	int ret;
 
 	switch (psp) {
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
 	case POWER_SUPPLY_PROP_TEMP_ALERT_MIN:
 	case POWER_SUPPLY_PROP_TEMP_ALERT_MAX:
 		ret = 1;
@@ -916,6 +937,8 @@ max17042_get_of_pdata(struct max17042_chip *chip)
 		pdata->vmin = INT_MIN;
 	if (of_property_read_s32(np, "maxim,over-volt", &pdata->vmax))
 		pdata->vmax = INT_MAX;
+	if (of_property_read_bool(np, "maxim,vchg-4V2"))
+		pdata->vchg=MAX17055_VCHG_4V2;
 
 	return pdata;
 }
@@ -966,6 +989,7 @@ max17042_get_default_pdata(struct max17042_chip *chip)
 	pdata->vmax = MAX17042_DEFAULT_VMAX;
 	pdata->temp_min = MAX17042_DEFAULT_TEMP_MIN;
 	pdata->temp_max = MAX17042_DEFAULT_TEMP_MAX;
+	pdata->vchg = MAX17055_VCHG_4V3;
 
 	return pdata;
 }
@@ -1031,6 +1055,7 @@ static int max17042_probe(struct i2c_client *client,
 	int ret;
 	int i;
 	u32 val;
+	u16 mask, bits;
 
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
 		return -EIO;
@@ -1083,6 +1108,14 @@ static int max17042_probe(struct i2c_client *client,
 		regmap_write(chip->regmap, MAX17042_CGAIN, 0x0000);
 		regmap_write(chip->regmap, MAX17042_MiscCFG, 0x0003);
 		regmap_write(chip->regmap, MAX17042_LearnCFG, 0x0007);
+	}
+
+	if (chip->chip_type &&
+	    (chip->chip_type == MAXIM_DEVICE_TYPE_MAX17055)) {
+		mask = MAX17055_VCHG_BIT | MAX17055_REFRESH_BIT;
+		bits = MAX17055_REFRESH_BIT | (chip->pdata->vchg ?
+					       MAX17055_VCHG_BIT : 0 );
+		regmap_write_bits(chip->regmap, MAX17055_ModelCfg, mask, bits);
 	}
 
 	chip->battery = devm_power_supply_register(&client->dev, max17042_desc,

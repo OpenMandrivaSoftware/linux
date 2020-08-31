@@ -13,6 +13,8 @@
  *    http://www.glyn.com/Products/Displays
  */
 
+#define DEBUG
+
 #include <linux/debugfs.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
@@ -52,6 +54,8 @@
 #define EV_REGISTER_OFFSET_Y		0x45
 #define EV_REGISTER_OFFSET_X		0x46
 
+#define REG_FW_VERSION			0xa6
+
 #define NO_REGISTER			0xff
 
 #define WORK_REGISTER_OPMODE		0x3c
@@ -68,6 +72,9 @@
 #define EDT_SWITCH_MODE_DELAY		5 /* msec */
 #define EDT_RAW_DATA_RETRIES		100
 #define EDT_RAW_DATA_DELAY		1000 /* usec */
+
+static int defers;
+#define MAX_DEFERS 4
 
 enum edt_pmode {
 	EDT_PMODE_NOT_SUPPORTED,
@@ -224,6 +231,13 @@ static irqreturn_t edt_ft5x06_ts_isr(int irq, void *dev_id)
 	if (error) {
 		dev_err_ratelimited(dev, "Unable to fetch data, error: %d\n",
 				    error);
+		// HACK: empty all slots on error
+		for (i = 0; i < tsdata->max_support_points; i++) {
+			input_mt_slot(tsdata->input, i);
+			input_mt_report_slot_state(tsdata->input, MT_TOOL_FINGER,
+					       false);
+		}
+		input_sync(tsdata->input);
 		goto out;
 	}
 
@@ -694,6 +708,26 @@ static int edt_ft5x06_debugfs_mode_set(void *data, u64 mode)
 DEFINE_SIMPLE_ATTRIBUTE(debugfs_mode_fops, edt_ft5x06_debugfs_mode_get,
 			edt_ft5x06_debugfs_mode_set, "%llu\n");
 
+static int edt_ft5x06_debugfs_fw_version_get(void *data, u64 *version)
+{
+	struct edt_ft5x06_ts_data *tsdata = data;
+	struct i2c_client *client = tsdata->client;
+
+	mutex_lock(&tsdata->mutex);
+
+	*version = edt_ft5x06_register_read(tsdata, REG_FW_VERSION);
+	if (*version == 0xff || *version == 0x00)
+		dev_warn(&client->dev, "failed to get firmware version\n");
+
+	mutex_unlock(&tsdata->mutex);
+
+	return 0;
+};
+
+DEFINE_SIMPLE_ATTRIBUTE(debugfs_fw_version_fops,
+			edt_ft5x06_debugfs_fw_version_get,
+			NULL, "%llu\n");
+
 static ssize_t edt_ft5x06_debugfs_raw_data_read(struct file *file,
 				char __user *buf, size_t count, loff_t *off)
 {
@@ -787,6 +821,9 @@ static void edt_ft5x06_ts_prepare_debugfs(struct edt_ft5x06_ts_data *tsdata,
 
 	debugfs_create_file("mode", S_IRUSR | S_IWUSR,
 			    tsdata->debug_dir, tsdata, &debugfs_mode_fops);
+	debugfs_create_file("fw_version", S_IRUSR,
+			    tsdata->debug_dir, tsdata,
+			    &debugfs_fw_version_fops);
 	debugfs_create_file("raw_data", S_IRUSR,
 			    tsdata->debug_dir, tsdata, &debugfs_raw_data_fops);
 }
@@ -921,6 +958,9 @@ static int edt_ft5x06_ts_identify(struct i2c_client *client,
 			strlcpy(fw_version, rdbuf, 1);
 			snprintf(model_name, EDT_NAME_LEN,
 				 "EVERVISION-FT5726NEi");
+			break;
+		case 0x02:   /* FT 8506 */
+			snprintf(model_name, EDT_NAME_LEN, "Focaltec FT8006P");
 			break;
 		default:
 			snprintf(model_name, EDT_NAME_LEN,
@@ -1079,6 +1119,11 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 	int error;
 	char fw_version[EDT_NAME_LEN];
 
+	if (defers < MAX_DEFERS) {
+	  defers++;
+	  return -EPROBE_DEFER;
+	}
+
 	dev_dbg(&client->dev, "probing for EDT FT5x06 I2C\n");
 
 	tsdata = devm_kzalloc(&client->dev, sizeof(*tsdata), GFP_KERNEL);
@@ -1229,6 +1274,7 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 	error = devm_request_threaded_irq(&client->dev, client->irq,
 					NULL, edt_ft5x06_ts_isr, irq_flags,
 					client->name, tsdata);
+
 	if (error) {
 		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
 		return error;
