@@ -1437,6 +1437,8 @@
 
 &mipi_dsi {
 	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
 
 	panel@0 {
 		compatible = "mantix,mlaf057we51-x";
