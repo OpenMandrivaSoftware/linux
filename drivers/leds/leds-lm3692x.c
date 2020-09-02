@@ -95,9 +95,6 @@
 #define LM3692X_FAULT_FLAG_SHRT BIT(3)
 #define LM3692X_FAULT_FLAG_OPEN BIT(4)
 
-#define MAX_DEFERS 2
-static int defers;
-
 /**
  * struct lm3692x_led -
  * @lock - Lock for reading/writing the device
@@ -482,11 +479,6 @@ static int lm3692x_probe(struct i2c_client *client,
 {
 	struct lm3692x_led *led;
 	int ret;
-
-	if (defers < MAX_DEFERS) {
-		defers++;
-		return -EPROBE_DEFER;
-	}
 
 	led = devm_kzalloc(&client->dev, sizeof(*led), GFP_KERNEL);
 	if (!led)
