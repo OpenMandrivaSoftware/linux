@@ -1345,6 +1345,12 @@
 		>;
 	};
 
+	/* SKHynix YACG4D0C9SHC - 8MP Front-Facing Camera */
+	camera1@20 {
+		reg = <0x20>;
+		status = "disabled";
+	};
+
 	backlight@36 {
 		compatible = "ti,lm36922";
 		reg = <0x36>;
@@ -1364,12 +1370,6 @@
 			linux,default-trigger = "backlight";
 			led-max-microamp = <20000>;
 		};
-	};
-
-	/* SKHynix YACG4D0C9SHC - 8MP Front-Facing Camera */
-	camera1@20 {
-		reg = <0x20>;
-		status = "disabled";
 	};
 
 	touchscreen@38 {
