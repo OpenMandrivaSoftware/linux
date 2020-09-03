@@ -330,6 +330,7 @@
 		regulator-name = "VDD_1V8";
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
+		vin-supply = <&buck7_reg>;
 	};
 
 	reg_vdd_3v3: regulator-vdd-3v3 {
