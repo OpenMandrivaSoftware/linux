@@ -306,6 +306,8 @@
 		vin-supply = <&reg_vdd_1v8>;
 		gpio = <&gpio1 5 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
+		/* Otherwise i2c3 is not functional */
+		regulator-always-on;
 	};
 
 	reg_lcd_3v4: regulator-lcd-3v4 {
