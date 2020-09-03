@@ -339,8 +339,7 @@ static int mxsfb_load(struct drm_device *drm)
 
 	ret = mxsfb_create_output(drm);
 	if (ret < 0) {
-		if (ret != -EPROBE_DEFER)
-			dev_err(drm->dev, "Failed to create outputs\n");
+		dev_err_probe(drm->dev, ret, "Failed to create outputs");
 		goto err_vblank;
 	}
 
@@ -363,14 +362,14 @@ static int mxsfb_load(struct drm_device *drm)
 	if (mxsfb->panel) {
 		ret = drm_panel_attach(mxsfb->panel, mxsfb->connector);
 		if (ret) {
-			dev_err(drm->dev, "Cannot connect panel: %d\n", ret);
+			dev_err_probe(drm->dev, ret, "Cannot connect panel");
 			goto err_vblank;
 		}
 	} else if (mxsfb->bridge) {
 		ret = drm_simple_display_pipe_attach_bridge(&mxsfb->pipe,
 							    mxsfb->bridge);
 		if (ret) {
-			dev_err(drm->dev, "Cannot connect bridge: %d\n", ret);
+			dev_err_probe(drm->dev, ret, "Cannot connect bridge");
 			goto err_vblank;
 		}
 	}
