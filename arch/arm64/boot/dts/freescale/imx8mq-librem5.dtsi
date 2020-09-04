@@ -1388,6 +1388,7 @@
 		interrupts = <27 IRQ_TYPE_EDGE_FALLING>;
 		touchscreen-size-x = <720>;
 		touchscreen-size-y = <1440>;
+		vcc-supply = <&reg_lcd_1v8>;
 	};
 };
 
