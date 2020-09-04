@@ -929,6 +929,7 @@
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
+	fsl,clock-drop-level = <25>;
 
 	panel@0 {
 		compatible = "rocktech,jh057n00900";
