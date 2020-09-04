@@ -618,11 +618,8 @@
 			MX8MQ_IOMUXC_ENET_RD3_GPIO1_IO29	0x83
 			/* DSI_TE */
 			MX8MQ_IOMUXC_ENET_RD2_GPIO1_IO28	0x83
-			/* fake tp */
 			/* TP_RST */
 			MX8MQ_IOMUXC_ENET_RX_CTL_GPIO1_IO24	0x83
-			/* TP_INT */
-			MX8MQ_IOMUXC_ENET_RD1_GPIO1_IO27	0x80
 		>;
 	};
 
@@ -871,6 +868,13 @@
 		fsl,pins = <
 			/* TCPC_INT */
 			MX8MQ_IOMUXC_GPIO1_IO10_GPIO1_IO10      0x01C0
+		>;
+	};
+
+	pinctrl_touch: touchgrp {
+		fsl,pins = <
+		/* TP_INT */
+		MX8MQ_IOMUXC_ENET_RD1_GPIO1_IO27	0x80
 		>;
 	};
 
@@ -1378,6 +1382,8 @@
 	touchscreen@38 {
 		compatible = "edt,edt-ft5506";
 		reg = <0x38>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_touch>;
 		interrupt-parent = <&gpio1>;
 		interrupts = <27 IRQ_TYPE_EDGE_FALLING>;
 		touchscreen-size-x = <720>;
