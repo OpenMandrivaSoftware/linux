@@ -73,9 +73,6 @@
 #define EDT_RAW_DATA_RETRIES		100
 #define EDT_RAW_DATA_DELAY		1000 /* usec */
 
-static int defers;
-#define MAX_DEFERS 4
-
 enum edt_pmode {
 	EDT_PMODE_NOT_SUPPORTED,
 	EDT_PMODE_HIBERNATE,
@@ -1108,6 +1105,8 @@ static void edt_ft5x06_disable_regulator(void *arg)
 	regulator_disable(data->vcc);
 }
 
+bool mantix_panel_prepared(void);
+
 static int edt_ft5x06_ts_probe(struct i2c_client *client,
 					 const struct i2c_device_id *id)
 {
@@ -1119,8 +1118,9 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 	int error;
 	char fw_version[EDT_NAME_LEN];
 
-	if (defers < MAX_DEFERS) {
-	  defers++;
+	/* Since the panel handles the reset via gpio we need to wait until the panel is up */
+	if (!mantix_panel_prepared()) {
+	  dev_dbg(&client->dev, "Panel not yet ready\n");
 	  return -EPROBE_DEFER;
 	}
 
