@@ -1459,7 +1459,8 @@
 		avee-supply = <&reg_lcd_avee>;
 		vddi-supply = <&reg_lcd_1v8>;
 		backlight = <&backlight_dsi>;
-		reset-gpios = <&gpio1 29 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio1 29 GPIO_ACTIVE_LOW>,
+			      <&gpio1 24 GPIO_ACTIVE_LOW>;
 		port {
 			panel_in: endpoint {
 				remote-endpoint = <&mipi_dsi_out>;
