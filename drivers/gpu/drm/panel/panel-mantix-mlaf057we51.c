@@ -23,10 +23,13 @@
 #define MANTIX_CMD_OTP_STOP_RELOAD_MIPI 0x41
 #define MANTIX_CMD_INT_CANCEL           0x4C
 
+#define MANTIX_NUM_RESETS 2
+
 struct mantix {
 	struct device *dev;
 	struct drm_panel panel;
-	struct gpio_desc *reset_gpio;
+	/* RESX and TP_RSTN */
+	struct gpio_descs *reset_gpios;
 
 	struct regulator *avdd;
 	struct regulator *avee;
@@ -137,6 +140,7 @@ static int mantix_unprepare(struct drm_panel *panel)
 
 static int mantix_prepare(struct drm_panel *panel)
 {
+	DECLARE_BITMAP(values, BITS_PER_TYPE(0));
 	struct mantix *ctx = panel_to_mantix(panel);
 	int ret;
 
@@ -167,11 +171,11 @@ static int mantix_prepare(struct drm_panel *panel)
 
 	/* T3+T5 */
 	usleep_range(10000, 12000);
-
-	gpiod_set_value_cansleep(ctx->reset_gpio, 1);
+	gpiod_set_array_value_cansleep(ctx->reset_gpios->ndescs,
+				       ctx->reset_gpios->desc,
+				       ctx->reset_gpios->info, values);
+	/* Reset 150us + 5ms until operational */
 	usleep_range(5150, 7000);
-
-	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
 
 	/* T6 */
 	msleep(50);
@@ -236,10 +240,15 @@ static int mantix_probe(struct mipi_dsi_device *dsi)
 	if (!ctx)
 		return -ENOMEM;
 
-	ctx->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_LOW);
-	if (IS_ERR(ctx->reset_gpio)) {
-		dev_err(dev, "cannot get reset gpio\n");
-		return PTR_ERR(ctx->reset_gpio);
+	ctx->reset_gpios = devm_gpiod_get_array(dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(ctx->reset_gpios)) {
+		dev_err(dev, "cannot get reset gpios\n");
+		return PTR_ERR(ctx->reset_gpios);
+	}
+
+	if (ctx->reset_gpios->ndescs != MANTIX_NUM_RESETS) {
+		dev_err(dev, "Need exactly %d reset-gpios\n", MANTIX_NUM_RESETS);
+		return -EINVAL;
 	}
 
 	mipi_dsi_set_drvdata(dsi, ctx);
