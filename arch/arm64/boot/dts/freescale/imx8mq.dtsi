@@ -976,8 +976,9 @@
 					 <&clk IMX8MQ_CLK_DSI_AHB>,
 					 <&clk IMX8MQ_CLK_DSI_IPG_DIV>,
 					 <&clk IMX8MQ_CLK_DSI_PHY_REF>,
-					 <&clk IMX8MQ_CLK_LCDIF_PIXEL>;
-				clock-names = "core", "rx_esc", "tx_esc", "phy_ref", "lcdif";
+					 <&clk IMX8MQ_CLK_LCDIF_PIXEL>,
+					 <&clk IMX8MQ_VIDEO_PLL1>;
+				clock-names = "core", "rx_esc", "tx_esc", "phy_ref", "lcdif", "video_pll";
 				assigned-clocks = <&clk IMX8MQ_CLK_DSI_AHB>,
 						  <&clk IMX8MQ_CLK_DSI_CORE>,
 						  <&clk IMX8MQ_CLK_DSI_IPG_DIV>;
