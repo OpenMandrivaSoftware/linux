@@ -4,11 +4,12 @@
  * Author: Chris Zhong <zyw@rock-chips.com>
  */
 
-#ifndef _CDN_DP_REG_H
-#define _CDN_DP_REG_H
+#ifndef CDNS_MHDP_H_
+#define CDNS_MHDP_H_
 
 #include <drm/drm_bridge.h>
 #include <drm/drm_connector.h>
+#include <drm/drm_dp_helper.h>
 #include <linux/bitops.h>
 
 #define ADDR_IMEM		0x10000
@@ -529,8 +530,6 @@ struct cdns_mhdp_device {
 	};
 };
 
-int cdns_mhdp_reg_read(struct cdns_mhdp_device *mhdp, u32 addr);
-int cdns_mhdp_reg_write(struct cdns_mhdp_device *mhdp, u32 addr, u32 val);
 void cdns_mhdp_clock_reset(struct cdns_mhdp_device *mhdp);
 void cdns_mhdp_set_fw_clk(struct cdns_mhdp_device *mhdp, unsigned long clk);
 int cdns_mhdp_load_firmware(struct cdns_mhdp_device *mhdp, const u32 *i_mem,
@@ -554,4 +553,4 @@ int cdns_mhdp_audio_mute(struct cdns_mhdp_device *mhdp, bool enable);
 int cdns_mhdp_audio_config(struct cdns_mhdp_device *mhdp,
 			   struct audio_info *audio);
 
-#endif /* _CDN_DP_REG_H */
+#endif /* CDNS_MHDP_H_ */
