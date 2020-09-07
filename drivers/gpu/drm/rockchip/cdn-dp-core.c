@@ -15,6 +15,7 @@
 
 #include <sound/hdmi-codec.h>
 
+#include <drm/bridge/cdns-mhdp.h>
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_dp_helper.h>
 #include <drm/drm_edid.h>
@@ -23,7 +24,6 @@
 #include <drm/drm_simple_kms_helper.h>
 
 #include "cdn-dp-core.h"
-#include "cdn-dp-reg.h"
 #include "rockchip_drm_vop.h"
 
 #define connector_to_dp(c) \
