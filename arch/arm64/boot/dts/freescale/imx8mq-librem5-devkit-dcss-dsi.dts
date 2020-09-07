@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright 2020 Purism SPC
+ */
+
+/dts-v1/;
+
+#include "imx8mq-librem5-devkit.dts"
+
+/delete-node/ &mipi_dsi_lcdif_in;
+/delete-node/ &lcdif_mipi_dsi;
+&lcdif {
+	status = "disabled";
+};
+
+&dcss {
+	status = "okay";
+
+	clocks = <&clk IMX8MQ_CLK_DISP_APB_ROOT>,
+		 <&clk IMX8MQ_CLK_DISP_AXI_ROOT>,
+		 <&clk IMX8MQ_CLK_DISP_RTRM_ROOT>,
+		 <&clk IMX8MQ_CLK_DC_PIXEL>,
+		 <&clk IMX8MQ_CLK_DISP_DTRC>;
+	clock-names = "apb", "axi", "rtrm", "pix", "dtrc";
+	assigned-clocks = <&clk IMX8MQ_CLK_DC_PIXEL>,
+					  <&clk IMX8MQ_VIDEO_PLL1_BYPASS>,
+					  <&clk IMX8MQ_VIDEO_PLL1_REF_SEL>,
+					  <&clk IMX8MQ_CLK_DISP_AXI>,
+					  <&clk IMX8MQ_CLK_DISP_RTRM>;
+	assigned-clock-parents = <&clk IMX8MQ_VIDEO_PLL1_OUT>,
+							 <&clk IMX8MQ_VIDEO_PLL1>,
+							 <&clk IMX8MQ_CLK_27M>,
+							 <&clk IMX8MQ_SYS1_PLL_800M>,
+							 <&clk IMX8MQ_SYS1_PLL_800M>;
+	assigned-clock-rates = <600000000>, <0>, <0>,
+						   <800000000>,
+						   <400000000>;
+
+	port@0 {
+		dcss_out: endpoint {
+			remote-endpoint = <&mipi_dsi_dcss_in>;
+		};
+	};
+};
+
+&mipi_dsi {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	fsl,clock-drop-level = <25>;
+
+	panel@0 {
+		compatible = "rocktech,jh057n00900";
+		reg = <0>;
+		backlight = <&backlight_dsi>;
+		reset-gpios = <&gpio3 13 GPIO_ACTIVE_LOW>;
+		iovcc-supply = <&reg_1v8_p>;
+		vcc-supply = <&reg_2v8_p>;
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&mipi_dsi_out>;
+			};
+		};
+	};
+
+	ports {
+		port@1 {
+			reg = <1>;
+			mipi_dsi_out: endpoint {
+				remote-endpoint = <&panel_in>;
+			};
+		};
+	};
+};
