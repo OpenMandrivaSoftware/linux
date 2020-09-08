@@ -80,7 +80,7 @@ static int cdns_mhdp_training_start(struct cdns_mhdp_device *mhdp)
 	u8 msg, event[2];
 	int ret;
 
-	DRM_DEV_INFO(mhdp->dev, "Staring link training");
+	DRM_DEV_INFO(mhdp->dev, "Starting link training");
 	msg = LINK_TRAINING_RUN;
 
 	/* start training */
