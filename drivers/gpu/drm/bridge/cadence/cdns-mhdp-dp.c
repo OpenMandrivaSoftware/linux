@@ -80,6 +80,7 @@ static int cdns_mhdp_training_start(struct cdns_mhdp_device *mhdp)
 	u8 msg, event[2];
 	int ret;
 
+	DRM_DEV_INFO(mhdp->dev, "Staring link training");
 	msg = LINK_TRAINING_RUN;
 
 	/* start training */
@@ -188,6 +189,8 @@ int cdns_mhdp_set_host_cap(struct cdns_mhdp_device *mhdp)
 	msg[5] = FAST_LT_NOT_SUPPORT;
 	msg[6] = mhdp->lane_mapping;
 	msg[7] = ENHANCED;
+
+	DRM_DEV_INFO(mhdp->dev, "Using %d lanes\n", mhdp->dp.num_lanes);
 
 	ret = cdns_mhdp_mailbox_send(mhdp, MB_MODULE_ID_DP_TX,
 				     DPTX_SET_HOST_CAPABILITIES,

@@ -173,9 +173,10 @@ cdns_dp_connector_detect(struct drm_connector *connector, bool force)
 {
 	struct cdns_mhdp_device *mhdp = container_of(connector,
 					struct cdns_mhdp_device, connector.base);
-	u8 hpd = 0xf;
+	u8 hpd;
 
 	hpd = cdns_mhdp_read_hpd(mhdp);
+	DRM_INFO("Connector status: %d", hpd);
 	if (hpd == 1)
 		/* Cable Connected */
 		return connector_status_connected;
@@ -364,7 +365,7 @@ static irqreturn_t cdns_dp_irq_thread(int irq, void *data)
 	struct cdns_mhdp_device *mhdp = data;
 
 	disable_irq_nosync(irq);
-
+	DRM_INFO("hpd irq");
 	mod_delayed_work(system_wq, &mhdp->hotplug_work,
 			msecs_to_jiffies(HOTPLUG_DEBOUNCE_MS));
 
