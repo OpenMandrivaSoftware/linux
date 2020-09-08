@@ -109,7 +109,7 @@ static void dp_aux_cfg(struct cdns_mhdp_device *mhdp)
 /* PMA common configuration for 27MHz */
 static void dp_phy_pma_cmn_cfg_27mhz(struct cdns_mhdp_device *mhdp)
 {
-	u32 num_lanes = mhdp->dp.num_lanes;
+	u32 num_lanes = 4;
 	u16 val;
 	int k;
 
@@ -160,7 +160,7 @@ static void dp_phy_pma_cmn_cfg_27mhz(struct cdns_mhdp_device *mhdp)
 
 static void dp_phy_pma_cmn_pll0_27mhz(struct cdns_mhdp_device *mhdp)
 {
-	u32 num_lanes = mhdp->dp.num_lanes;
+	u32 num_lanes = 4;
 	u32 link_rate = mhdp->dp.rate;
 	u16 val;
 	int index, i, k;
