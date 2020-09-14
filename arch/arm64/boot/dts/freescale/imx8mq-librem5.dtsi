@@ -955,7 +955,7 @@
 	pinctrl-0 = <&pinctrl_i2c1>;
 	status = "okay";
 
-	typec_pd: usb-pd@3f {
+	tps65982: usb-pd@3f {
 		compatible = "ti,tps6598x";
 		reg = <0x3f>;
 		pinctrl-names = "default";
