@@ -14,6 +14,7 @@
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include <linux/usb/phy.h>
+#include <linux/regulator/consumer.h>
 
 #include <linux/acpi.h>
 #include <linux/of.h>
@@ -120,6 +121,7 @@ struct bq25890_device {
 	int table_len;
 
 	struct mutex lock; /* protect state data */
+	struct gpio_desc *otg_en;
 };
 
 static const struct regmap_range bq25890_readonly_reg_ranges[] = {
@@ -755,12 +757,34 @@ static char *bq25890_charger_supplied_to[] = {
 	"main-battery",
 };
 
+
+static void bq25890_external_power_changed(struct power_supply *psy)
+{
+	struct bq25890_device *bq = power_supply_get_drvdata(psy);
+	bool supplied;
+	int ret;
+
+	supplied = power_supply_am_i_supplied(bq->charger);
+	dev_info(bq->dev, "Upstream supply changed: %d.\n", supplied);
+
+	if (!bq->otg_en)
+		return;
+
+	dev_info(bq->dev, "%sabling OTG_EN pin\n", supplied ? "dis" : "en");
+	gpiod_set_value_cansleep(bq->otg_en, !supplied);
+	ret = bq25890_field_write(bq, F_CHG_CFG, supplied);
+	if (ret < 0)
+		dev_err(bq->dev, "Failed to set charging to %d", supplied);
+}
+
+
 static const struct power_supply_desc bq25890_power_supply_desc = {
 	.name = "bq25890-charger",
 	.type = POWER_SUPPLY_TYPE_USB,
 	.properties = bq25890_power_supply_props,
 	.num_properties = ARRAY_SIZE(bq25890_power_supply_props),
 	.get_property = bq25890_power_supply_get_property,
+	.external_power_changed	= bq25890_external_power_changed,
 };
 
 static int bq25890_power_supply_init(struct bq25890_device *bq)
@@ -1052,6 +1076,13 @@ static int bq25890_probe(struct i2c_client *client,
 		bq->usb_nb.notifier_call = bq25890_usb_notifier;
 		usb_register_notifier(bq->usb_phy, &bq->usb_nb);
 	}
+	bq->otg_en = devm_gpiod_get_optional(&client->dev, "otg", GPIOD_OUT_LOW);
+	if (IS_ERR(bq->otg_en))
+		return PTR_ERR(bq->otg_en);
+	else if (bq->otg_en) {
+		dev_info(dev, "Got otg gpio hack");
+	} else
+		dev_info(dev, "No otg gpio found");
 
 	ret = devm_request_threaded_irq(dev, client->irq, NULL,
 					bq25890_irq_handler_thread,
