@@ -295,6 +295,18 @@
 	};
 };
 
+/delete-node/ &dcss_dsi_out;
+/delete-node/ &mipi_dsi_dcss_in;
+&dcss {
+	status = "okay";
+
+	port@0 {
+		dcss_hdmi_out: endpoint {
+			remote-endpoint = <&hdmi_in>;
+		};
+	};
+};
+
 &dphy {
 	status = "okay";
 };
@@ -315,6 +327,17 @@
 		ethphy0: ethernet-phy@1 {
 			compatible = "ethernet-phy-ieee802.3-c22";
 			reg = <1>;
+		};
+	};
+};
+
+&hdmi {
+	compatible = "nxp,imx8mq-cdns-hdmi";
+	lane-mapping = <0xe4>;
+	status = "okay";
+	port@0 {
+		hdmi_in: endpoint {
+			remote-endpoint = <&dcss_hdmi_out>;
 		};
 	};
 };
