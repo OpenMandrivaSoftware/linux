@@ -383,6 +383,10 @@
 
 	pinctrl_keys: keysgrp {
 		fsl,pins = <
+			/* 4G_WAKE */
+			MX8MQ_IOMUXC_NAND_RE_B_GPIO3_IO15	0x80
+			/* PWR_KEY */
+			MX8MQ_IOMUXC_NAND_CLE_GPIO3_IO5		0x01C0
 			/* VOL- */
 			MX8MQ_IOMUXC_ENET_MDIO_GPIO1_IO17	0x01C0
 			/* VOL+ */
