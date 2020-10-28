@@ -50,6 +50,112 @@
 		};
 	};
 
+	leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_flash>, <&pinctrl_hub_nreset>,
+			<&pinctrl_sd_pwr>, <&pinctrl_charger>
+			, <&pinctrl_smc>,
+			<&pinctrl_gnss>,
+			<&pinctrl_flash_pwr>,
+			<&pinctrl_wwan_pwr>, <&pinctrl_wifi_pwr>,
+			<&pinctrl_wwan>,
+			<&pinctrl_camera_pwr>,
+			<&pinctrl_bt>
+			;
+
+		camera-en {
+			label = "camera_en";
+			gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		chg-en {
+			label = "chg_en";
+			gpios = <&gpio3 2 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		chg-otg-en {
+			label = "chg_otg_en";
+			gpios = <&gpio3 4 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		flash-strobe {
+			label = "flash_strobe";
+			gpios = <&gpio1 21 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+			linux,default-trigger = "flash";
+		};
+
+		hub-nreset {
+			label = "hub_nreset";
+			gpios = <&gpio1 12 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		sd-en {
+			label = "sd_en";
+			gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		bt-reg-on {
+			label = "bt_reg_on";
+			gpios = <&gpio4 29 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		flash-en {
+			label = "flash_en";
+			gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gnss-nreset {
+			label = "gnss_nreset";
+			gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		smc-en {
+			label = "smc_en";
+			gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		wwan-en {
+			label = "wwan_en";
+			gpios = <&gpio3 18 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		wifi-en {
+			label = "wifi_en";
+			gpios = <&gpio3 10 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		wwan-nreset {
+			label = "wwan_nreset";
+			gpios = <&gpio3 1 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		wwan-disable {
+			label = "wwan_disable";
+			gpios = <&gpio3 16 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		wwan-dis2 {
+			label = "wwan_dis2";
+			gpios = <&gpio3 13 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
 	reg_audio_pwr_en: regulator-audio-pwr-en {
 		compatible = "regulator-fixed";
 		pinctrl-names = "default";
