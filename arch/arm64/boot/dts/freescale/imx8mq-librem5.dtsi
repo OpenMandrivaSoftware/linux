@@ -52,6 +52,28 @@
 		};
 	};
 
+	pwmleds {
+		compatible = "pwm-leds";
+
+		blue {
+			label = "blue:status";
+			max-brightness = <248>;
+			pwms = <&pwm2 0 50000>;
+		};
+
+		green {
+			label = "green:status";
+			max-brightness = <248>;
+			pwms = <&pwm4 0 50000>;
+		};
+
+		red {
+			label = "red:status";
+			max-brightness = <248>;
+			pwms = <&pwm3 0 50000>;
+		};
+	};
+
 	leds {
 		compatible = "gpio-leds";
 		pinctrl-names = "default";
