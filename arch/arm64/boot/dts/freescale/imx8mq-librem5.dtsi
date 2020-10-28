@@ -1159,6 +1159,27 @@
 		};
 	};
 
+	flash@53 {
+		compatible = "lm3560";
+		reg = <0x53>; /* A6 ?? */
+		#address-cells = <1>;
+		#size-cells = <0>;
+		flash@0 {
+			reg = <0x0>;
+			flash-timeout-us = <150000>;
+			flash-max-microamp = <320000>;
+			led-max-microamp = <60000>;
+			label = "lm3560:flash";
+		};
+
+		torch@1 {
+			reg = <0x1>;
+			led-max-microamp = <10000>;
+			label = "lm3560:torch";
+		};
+
+	};
+
 	proximity: prox@60 {
 		compatible = "vishay,vcnl4040", "vishay,vcnl4200";
 		reg = <0x60>;
