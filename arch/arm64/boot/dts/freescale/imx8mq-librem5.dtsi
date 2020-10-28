@@ -50,7 +50,7 @@
 		};
 	};
 
-	reg_aud_1v8: regulator-audio-1v8 {
+	reg_audio_pwr_en: regulator-audio-pwr-en {
 		compatible = "regulator-fixed";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_audiopwr>;
@@ -59,6 +59,14 @@
 		regulator-max-microvolt = <1800000>;
 		gpio = <&gpio1 4 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
+	};
+
+	reg_aud_1v8: regulator-audio-1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "AUD_1V8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&reg_audio_pwr_en>;
 	};
 
 	reg_gnss: regulator-gnss {
