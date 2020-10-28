@@ -1064,6 +1064,7 @@
 		#size-cells = <0>;
 		enable-gpios = <&gpio3 14 GPIO_ACTIVE_HIGH>;
 		vled-supply = <&reg_vsys_3v4>;
+		ti,brightness-mapping-exponential;
 		ti,ovp-microvolt = <25000000>;
 
 		led_backlight: led@0 {
