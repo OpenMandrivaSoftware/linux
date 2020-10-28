@@ -1148,13 +1148,12 @@
 	regulator@3e {
 		compatible = "tps65132";
 		reg = <0x3e>;
-
-		outp {
+		reg_lcd_avdd: outp {
 			regulator-name = "LCD_AVDD";
 			vin-supply = <&reg_lcd_3v4>;
 		};
 
-		outn {
+		reg_lcd_avee: outn {
 			regulator-name = "LCD_AVEE";
 			vin-supply = <&reg_lcd_3v4>;
 		};
