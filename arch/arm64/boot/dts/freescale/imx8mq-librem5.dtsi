@@ -1297,6 +1297,7 @@
 		maxim,over-heat-temp = <700>;
 		maxim,over-volt = <4500>;
 		maxim,rsns-microohm = <5000>;
+		maxim,vchg-4V2;
 	};
 
 	bq25895: charger@6a {
