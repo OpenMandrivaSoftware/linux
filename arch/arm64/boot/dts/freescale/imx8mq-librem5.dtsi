@@ -1229,7 +1229,7 @@
 
 		led_backlight: led@0 {
 			reg = <0>;
-			label = ":backlight";
+			label = "white:backlight_cluster";
 			linux,default-trigger = "backlight";
 			led-max-microamp = <20000>;
 		};
