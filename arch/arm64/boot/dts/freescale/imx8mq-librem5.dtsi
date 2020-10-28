@@ -287,7 +287,7 @@
 		compatible = "simple-audio-card";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_hp>;
-		simple-audio-card,name = "Librem 5";
+		simple-audio-card,name = "wm8962";
 		simple-audio-card,format = "i2s";
 		simple-audio-card,widgets =
 			"Headphone", "Headphones",
@@ -318,7 +318,7 @@
 
 	sound-wwan {
 		compatible = "simple-audio-card";
-		simple-audio-card,name = "Modem";
+		simple-audio-card,name = "MODEM";
 		simple-audio-card,format = "i2s";
 
 		simple-audio-card,cpu {
