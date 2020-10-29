@@ -512,6 +512,38 @@ static const struct etnaviv_gem_ops etnaviv_gem_shmem_ops = {
 	.mmap = etnaviv_gem_mmap_obj,
 };
 
+void etnaviv_gem_close_object(struct drm_gem_object *obj, struct drm_file *unused)
+{
+	struct etnaviv_gem_object *etnaviv_obj = to_etnaviv_bo(obj);
+	struct etnaviv_vram_mapping *mapping, *tmp;
+
+	/* Handle this via etnaviv_gem_free_object */
+	if (obj->handle_count == 1)
+		return;
+
+	WARN_ON(is_active(etnaviv_obj));
+
+	/*
+	 * userspace wants to release the handle so we need to remove
+	 * the mapping from the gpu's virtual address space to stay
+	 * in sync.
+	 */
+	list_for_each_entry_safe(mapping, tmp, &etnaviv_obj->vram_list,
+				 obj_node) {
+		struct etnaviv_iommu_context *context = mapping->context;
+
+		WARN_ON(mapping->use);
+
+		if (context) {
+			etnaviv_iommu_unmap_gem(context, mapping);
+			etnaviv_iommu_context_put(context);
+		}
+
+		list_del(&mapping->obj_node);
+		kfree(mapping);
+	}
+}
+
 void etnaviv_gem_free_object(struct drm_gem_object *obj)
 {
 	struct etnaviv_gem_object *etnaviv_obj = to_etnaviv_bo(obj);
@@ -570,6 +602,7 @@ static const struct drm_gem_object_funcs etnaviv_gem_object_funcs = {
 	.get_sg_table = etnaviv_gem_prime_get_sg_table,
 	.vmap = etnaviv_gem_prime_vmap,
 	.vm_ops = &vm_ops,
+	.close = etnaviv_gem_close_object,
 };
 
 static int etnaviv_gem_new_impl(struct drm_device *dev, u32 size, u32 flags,
