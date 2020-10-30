@@ -12,6 +12,7 @@
 #include <drm/drm_dp_helper.h>
 #include <linux/bitops.h>
 #include <linux/extcon.h>
+#include <linux/platform_device.h>
 
 #define ADDR_IMEM		0x10000
 #define ADDR_DMEM		0x20000
