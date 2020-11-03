@@ -1254,6 +1254,8 @@ patternProperties:
     description: Xylon
   "^yes-optoelectronics,.*":
     description: Yes Optoelectronics Co.,Ltd.
+  "^ys,.*":
+    description: Shenzhen Yashi Changhua Intelligent Technology Co., Ltd.
   "^ylm,.*":
     description: Shenzhen Yangliming Electronic Technology Co., Ltd.
   "^yna,.*":
