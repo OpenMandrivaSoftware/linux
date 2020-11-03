@@ -1328,7 +1328,7 @@
 	#size-cells = <0>;
 	fsl,clock-drop-level = <1>;
 
-	panel@0 {
+	lcd_panel: panel@0 {
 		compatible = "mantix,mlaf057we51-x";
 		reg = <0>;
 		pinctrl-names = "default";
