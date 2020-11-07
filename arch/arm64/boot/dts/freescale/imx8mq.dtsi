@@ -1232,6 +1232,7 @@
                                                          <&clk IMX8MQ_CLK_27M>;
 				assigned-clock-rates = <800000000>,
 						       <400000000>;
+				interconnects = <&noc IMX8MQ_ICM_DCSS &noc IMX8MQ_ICS_DRAM>;
 				status = "disabled";
 				dcss_dsi_out: port@0 {
 					dcss_mipi_dsi: endpoint {
