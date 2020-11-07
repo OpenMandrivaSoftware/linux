@@ -828,39 +828,41 @@ static int max17042_init_chip(struct max17042_chip *chip)
 	 */
 	msleep(500);
 
-	/* Initialize configaration */
-	max17042_write_config_regs(chip);
+	if (chip->pdata->enable_por_init) {
+		/* Initialize configaration */
+		max17042_write_config_regs(chip);
 
-	/* write cell characterization data */
-	ret = max17042_init_model(chip);
-	if (ret) {
-		dev_err(&chip->client->dev, "%s init failed\n",
-			__func__);
-		return -EIO;
+		/* write cell characterization data */
+		ret = max17042_init_model(chip);
+		if (ret) {
+			dev_err(&chip->client->dev, "%s init failed\n",
+				__func__);
+			return -EIO;
+		}
+
+		ret = max17042_verify_model_lock(chip);
+		if (ret) {
+			dev_err(&chip->client->dev, "%s lock verify failed\n",
+				__func__);
+			return -EIO;
+		}
+		/* write custom parameters */
+		max17042_write_custom_regs(chip);
+
+		/* update capacity params */
+		max17042_update_capacity_regs(chip);
+
+		/* delay must be atleast 350mS to allow VFSOC
+		 * to be calculated from the new configuration
+		 */
+		msleep(350);
+
+		/* reset vfsoc0 reg */
+		max17042_reset_vfsoc0_reg(chip);
+
+		/* load new capacity params */
+		max17042_load_new_capacity_params(chip);
 	}
-
-	ret = max17042_verify_model_lock(chip);
-	if (ret) {
-		dev_err(&chip->client->dev, "%s lock verify failed\n",
-			__func__);
-		return -EIO;
-	}
-	/* write custom parameters */
-	max17042_write_custom_regs(chip);
-
-	/* update capacity params */
-	max17042_update_capacity_regs(chip);
-
-	/* delay must be atleast 350mS to allow VFSOC
-	 * to be calculated from the new configuration
-	 */
-	msleep(350);
-
-	/* reset vfsoc0 reg */
-	max17042_reset_vfsoc0_reg(chip);
-
-	/* load new capacity params */
-	max17042_load_new_capacity_params(chip);
 
 	/* Init complete, Clear the POR bit */
 	regmap_update_bits(map, MAX17042_STATUS, STATUS_POR_BIT, 0x0);
@@ -905,7 +907,7 @@ static void max17042_init_worker(struct work_struct *work)
 	int ret;
 
 	/* Initialize registers according to values from the platform data */
-	if (chip->pdata->enable_por_init && chip->pdata->config_data) {
+	if (chip->pdata->config_data) {
 		ret = max17042_init_chip(chip);
 		if (ret)
 			return;
