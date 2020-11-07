@@ -963,6 +963,12 @@ max17042_get_of_pdata(struct max17042_chip *chip)
 		pdata->config_data->model_cfg |= MAX17055_VCHG_BIT;
 
 
+	if (of_property_read_u32(np, "maxim,termination-current", &prop) == 0) {
+		data64 = (u64)prop * pdata->r_sns;
+		do_div(data64, 1562500ll);
+		pdata->config_data->ichgt_term = (u16)data64;
+	}
+
 	return pdata;
 }
 #endif
