@@ -211,6 +211,7 @@ struct max17042_config_data {
 	u16	full_soc_thresh;	/* 0x13 */
 	u16	design_cap;	/* 0x18 */
 	u16	ichgt_term;	/* 0x1E */
+	u16	model_cfg;	/* 0xDB */
 
 	/* MG3 config */
 	u16	at_rate;	/* 0x04 */
@@ -264,7 +265,6 @@ struct max17042_platform_data {
 	int         vmax;	/* in millivolts */
 	int         temp_min;	/* in tenths of degree Celsius */
 	int         temp_max;	/* in tenths of degree Celsius */
-	int         vchg;       /* charge voltage, 1 = >4.25V, 0 = 4.2V */
 };
 
 #endif /* __MAX17042_BATTERY_H_ */
