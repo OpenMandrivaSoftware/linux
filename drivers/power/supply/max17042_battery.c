@@ -457,6 +457,11 @@ static int max17042_set_property(struct power_supply *psy,
 		do_div(data64, 5000000ll);
 		ret = regmap_write(map, MAX17042_DesignCap, (u32)data64);
 
+		if (chip->chip_type &&
+		   (chip->chip_type == MAXIM_DEVICE_TYPE_MAX17055)) {
+			regmap_write_bits(map, MAX17055_ModelCfg, MAX17055_REFRESH_BIT, MAX17055_REFRESH_BIT);
+		}
+
 		break;
 	case POWER_SUPPLY_PROP_TEMP_ALERT_MIN:
 		ret = regmap_read(map, MAX17042_TALRT_Th, &data);
