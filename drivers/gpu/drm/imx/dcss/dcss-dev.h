@@ -9,6 +9,7 @@
 #include <drm/drm_fourcc.h>
 #include <drm/drm_plane.h>
 #include <linux/io.h>
+#include <linux/interconnect.h>
 #include <video/videomode.h>
 
 #define SET			0x04
@@ -86,6 +87,8 @@ struct dcss_dev {
 	struct clk *pll_phy_ref_clk;
 
 	bool hdmi_output;
+	struct icc_path *icc_path;
+	u32 icc_peak_bw;
 
 	void (*disable_callback)(void *data);
 	struct completion disable_completion;

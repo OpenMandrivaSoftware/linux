@@ -15,6 +15,9 @@
 #include "dcss-dev.h"
 #include "dcss-kms.h"
 
+/* sufficent for 4K at 60 Hz */
+#define DCSS_BW_MAX GBps_to_icc(2)
+
 static void dcss_clocks_enable(struct dcss_dev *dcss)
 {
 	clk_prepare_enable(dcss->axi_clk);
@@ -162,6 +165,31 @@ static void dcss_clks_release(struct dcss_dev *dcss)
 	devm_clk_put(dcss->dev, dcss->apb_clk);
 }
 
+static int dcss_init_icc(struct dcss_dev *dcss)
+{
+	int ret;
+	struct icc_path *icc_path;
+
+	/* Optional interconnect request */
+	icc_path = of_icc_get(dcss->dev, "dram");
+	if (IS_ERR(icc_path)) {
+		ret = PTR_ERR(icc_path);
+		if (ret == -EPROBE_DEFER)
+			return ret;
+		/* no interconnect support is not necessarily a fatal
+		 * condition, the platform may simply not have an
+		 * interconnect driver yet.  But warn about it in case
+		 * bootloader didn't setup bus clocks high enough for
+		 * scanout.
+		 */
+		dev_warn(dcss->dev, "No interconnect support may cause display underflows!\n");
+		return 0;
+	}
+	dcss->icc_path = icc_path;
+	dcss->icc_peak_bw = DCSS_BW_MAX;
+	return 0;
+}
+
 struct dcss_dev *dcss_dev_create(struct device *dev, bool hdmi_output)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -190,10 +218,14 @@ struct dcss_dev *dcss_dev_create(struct device *dev, bool hdmi_output)
 	dcss->devtype = devtype;
 	dcss->hdmi_output = hdmi_output;
 
+	ret = dcss_init_icc(dcss);
+	if (ret < 0)
+		goto err;
+
 	ret = dcss_clks_init(dcss);
 	if (ret) {
 		dev_err(dev, "clocks initialization failed\n");
-		goto err;
+		goto icc_err;
 	}
 
 	dcss->of_port = of_graph_get_port_by_id(dev->of_node, 0);
@@ -223,7 +255,8 @@ struct dcss_dev *dcss_dev_create(struct device *dev, bool hdmi_output)
 
 clks_err:
 	dcss_clks_release(dcss);
-
+icc_err:
+	icc_put(dcss->icc_path);
 err:
 	kfree(dcss);
 
@@ -242,6 +275,8 @@ void dcss_dev_destroy(struct dcss_dev *dcss)
 	dcss_submodules_stop(dcss);
 
 	dcss_clks_release(dcss);
+
+	icc_put(dcss->icc_path);
 
 	kfree(dcss);
 }
@@ -267,6 +302,8 @@ int dcss_dev_suspend(struct device *dev)
 
 	dcss_clocks_disable(dcss);
 
+	icc_set_bw(dcss->icc_path, 0, 0);
+
 	return 0;
 }
 
@@ -280,6 +317,8 @@ int dcss_dev_resume(struct device *dev)
 		drm_mode_config_helper_resume(ddev);
 		return 0;
 	}
+
+	icc_set_bw(dcss->icc_path, 0, dcss->icc_peak_bw);
 
 	dcss_clocks_enable(dcss);
 
@@ -307,12 +346,16 @@ int dcss_dev_runtime_suspend(struct device *dev)
 
 	dcss_clocks_disable(dcss);
 
+	icc_set_bw(dcss->icc_path, 0, 0);
+
 	return 0;
 }
 
 int dcss_dev_runtime_resume(struct device *dev)
 {
 	struct dcss_dev *dcss = dcss_drv_dev_to_dcss(dev);
+
+	icc_set_bw(dcss->icc_path, 0, dcss->icc_peak_bw);
 
 	dcss_clocks_enable(dcss);
 
