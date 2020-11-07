@@ -962,6 +962,11 @@ max17042_get_of_pdata(struct max17042_chip *chip)
 	if (!of_property_read_bool(np, "maxim,vchg-4V2"))
 		pdata->config_data->model_cfg |= MAX17055_VCHG_BIT;
 
+	if (of_property_read_u32(np, "maxim,battery-capacity", &prop) == 0) {
+		data64 = (u64)prop * pdata->r_sns;
+		do_div(data64, 5000000ll);
+		pdata->config_data->design_cap = (u16)data64;
+	}
 
 	if (of_property_read_u32(np, "maxim,termination-current", &prop) == 0) {
 		data64 = (u64)prop * pdata->r_sns;
