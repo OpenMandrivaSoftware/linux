@@ -1314,6 +1314,7 @@
 		ti,boost-max-current = <500000>; /* uA */
 		ti,use-vinmin-threshold = <1>; /* enable VINDPM */
 		ti,vinmin-threshold = <3900000>; /* uV */
+		ti,auto_dpdm_disable;
 		monitored-battery = <&bat>;
 	};
 };
