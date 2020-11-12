@@ -83,6 +83,7 @@ struct bq25890_init_data {
 	u8 boosti;	/* boost current limit		*/
 	u8 boostf;	/* boost frequency		*/
 	u8 ilim_en;	/* enable ILIM pin		*/
+	u8 auto_dpdm_en;	/* enable auto_dpdm - enabled is the default */
 	u8 force_vindpm;/* force vinmin threshold       */
 	u8 vindpm;	/* vinmin threshold             */
 	u8 treg;	/* thermal regulation threshold */
@@ -687,6 +688,7 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 		{F_TREG,	 bq->init_data.treg},
 		{F_BATCMP,	 bq->init_data.rbatcomp},
 		{F_VCLAMP,	 bq->init_data.vclamp},
+		{F_AUTO_DPDM_EN, bq->init_data.auto_dpdm_en},
 		{F_FORCE_VINDPM, bq->init_data.force_vindpm},
 		{F_VINDPM,	 bq->init_data.vindpm},
 	};
@@ -1004,6 +1006,8 @@ static int bq25890_fw_probe(struct bq25890_device *bq)
 
 	init->ilim_en = device_property_read_bool(bq->dev, "ti,use-ilim-pin");
 	init->boostf = device_property_read_bool(bq->dev, "ti,boost-low-freq");
+	/* use the inverse so that we don't change the default behaviour */
+	init->auto_dpdm_en = !device_property_read_bool(bq->dev, "ti,auto_dpdm_disable");
 
 	return 0;
 }
