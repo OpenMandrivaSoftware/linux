@@ -38,6 +38,8 @@ static struct cdns_plat_data imx8mq_dp_drv_data = {
 	.unbind	= cdns_dp_unbind,
 	.phy_set = cdns_dp_phy_set_imx8mq,
 	.lane_mapping = 0xc6,
+	.pm_runtime_suspend = cdns_dp_pm_runtime_suspend,
+	.pm_runtime_resume = cdns_dp_pm_runtime_resume,
 };
 
 static const struct of_device_id cdns_mhdp_imx_dt_ids[] = {
@@ -126,13 +128,44 @@ static int cdns_mhdp_imx_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int __maybe_unused cdns_mhdp_imx_resume(struct device *dev)
+{
+	struct imx_mhdp_device *imx_mhdp = dev_get_drvdata(dev);
+	int ret = 0;
+
+	if (imx_mhdp->mhdp.plat_data->pm_runtime_resume)
+		imx_mhdp->mhdp.plat_data->pm_runtime_resume(&imx_mhdp->mhdp);
+
+	return ret;
+}
+
+static int __maybe_unused cdns_mhdp_imx_suspend(struct device *dev)
+{
+	struct imx_mhdp_device *imx_mhdp = dev_get_drvdata(dev);
+	int ret = 0;
+
+	if (imx_mhdp->mhdp.plat_data->pm_runtime_suspend)
+		imx_mhdp->mhdp.plat_data->pm_runtime_suspend(&imx_mhdp->mhdp);
+
+	return ret;
+}
+
+static const struct dev_pm_ops cdns_mhdp_imx_pm_ops = {
+	SET_RUNTIME_PM_OPS(cdns_mhdp_imx_suspend,
+			   cdns_mhdp_imx_resume,
+			   NULL)
+};
+
+
 static struct platform_driver cdns_mhdp_imx_platform_driver = {
 	.probe  = cdns_mhdp_imx_probe,
 	.remove = cdns_mhdp_imx_remove,
 	.driver = {
 		.name = "cdns-mhdp-imx",
 		.of_match_table = cdns_mhdp_imx_dt_ids,
+		.pm = &cdns_mhdp_imx_pm_ops,
 	},
+
 };
 
 module_platform_driver(cdns_mhdp_imx_platform_driver);

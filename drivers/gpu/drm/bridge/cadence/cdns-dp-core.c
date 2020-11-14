@@ -20,6 +20,7 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/of_device.h>
+#include <linux/pm_runtime.h>
 
 #include "cdns-mhdp-common.h"
 
@@ -197,6 +198,8 @@ static int cdns_dp_connector_get_modes(struct drm_connector *connector)
 	int num_modes = 0;
 	struct edid *edid;
 
+	pm_runtime_get_sync(mhdp->dev);
+
 	edid = drm_do_get_edid(&mhdp->connector.base,
 				   cdns_mhdp_get_edid_block, mhdp);
 	if (edid) {
@@ -212,6 +215,9 @@ static int cdns_dp_connector_get_modes(struct drm_connector *connector)
 
 	if (num_modes == 0)
 		DRM_ERROR("Invalid edid\n");
+
+	pm_runtime_put(mhdp->dev);
+
 	return num_modes;
 }
 
@@ -312,6 +318,8 @@ static void cdn_dp_bridge_enable(struct drm_bridge *bridge)
 	struct cdns_mhdp_device *mhdp = bridge->driver_private;
 	int ret;
 
+	pm_runtime_get_sync(mhdp->dev);
+
 	/* Link trainning */
 	ret = cdns_mhdp_train_link(mhdp);
 	if (ret) {
@@ -331,6 +339,8 @@ static void cdn_dp_bridge_disable(struct drm_bridge *bridge)
 	struct cdns_mhdp_device *mhdp = bridge->driver_private;
 
 	cdns_mhdp_set_video_status(mhdp, CONTROL_VIDEO_IDLE);
+
+	pm_runtime_put(mhdp->dev);
 }
 
 static const struct drm_bridge_funcs cdns_dp_bridge_funcs = {
@@ -459,6 +469,13 @@ static int __cdns_dp_probe(struct platform_device *pdev,
 
 	dp_aux_init(mhdp, dev);
 
+	pm_runtime_set_active(dev);
+	pm_runtime_mark_last_busy(dev);
+	pm_runtime_enable(dev);
+	pm_runtime_set_autosuspend_delay(dev, 500);
+	pm_runtime_use_autosuspend(dev);
+
+
 	return 0;
 }
 
@@ -466,6 +483,7 @@ static void __cdns_dp_remove(struct cdns_mhdp_device *mhdp)
 {
 	dp_aux_destroy(mhdp);
 	cdns_mhdp_unregister_audio_driver(mhdp->dev);
+	pm_runtime_disable(mhdp->dev);
 }
 
 /* -----------------------------------------------------------------------------
@@ -526,6 +544,24 @@ void cdns_dp_unbind(struct device *dev)
 	__cdns_dp_remove(mhdp);
 }
 EXPORT_SYMBOL_GPL(cdns_dp_unbind);
+
+/* Runtime suspend */
+
+int cdns_dp_pm_runtime_suspend(struct cdns_mhdp_device *mhdp)
+{
+	dev_dbg(mhdp->dev, "Runtime suspend");
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(cdns_dp_pm_runtime_suspend);
+
+int cdns_dp_pm_runtime_resume(struct cdns_mhdp_device *mhdp)
+{
+	dev_dbg(mhdp->dev, "Runtime resume");
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(cdns_dp_pm_runtime_resume);
 
 MODULE_AUTHOR("Sandor Yu <sandor.yu@nxp.com>");
 MODULE_DESCRIPTION("Cadence Display Port transmitter driver");

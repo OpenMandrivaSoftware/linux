@@ -592,6 +592,9 @@ struct cdns_plat_data {
 	int (*power_on)(struct cdns_mhdp_device *mhdp);
 	int (*power_off)(struct cdns_mhdp_device *mhdp);
 
+	int (*pm_runtime_suspend)(struct cdns_mhdp_device *mhdp);
+	int (*pm_runtime_resume)(struct cdns_mhdp_device *mhdp);
+
 	char *plat_name;
 	int lane_mapping;
 };
@@ -666,6 +669,8 @@ u32 cdns_phy_reg_read(struct cdns_mhdp_device *mhdp, u32 addr);
 int cdns_dp_bind(struct platform_device *pdev, struct drm_encoder *encoder,
 		struct cdns_mhdp_device *mhdp);
 void cdns_dp_unbind(struct device *dev);
+int cdns_dp_pm_runtime_suspend(struct cdns_mhdp_device *pdev);
+int cdns_dp_pm_runtime_resume(struct cdns_mhdp_device *pdev);
 
 /* HDMI */
 int cdns_hdmi_bind(struct platform_device *pdev, struct drm_encoder *encoder,
