@@ -747,6 +747,8 @@ static int s5k3l6_find_pixfmt(struct v4l2_mbus_framefmt *mf)
 		if ((mf->colorspace != V4L2_COLORSPACE_DEFAULT)
 				&& (mf->colorspace != V4L2_COLORSPACE_RAW))
 			continue;
+		if ((mf->width != s5k3l6_frames[i].width) || (mf->height != s5k3l6_frames[i].height))
+			continue;
 		if (mf->code == s5k3l6_frames[i].code)
 			return i;
 	}
@@ -1003,6 +1005,14 @@ static int s5k3l6_try_cis_format(struct v4l2_mbus_framefmt *mf)
 			      &mf->height, S5K5BAF_WIN_HEIGHT_MIN,
 			      S5K5BAF_CIS_HEIGHT, 1, 0);
 */
+
+	struct s5k3l6_frame *mode = v4l2_find_nearest_size(s5k3l6_frames,
+				      ARRAY_SIZE(s5k3l6_frames),
+				      width, height,
+				      mf->width, mf->height);
+	mf->width = mode->width;
+	mf->height = mode->height;
+
 	pixfmt = s5k3l6_find_pixfmt(mf);
 	if (pixfmt < 0)
 		return pixfmt;
@@ -1078,9 +1088,8 @@ static int s5k5baf_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config
 	state->frame_fmt_idx = pixfmt_idx;
 	mf->code = s5k3l6_frames[state->frame_fmt_idx].code;
 	mf->colorspace = V4L2_COLORSPACE_RAW;
-	// dunno, maybe it'll be useful sometime
-	//mf->width = state->crop_source.width;
-	//mf->height = state->crop_source.height;
+	mf->width = s5k3l6_frames[state->frame_fmt_idx].width;
+	mf->height = s5k3l6_frames[state->frame_fmt_idx].height;
 
 	mutex_unlock(&state->lock);
 	return 0;
