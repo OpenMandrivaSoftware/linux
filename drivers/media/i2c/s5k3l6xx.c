@@ -575,6 +575,14 @@ static const struct s5k3l6_frame s5k3l6_frames[] = {
 		.streamregcount = ARRAY_SIZE(sensor_3l6_setfile_B_2064x1160_30fps) / 3,
 		.code = MEDIA_BUS_FMT_SBGGR8_1X8,
 	},
+	{
+		.width = 4128, .height = 3096,
+		.pllregs = sensor_3l6_pllinfo_A_4128x3096_30fps,
+		.pllregcount = ARRAY_SIZE(sensor_3l6_pllinfo_A_4128x3096_30fps) / 3,
+		.streamregs = sensor_3l6_setfile_A_4128x3096_30fps,
+		.streamregcount = ARRAY_SIZE(sensor_3l6_setfile_A_4128x3096_30fps) / 3,
+		.code = MEDIA_BUS_FMT_SBGGR8_1X8,
+	},
 };
 
 static struct v4l2_rect s5k5baf_cis_rect = {
