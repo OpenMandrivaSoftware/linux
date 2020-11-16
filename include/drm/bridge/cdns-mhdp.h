@@ -11,6 +11,7 @@
 #include <drm/drm_connector.h>
 #include <drm/drm_dp_helper.h>
 #include <linux/bitops.h>
+#include <linux/extcon.h>
 
 #define ADDR_IMEM		0x10000
 #define ADDR_DMEM		0x20000
@@ -636,6 +637,8 @@ struct cdns_mhdp_device {
 	};
 	const struct cdns_plat_data *plat_data;
 
+	struct extcon_dev *extcon;
+	struct notifier_block event_nb;
 };
 
 void cdns_mhdp_clock_reset(struct cdns_mhdp_device *mhdp);

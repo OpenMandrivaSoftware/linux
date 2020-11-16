@@ -382,6 +382,17 @@ static irqreturn_t cdns_dp_irq_thread(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
+static int cdns_dp_pd_event(struct notifier_block *nb,
+			    unsigned long event, void *priv)
+{
+	struct cdns_mhdp_device *mhdp = container_of(nb, struct cdns_mhdp_device,
+						     event_nb);
+	int state = extcon_get_state(mhdp->extcon, EXTCON_DISP_DP);
+
+	dev_dbg(mhdp->dev, "Extcon notification: %d", state);
+	return NOTIFY_DONE;
+}
+
 static int __cdns_dp_probe(struct platform_device *pdev,
 		struct cdns_mhdp_device *mhdp)
 {
@@ -464,17 +475,26 @@ static int __cdns_dp_probe(struct platform_device *pdev,
 
 	dev_set_drvdata(dev, mhdp);
 
+	mhdp->extcon = extcon_get_edev_by_phandle(dev, 0);
+	if (IS_ERR(mhdp->extcon)) {
+		return dev_err_probe(dev, PTR_ERR(mhdp->extcon),
+				     "Failed to get extcon\n");
+	}
+
+	mhdp->event_nb.notifier_call = cdns_dp_pd_event;
+	ret = devm_extcon_register_notifier(mhdp->dev, mhdp->extcon,
+					    EXTCON_DISP_DP,
+					    &mhdp->event_nb);
+
 	/* register audio driver */
 	cdns_mhdp_register_audio_driver(dev);
-
 	dp_aux_init(mhdp, dev);
 
 	pm_runtime_set_active(dev);
 	pm_runtime_mark_last_busy(dev);
 	pm_runtime_enable(dev);
-	pm_runtime_set_autosuspend_delay(dev, 500);
+	pm_runtime_set_autosuspend_delay(dev, 2000);
 	pm_runtime_use_autosuspend(dev);
-
 
 	return 0;
 }
