@@ -24,6 +24,8 @@
 
 #include "cdns-mhdp-common.h"
 
+#define CDNS_EXTCON_ONLY
+
 /*
  * This function only implements native DPDC reads and writes
  */
@@ -390,6 +392,7 @@ static int cdns_dp_pd_event(struct notifier_block *nb,
 	int state = extcon_get_state(mhdp->extcon, EXTCON_DISP_DP);
 
 	dev_dbg(mhdp->dev, "Extcon notification: %d", state);
+	pm_runtime_get_sync(mhdp->dev);
 	return NOTIFY_DONE;
 }
 
@@ -434,8 +437,10 @@ static int __cdns_dp_probe(struct platform_device *pdev,
 	}
 	cdns_mhdp_read_fw_version(mhdp);
 
+#ifndef CDNS_EXTCON_ONLY
 	/* DP PHY init before AUX init */
 	cdns_mhdp_plat_call(mhdp, phy_set);
+#endif
 
 	/* Enable Hotplug Detect IRQ thread */
 	irq_set_status_flags(mhdp->irq[IRQ_IN], IRQ_NOAUTOEN);
@@ -486,12 +491,16 @@ static int __cdns_dp_probe(struct platform_device *pdev,
 					    EXTCON_DISP_DP,
 					    &mhdp->event_nb);
 
+#ifndef CDNS_EXTCON_ONLY
 	/* register audio driver */
 	cdns_mhdp_register_audio_driver(dev);
+#endif
 	dp_aux_init(mhdp, dev);
 
+#ifndef CDNS_EXTCON_ONLY
 	pm_runtime_set_active(dev);
 	pm_runtime_mark_last_busy(dev);
+#endif
 	pm_runtime_enable(dev);
 	pm_runtime_set_autosuspend_delay(dev, 2000);
 	pm_runtime_use_autosuspend(dev);
@@ -570,6 +579,7 @@ EXPORT_SYMBOL_GPL(cdns_dp_unbind);
 int cdns_dp_pm_runtime_suspend(struct cdns_mhdp_device *mhdp)
 {
 	dev_dbg(mhdp->dev, "Runtime suspend");
+	/* TODO: power down phy */
 
 	return 0;
 }
@@ -578,6 +588,7 @@ EXPORT_SYMBOL_GPL(cdns_dp_pm_runtime_suspend);
 int cdns_dp_pm_runtime_resume(struct cdns_mhdp_device *mhdp)
 {
 	dev_dbg(mhdp->dev, "Runtime resume");
+	cdns_mhdp_plat_call(mhdp, phy_set);
 
 	return 0;
 }

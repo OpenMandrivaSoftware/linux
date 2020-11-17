@@ -367,6 +367,8 @@ int cdns_dp_phy_set_imx8mq(struct cdns_mhdp_device *mhdp)
 {
 	int ret;
 
+	dev_dbg(mhdp->dev, "Powering up phy\n");
+
 	/* Disable phy clock if PHY in power up state */
 	dp_phy_power_down(mhdp);
 
