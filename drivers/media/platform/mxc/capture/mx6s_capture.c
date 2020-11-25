@@ -1087,13 +1087,13 @@ static void mx6s_csi_frame_done(struct mx6s_csi_dev *csi_dev,
 		if (bufnum == 1) {
 			phys_fb2 = csi_read(csi_dev, CSI_CSIDMASA_FB2);
 			if (phys_fb2 != (u32)phys) {
-				dev_err(csi_dev->dev, "%lx != %x\n", phys,
+				dev_err(csi_dev->dev, "fb2 dma buffer mismatch %lx != %x\n", phys,
 					phys_fb2);
 			}
 		} else {
 			phys_fb1 = csi_read(csi_dev, CSI_CSIDMASA_FB1);
 			if (phys_fb1 != (u32)phys) {
-				dev_err(csi_dev->dev, "%lx != %x\n", phys,
+				dev_err(csi_dev->dev, "fb1 dma buffer mismatch %lx != %x\n", phys,
 					phys_fb1);
 			}
 		}
