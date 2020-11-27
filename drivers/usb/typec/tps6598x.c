@@ -41,6 +41,11 @@
 #define TPS_REG_RX_IDENTITY_SOP		0x48
 #define TPS_REG_DATA_STATUS		0x5f
 
+#define TPS_USB_500mA	  500000
+#define TPS_TYPEC_1500mA 1500000
+#define TPS_TYPEC_3000mA 3000000
+#define TPS_USB_5V	 5000000
+
 /* TPS_REG_SYSTEM_CONF bits */
 #define TPS_SYSCONF_PORTINFO(c)		((c) & 7)
 
@@ -108,6 +113,8 @@ struct tps6598x {
 static enum power_supply_property tps6598x_psy_props[] = {
 	POWER_SUPPLY_PROP_USB_TYPE,
 	POWER_SUPPLY_PROP_ONLINE,
+	POWER_SUPPLY_PROP_CURRENT_MAX,
+	POWER_SUPPLY_PROP_VOLTAGE_MAX,
 };
 
 static enum power_supply_usb_type tps6598x_psy_usb_types[] = {
@@ -295,6 +302,8 @@ static void tps6598x_disconnect(struct tps6598x *tps, u32 status)
 	typec_set_vconn_role(tps->port, TPS_STATUS_TO_TYPEC_VCONN(status));
 	tps6598x_set_data_role(tps, TPS_STATUS_TO_TYPEC_DATAROLE(status), false);
 
+	memset(&tps->terms, 0, sizeof(struct tps6598x_pdo));
+
 	power_supply_changed(tps->psy);
 }
 
@@ -472,6 +481,7 @@ static irqreturn_t tps6598x_interrupt(int irq, void *data)
 	u64 event2;
 	u32 status, data_status;
 	u16 pwr_status;
+	bool psy_changed = false;
 	int ret;
 
 	mutex_lock(&tps->lock);
@@ -498,6 +508,7 @@ static irqreturn_t tps6598x_interrupt(int irq, void *data)
 			goto err_clear_ints;
 		}
 		tps->pwr_status = pwr_status;
+		psy_changed = true;
 		trace_tps6598x_power_status(pwr_status);
 	}
 
@@ -516,6 +527,7 @@ static irqreturn_t tps6598x_interrupt(int irq, void *data)
 			dev_err(tps->dev, "failed to read pd contract: %d\n", ret);
 			goto err_clear_ints;
 		}
+		psy_changed = true;
 	}
 
 	/* Handle plug insert or removal */
@@ -530,12 +542,20 @@ static irqreturn_t tps6598x_interrupt(int irq, void *data)
 		}
 	}
 
+	if ((event1 | event2) & TPS_REG_INT_HARD_RESET) {
+		memset(&tps->terms, 0, sizeof(struct tps6598x_pdo));
+		psy_changed = true;
+	}
+
 err_clear_ints:
 	tps6598x_write64(tps, TPS_REG_INT_CLEAR1, event1);
 	tps6598x_write64(tps, TPS_REG_INT_CLEAR2, event2);
 
 err_unlock:
 	mutex_unlock(&tps->lock);
+
+	if (psy_changed)
+		power_supply_changed(tps->psy);
 
 	return IRQ_HANDLED;
 }
@@ -581,6 +601,49 @@ static int tps6598x_psy_get_online(struct tps6598x *tps,
 	} else {
 		val->intval = 0;
 	}
+
+	return 0;
+}
+
+static int tps6598x_psy_get_max_current(struct tps6598x *tps,
+					union power_supply_propval *val)
+{
+	enum typec_pwr_opmode mode;
+
+	mode = TPS_POWER_STATUS_PWROPMODE(tps->pwr_status);
+	switch (mode) {
+	case TYPEC_PWR_MODE_1_5A:
+		val->intval = TPS_TYPEC_1500mA;
+		break;
+	case TYPEC_PWR_MODE_3_0A:
+		val->intval = TPS_TYPEC_3000mA;
+		break;
+	case TYPEC_PWR_MODE_PD:
+		val->intval = tps->terms.max_current ?: TPS_USB_500mA;
+		break;
+	default:
+	case TYPEC_PWR_MODE_USB:
+		val->intval = TPS_USB_500mA;
+	}
+	return 0;
+}
+
+static int tps6598x_psy_get_max_voltage(struct tps6598x *tps,
+					union power_supply_propval *val)
+{
+	enum typec_pwr_opmode mode;
+
+	mode = TPS_POWER_STATUS_PWROPMODE(tps->pwr_status);
+	switch (mode) {
+	case TYPEC_PWR_MODE_PD:
+		val->intval = tps->terms.max_voltage ?: TPS_USB_5V;
+		break;
+	default:
+	case TYPEC_PWR_MODE_1_5A:
+	case TYPEC_PWR_MODE_3_0A:
+	case TYPEC_PWR_MODE_USB:
+		val->intval = TPS_USB_5V;
+	}
 	return 0;
 }
 
@@ -600,6 +663,12 @@ static int tps6598x_psy_get_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
 		ret = tps6598x_psy_get_online(tps, val);
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		ret = tps6598x_psy_get_max_current(tps, val);
+		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		ret = tps6598x_psy_get_max_voltage(tps, val);
 		break;
 	default:
 		ret = -EINVAL;
