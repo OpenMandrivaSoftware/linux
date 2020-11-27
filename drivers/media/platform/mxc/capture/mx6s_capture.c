@@ -1217,26 +1217,24 @@ static irqreturn_t mx6s_csi_irq_handler(int irq, void *data)
 		 * PDM TKT230775 */
 		pr_debug("Skip two frames\n");
 	} else if (status & BIT_DMA_TSF_DONE_FB1) {
-		dev_dbg(csi_dev->dev, "BIT_DMA_TSF_DONE_FB1\n");
 		if (csi_dev->nextfb == 0) {
 			if (csi_dev->skipframe > 0) {
-				dev_dbg(csi_dev->dev, "skipping 1 due to DMA\n");
 				csi_dev->skipframe--;
+				dev_warn(csi_dev->dev, "Skip frame on fb 0");
 			} else
 				mx6s_csi_frame_done(csi_dev, 0, false);
 		} else
-			pr_err("skip frame 0\n");
+			dev_err(csi_dev->dev, "frame in unexpected fb 0\n");
 
 	} else if (status & BIT_DMA_TSF_DONE_FB2) {
-		dev_dbg(csi_dev->dev, "BIT_DMA_TSF_DONE_FB2\n");
 		if (csi_dev->nextfb == 1) {
 			if (csi_dev->skipframe > 0) {
-				dev_dbg(csi_dev->dev, "skipping 2 due to DMA\n");
 				csi_dev->skipframe--;
+				dev_warn(csi_dev->dev, "Skip frame on fb 1");
 			} else
 				mx6s_csi_frame_done(csi_dev, 1, false);
 		} else
-			pr_err("skip frame 1\n");
+			dev_err(csi_dev->dev, "frame in unexpected fb 1\n");
 	} else if (status & BIT_FIELD0_INT){
 		dev_dbg(csi_dev->dev, "FIELD0_INT\n");
 	} else if (status & BIT_FIELD1_INT){
