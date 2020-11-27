@@ -762,18 +762,33 @@ static void bq25890_external_power_changed(struct power_supply *psy)
 {
 	struct bq25890_device *bq = power_supply_get_drvdata(psy);
 	bool supplied;
-	int ret;
+	int max_current = 500; /* mA, save default */
 
 	supplied = power_supply_am_i_supplied(bq->charger);
 	dev_info(bq->dev, "Upstream supply changed: %d.\n", supplied);
+
+	if (supplied) {
+		struct power_supply *psy_supply;
+		union power_supply_propval val;
+
+		psy_supply = power_supply_get_by_name(*bq->charger->supplied_from);
+		power_supply_get_property(psy_supply, POWER_SUPPLY_PROP_CURRENT_MAX, &val);
+		max_current = val.intval / 1000;
+		/* Just as a safety net for now */
+		if (max_current <= 100 || max_current > 3000) {
+			dev_err(bq->dev, "Max_current out of range: %d", max_current);
+			max_current = 500;
+		}
+	}
+	if (bq25890_field_write(bq, F_IILIM, (max_current-100)/50) < 0)
+		dev_err(bq->dev, "Failed to set IILIM");
 
 	if (!bq->otg_en)
 		return;
 
 	dev_info(bq->dev, "%sabling OTG_EN pin\n", supplied ? "dis" : "en");
 	gpiod_set_value_cansleep(bq->otg_en, !supplied);
-	ret = bq25890_field_write(bq, F_CHG_CFG, supplied);
-	if (ret < 0)
+	if (bq25890_field_write(bq, F_CHG_CFG, supplied)  < 0)
 		dev_err(bq->dev, "Failed to set charging to %d", supplied);
 }
 
