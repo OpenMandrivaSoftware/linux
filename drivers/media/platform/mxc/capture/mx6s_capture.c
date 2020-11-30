@@ -372,8 +372,8 @@ struct mx6s_fmt *format_by_fourcc(int fourcc)
 
 	for (i = 0; i < NUM_FORMATS; i++) {
 		if (formats[i].pixelformat == fourcc) {
-			pr_err("%s : found format:'%4.4s'\n", __func__,
-			       (char *)&fourcc);
+			pr_debug("%s : found format nr. %d :'%4.4s'\n", __func__,
+				 i, (char *)&fourcc);
 			return formats + i;
 		}
 	}
@@ -387,8 +387,10 @@ struct mx6s_fmt *format_by_mbus(u32 code)
 	int i;
 
 	for (i = 0; i < NUM_FORMATS; i++) {
-		if (formats[i].mbus_code == code)
+		if (formats[i].mbus_code == code) {
+			pr_debug("mx6s: %s: found fmt nr. %d\n", __func__, i);
 			return formats + i;
+		}
 	}
 
 	pr_err("unknown mbus:0x%x\n", code);
@@ -557,7 +559,11 @@ static void csi_tvdec_enable(struct mx6s_csi_dev *csi_dev, bool enable)
 	unsigned long cr18 = __raw_readl(csi_dev->regbase + CSI_CSICR18);
 	unsigned long cr1 = __raw_readl(csi_dev->regbase + CSI_CSICR1);
 
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
+
 	if (enable == true) {
+		dev_dbg(csi_dev->dev, "%s: enable baseaddr switch on vsync\n",
+			__func__);
 		cr18 |= (BIT_TVDECODER_IN_EN |
 				BIT_BASEADDR_SWITCH_EN |
 				BIT_BASEADDR_SWITCH_SEL |
@@ -565,6 +571,8 @@ static void csi_tvdec_enable(struct mx6s_csi_dev *csi_dev, bool enable)
 		cr1 |= BIT_CCIR_MODE;
 		cr1 &= ~(BIT_SOF_POL | BIT_REDGE);
 	} else {
+		dev_dbg(csi_dev->dev, "%s: disable baseaddr switch on vsync\n",
+			__func__);
 		cr18 &= ~(BIT_TVDECODER_IN_EN |
 				BIT_BASEADDR_SWITCH_EN |
 				BIT_BASEADDR_SWITCH_SEL |
@@ -581,6 +589,8 @@ static void csi_dmareq_rff_enable(struct mx6s_csi_dev *csi_dev)
 {
 	unsigned long cr3 = __raw_readl(csi_dev->regbase + CSI_CSICR3);
 	unsigned long cr2 = __raw_readl(csi_dev->regbase + CSI_CSICR2);
+
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
 
 	/* Burst Type of DMA Transfer from RxFIFO. INCR16 */
 	cr2 |= 0xC0000000;
@@ -599,6 +609,8 @@ static void csi_dmareq_rff_enable(struct mx6s_csi_dev *csi_dev)
 static void csi_dmareq_rff_disable(struct mx6s_csi_dev *csi_dev)
 {
 	unsigned long cr3 = __raw_readl(csi_dev->regbase + CSI_CSICR3);
+
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
 
 	cr3 &= ~BIT_DMA_REQ_EN_RFF;
 	cr3 &= ~BIT_HRESP_ERR_EN;
@@ -662,7 +674,7 @@ static int mx6s_videobuf_setup(struct vb2_queue *vq,
 
 	sizes[0] = csi_dev->pix.sizeimage;
 
-	pr_debug("size=%d\n", sizes[0]);
+	dev_dbg(csi_dev->dev, "size=%d\n", sizes[0]);
 	if (0 == *count)
 		*count = 32;
 	if (!*num_planes &&
@@ -754,7 +766,7 @@ static int mx6s_csi_enable(struct mx6s_csi_dev *csi_dev)
 	unsigned long val;
 	int timeout, timeout2;
 
-	pr_err("%s : starting.\n", __func__);
+	dev_dbg(csi_dev->dev, "%s : starting.\n", __func__);
 
 	csi_dev->skipframe = 0;
 	csisw_reset(csi_dev);
@@ -841,7 +853,8 @@ static int mx6s_configure_csi(struct mx6s_csi_dev *csi_dev)
 	u32 cr1, cr18;
 	u32 width;
 
-	pr_err("%s : starting.\n", __func__);
+	dev_dbg(csi_dev->dev, "%s : starting.\n", __func__);
+
 	if (pix->field == V4L2_FIELD_INTERLACED) {
 		csi_deinterlace_enable(csi_dev, true);
 		csi_buf_stride_set(csi_dev, csi_dev->pix.width);
@@ -907,6 +920,7 @@ static int mx6s_start_streaming(struct vb2_queue *vq, unsigned int count)
 	unsigned long flags;
 
 	dev_dbg(csi_dev->dev,"%s : starting.\n", __func__);
+
 	if (count < 2)
 	{
 		dev_err(csi_dev->dev,"%s : ENOBUFS\n", __func__);
@@ -1093,6 +1107,8 @@ static void mx6s_csi_frame_done(struct mx6s_csi_dev *csi_dev,
 
 		mx6s_update_csi_buf(csi_dev,
 					csi_dev->discard_buffer_dma, bufnum);
+
+		dev_dbg(csi_dev->dev, "%s: capture list empty. return.\n", __func__);
 		return;
 	}
 
@@ -1108,6 +1124,8 @@ static void mx6s_csi_frame_done(struct mx6s_csi_dev *csi_dev,
 
 	phys = vb2_dma_contig_plane_dma_addr(vb, 0);
 	mx6s_update_csi_buf(csi_dev, phys, bufnum);
+
+	dev_dbg(csi_dev->dev, "%s: completed\n", __func__);
 }
 
 static irqreturn_t mx6s_csi_irq_handler(int irq, void *data)
@@ -1453,6 +1471,8 @@ static int mx6s_vidioc_enum_fmt_vid_cap(struct file *file, void  *priv,
 
 	WARN_ON(priv != file->private_data);
 
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
+
 	ret = v4l2_subdev_call(sd, pad, enum_mbus_code, NULL, &code);
 	if (ret < 0) {
 		/* no more formats */
@@ -1466,7 +1486,8 @@ static int mx6s_vidioc_enum_fmt_vid_cap(struct file *file, void  *priv,
 		return -EINVAL;
 	}
 
-	dev_dbg(csi_dev->dev, "found fmt %s %x\n", fmt->name, fmt->pixelformat);
+	dev_dbg(csi_dev->dev, "found fmt %s pixelformat: %x mbus code: 0x%x\n",
+		fmt->name, fmt->pixelformat, code.code);
 	strlcpy(f->description, fmt->name, sizeof(f->description));
 	f->pixelformat = fmt->pixelformat;
 
@@ -1523,6 +1544,8 @@ static int mx6s_vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 	struct mx6s_csi_dev *csi_dev = video_drvdata(file);
 	int ret;
 
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
+
 	ret = mx6s_vidioc_try_fmt_vid_cap(file, csi_dev, f);
 	if (ret < 0)
 		return ret;
@@ -1564,6 +1587,8 @@ static int mx6s_vidioc_querycap(struct file *file, void  *priv,
 
 	WARN_ON(priv != file->private_data);
 
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
+
 	/* cap->name is set by the friendly caller:-> */
 	strlcpy(cap->driver, MX6S_CAM_DRV_NAME, sizeof(cap->driver));
 	strlcpy(cap->card, MX6S_CAM_DRIVER_DESCRIPTION, sizeof(cap->card));
@@ -1580,6 +1605,8 @@ static int mx6s_vidioc_expbuf(struct file *file, void *priv,
 {
 	struct mx6s_csi_dev *csi_dev = video_drvdata(file);
 
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
+
 	if (eb->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		return vb2_expbuf(&csi_dev->vb2_vidq, eb);
 
@@ -1594,6 +1621,8 @@ static int mx6s_vidioc_streamon(struct file *file, void *priv,
 	int ret;
 
 	WARN_ON(priv != file->private_data);
+
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
 
 	if (i != V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		return -EINVAL;
@@ -1612,6 +1641,8 @@ static int mx6s_vidioc_streamoff(struct file *file, void *priv,
 	struct v4l2_subdev *sd = csi_dev->sd;
 
 	WARN_ON(priv != file->private_data);
+
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
 
 	if (i != V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		return -EINVAL;
@@ -1754,9 +1785,14 @@ static int mx6s_vidioc_enum_framesizes(struct file *file, void *priv,
 	};
 	int ret;
 
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
+
 	fmt = format_by_fourcc(fsize->pixel_format);
-	if (fmt->pixelformat != fsize->pixel_format)
+	if (fmt->pixelformat != fsize->pixel_format) {
+		dev_err(csi_dev->dev, "%s: format_by_fourcc got wrong pixelformat\n",
+			__func__);
 		return -EINVAL;
+	}
 	fse.code = fmt->mbus_code;
 
 	ret = v4l2_subdev_call(sd, pad, enum_frame_size, NULL, &fse);
@@ -1796,9 +1832,14 @@ static int mx6s_vidioc_enum_frameintervals(struct file *file, void *priv,
 	};
 	int ret;
 
+	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
+
 	fmt = format_by_fourcc(interval->pixel_format);
-	if (fmt->pixelformat != interval->pixel_format)
+	if (fmt->pixelformat != interval->pixel_format) {
+		dev_err(csi_dev->dev, "%s: format_by_fourcc got wrong pixelformat\n",
+			__func__);
 		return -EINVAL;
+	}
 	fie.code = fmt->mbus_code;
 
 	ret = v4l2_subdev_call(sd, pad, enum_frame_interval, NULL, &fie);
