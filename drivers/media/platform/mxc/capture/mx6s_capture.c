@@ -1194,6 +1194,32 @@ static irqreturn_t mx6s_csi_irq_handler(int irq, void *data)
 				mx6s_csi_frame_done(csi_dev, 1, false);
 		} else
 			pr_err("skip frame 1\n");
+	} else if (status & BIT_FIELD0_INT){
+		dev_dbg(csi_dev->dev, "FIELD0_INT\n");
+	} else if (status & BIT_FIELD1_INT){
+		dev_dbg(csi_dev->dev, "FIELD1_INT\n");
+	} else if (status & BIT_SFF_OR_INT){
+		dev_dbg(csi_dev->dev, "SFF_OR_INT\n");
+	} else if (status & BIT_DMA_TSF_DONE_SFF){
+		dev_dbg(csi_dev->dev, "DMA_TSF_DONE_SFF\n");
+	} else if (status & BIT_STATFF_INT){
+		dev_dbg(csi_dev->dev, "STATFF_INT\n");
+	} else if (status & BIT_RXFF_INT){
+		dev_dbg(csi_dev->dev, "RXFF_INT\n");
+	} else if (status & BIT_EOF_INT){
+		dev_dbg(csi_dev->dev, "EOF_INT: End of Frame\n");
+	} else if (status & BIT_SOF_INT){
+		dev_dbg(csi_dev->dev, "SOF_INT: Start of Frame\n");
+	} else if (status & BIT_F2_INT){
+		dev_dbg(csi_dev->dev, "F2_INT\n");
+	} else if (status & BIT_F1_INT){
+		dev_dbg(csi_dev->dev, "F1_INT\n");
+	} else if (status & BIT_COF_INT){
+		dev_dbg(csi_dev->dev, "COF_INT\n");
+	} else if (status & BIT_ECC_INT){
+		dev_dbg(csi_dev->dev, "ECC_INT\n");
+	} else if (status & BIT_DRDY){
+		dev_dbg(csi_dev->dev, "DRDY\n");
 	}
 
 	spin_unlock(&csi_dev->slock);
