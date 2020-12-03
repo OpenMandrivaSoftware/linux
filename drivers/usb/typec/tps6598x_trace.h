@@ -187,6 +187,20 @@
 	(data_status & TPS_DATA_STATUS_DP_CONNECTION ? \
 	 show_data_status_dp_pin_assignment(data_status) : "")
 
+#define show_pdo_contract_type(pdo) \
+	__print_symbolic(TPS_PDO_CONTRACT_TYPE(pdo), \
+		{ TPS_PDO_CONTRACT_FIXED, "fixed" }, \
+		{ TPS_PDO_CONTRACT_BATTERY, "battery" }, \
+		{ TPS_PDO_CONTRACT_VARIABLE, "variable" })
+
+#define show_pdo_contract_details(pdo) \
+	__print_flags(pdo & TPS_PDO_FIXED_CONTRACT_DETAILS, "|", \
+		{ TPS_PDO_FIXED_CONTRACT_DR_POWER, "dr-power" }, \
+		{ TPS_PDO_FIXED_CONTRACT_USB_SUSPEND, "usb-suspend" }, \
+		{ TPS_PDO_FIXED_CONTRACT_EXTERNAL_PWR, "ext-power" }, \
+		{ TPS_PDO_FIXED_CONTRACT_USB_COMMS, "usb-comms" }, \
+		{ TPS_PDO_FIXED_CONTRACT_DR_DATA, "dr-data" })
+
 TRACE_EVENT(tps6598x_irq,
 	    TP_PROTO(u64 event1,
 		     u64 event2),
@@ -270,6 +284,30 @@ TRACE_EVENT(tps6598x_data_status,
 		      show_data_status_flags(__entry->data_status),
 		      __entry->data_status & TPS_DATA_STATUS_DP_CONNECTION ? ", DP pinout " : "",
 		      maybe_show_data_status_dp_pin_assignment(__entry->data_status)
+		    )
+);
+
+TRACE_EVENT(tps6598x_pdo,
+	    TP_PROTO(struct tps6598x_pdo *pdo),
+	    TP_ARGS(pdo),
+
+	    TP_STRUCT__entry(
+			     __field(u32, pdo)
+			     __field(int, max_current)
+			     __field(int, max_voltage)
+			     ),
+
+	    TP_fast_assign(
+			   __entry->pdo = pdo->pdo;
+			   __entry->max_current = pdo->max_current;
+			   __entry->max_voltage = pdo->max_voltage;
+			   ),
+
+	    TP_printk("%s supply, max %duA, %duV, details: %s",
+		      show_pdo_contract_type(__entry->pdo),
+		      __entry->max_current,
+		      __entry->max_voltage,
+		      show_pdo_contract_details(__entry->pdo)
 		    )
 );
 

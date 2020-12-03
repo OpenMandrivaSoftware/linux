@@ -36,6 +36,7 @@
 #define TPS_REG_STATUS			0x1a
 #define TPS_REG_SYSTEM_CONF		0x28
 #define TPS_REG_CTRL_CONF		0x29
+#define TPS_REG_ACTIVE_CONTRACT		0x34
 #define TPS_REG_POWER_STATUS		0x3f
 #define TPS_REG_RX_IDENTITY_SOP		0x48
 #define TPS_REG_DATA_STATUS		0x5f
@@ -96,6 +97,7 @@ struct tps6598x {
 	struct power_supply *psy;
 	struct power_supply_desc psy_desc;
 	enum power_supply_usb_type usb_type;
+	struct tps6598x_pdo terms;
 
 	u32 data_status;
 	u16 pwr_status;
@@ -422,6 +424,47 @@ static const struct typec_operations tps6598x_ops = {
 	.pr_set = tps6598x_pr_set,
 };
 
+static int tps6598x_get_active_pd_contract(struct tps6598x *tps)
+{
+	u64 contract;
+	int type;
+	int max_power;
+	int ret = 0;
+
+	ret = tps6598x_block_read(tps, TPS_REG_ACTIVE_CONTRACT, &contract, 6);
+	if (ret)
+		return ret;
+
+	contract &= 0xFFFFFFFFFFFF;
+	type = TPS_PDO_CONTRACT_TYPE(contract);
+	memset(&tps->terms, 0, sizeof(struct tps6598x_pdo));
+
+	/* If there's no PD it decodes to all 0 */
+	switch (type) {
+	case TPS_PDO_CONTRACT_FIXED:
+		tps->terms.max_voltage = TPS_PDO_FIXED_CONTRACT_VOLTAGE(contract);
+		tps->terms.max_current = TPS_PDO_FIXED_CONTRACT_MAX_CURRENT(contract);
+		break;
+	case TPS_PDO_CONTRACT_BATTERY:
+		tps->terms.max_voltage = TPS_PDO_BAT_CONTRACT_MAX_VOLTAGE(contract);
+		max_power = TPS_PDO_BAT_CONTRACT_MAX_POWER(contract);
+		tps->terms.max_current = 1000 * 1000 * max_power / tps->terms.max_voltage;
+		break;
+	case TPS_PDO_CONTRACT_VARIABLE:
+		tps->terms.max_voltage = TPS_PDO_VAR_CONTRACT_MAX_VOLTAGE(contract);
+		tps->terms.max_current = TPS_PDO_VAR_CONTRACT_MAX_CURRENT(contract);
+		break;
+	default:
+		dev_warn(tps->dev, "Unknown contract type: %d\n", type);
+		return -EINVAL;
+	}
+
+	tps->terms.pdo = contract;
+	trace_tps6598x_pdo(&tps->terms);
+
+	return 0;
+}
+
 static irqreturn_t tps6598x_interrupt(int irq, void *data)
 {
 	struct tps6598x *tps = data;
@@ -466,6 +509,13 @@ static irqreturn_t tps6598x_interrupt(int irq, void *data)
 		}
 		tps->data_status = data_status;
 		tps6598x_update_data_status(tps, status);
+	}
+
+	if ((event1 | event2) & TPS_REG_INT_NEW_CONTRACT_AS_CONSUMER) {
+		if (tps6598x_get_active_pd_contract(tps) < 0) {
+			dev_err(tps->dev, "failed to read pd contract: %d\n", ret);
+			goto err_clear_ints;
+		}
 	}
 
 	/* Handle plug insert or removal */

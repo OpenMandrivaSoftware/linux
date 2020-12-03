@@ -6,6 +6,8 @@
  * Author: Heikki Krogerus <heikki.krogerus@linux.intel.com>
  */
 
+#include <linux/bitfield.h>
+
 #ifndef __TPS6598X_H__
 #define __TPS6598X_H__
 
@@ -178,5 +180,35 @@
 #define TPS_DATA_STATUS_DP_SPEC_PIN_ASSIGNMENT_D    (BIT(1) | BIT(0))
 #define TPS_DATA_STATUS_DP_SPEC_PIN_ASSIGNMENT_A    BIT(2)
 #define TPS_DATA_STATUS_DP_SPEC_PIN_ASSIGNMENT_B    (BIT(2) | BIT(1))
+
+
+/* PDO decoding as in https://www.ti.com/lit/an/slva842/slva842.pdf */
+#define TPS_PDO_CONTRACT_TYPE(x)	FIELD_GET(GENMASK(31, 30), x)
+#define TPS_PDO_CONTRACT_FIXED	0
+#define TPS_PDO_CONTRACT_BATTERY	1
+#define TPS_PDO_CONTRACT_VARIABLE	2
+
+#define TPS_PDO_FIXED_CONTRACT_DETAILS		GENMASK(29, 25)
+#define TPS_PDO_FIXED_CONTRACT_DR_POWER		BIT(29)
+#define TPS_PDO_FIXED_CONTRACT_USB_SUSPEND	BIT(28)
+#define TPS_PDO_FIXED_CONTRACT_EXTERNAL_PWR	BIT(27)
+#define TPS_PDO_FIXED_CONTRACT_USB_COMMS	BIT(26)
+#define TPS_PDO_FIXED_CONTRACT_DR_DATA		BIT(25)
+
+#define TPS_PDO_FIXED_CONTRACT_VOLTAGE(x)	(FIELD_GET(GENMASK(19, 10), x) * 50000)
+#define TPS_PDO_FIXED_CONTRACT_MAX_CURRENT(x)	(FIELD_GET(GENMASK(9, 0), x) * 10000)
+#define TPS_PDO_VAR_CONTRACT_MAX_VOLTAGE(x)	(FIELD_GET(GENMASK(29, 20), x) * 50000)
+#define TPS_PDO_VAR_CONTRACT_MIN_VOLTAGE(x)	(FIELD_GET(GENMASK(19, 10), x) * 50000)
+#define TPS_PDO_VAR_CONTRACT_MAX_CURRENT(x)	(FIELD_GET(GENMASK(9, 0), x) * 10000)
+#define TPS_PDO_BAT_CONTRACT_MAX_VOLTAGE(x)	(FIELD_GET(GENMASK(29, 20), x) * 50000)
+#define TPS_PDO_BAT_CONTRACT_MIN_VOLTAGE(x)	(FIELD_GET(GENMASK(19, 10), x) * 50000)
+#define TPS_PDO_BAT_CONTRACT_MAX_POWER(x)	(FIELD_GET(GENMASK(9, 0), x) * 250000)
+
+struct tps6598x_pdo {
+	u32 pdo;
+	int max_voltage; /* uV */
+	int max_current; /* uA */
+	int max_power;   /* uW */
+};
 
 #endif /* __TPS6598X_H__ */
