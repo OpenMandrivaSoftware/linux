@@ -622,6 +622,10 @@ static void csi_set_imagpara(struct mx6s_csi_dev *csi,
 {
 	int imag_para = 0;
 	unsigned long cr3 = __raw_readl(csi->regbase + CSI_CSICR3);
+	int rx_count;
+
+	rx_count = (width * height) >> 2;
+	__raw_writel(rx_count, csi->regbase + CSI_CSIRXCNT);
 
 	imag_para = (width << 16) | height;
 	__raw_writel(imag_para, csi->regbase + CSI_CSIIMAG_PARA);
