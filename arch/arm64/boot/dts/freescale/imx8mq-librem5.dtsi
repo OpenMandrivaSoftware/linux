@@ -1014,7 +1014,6 @@
 				regulator-max-microvolt = <1300000>;
 				regulator-boot-on;
 				rohm,dvs-run-voltage = <900000>;
-				regulator-always-on;
 			};
 
 			buck4_reg: BUCK4 {
