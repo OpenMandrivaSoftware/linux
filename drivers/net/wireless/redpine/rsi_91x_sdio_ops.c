@@ -74,13 +74,13 @@ int rsi_sdio_master_access_msword(struct rsi_hw *adapter,
 	return status;
 }
 
+void rsi_rx_handler(struct rsi_hw *adapter);
+
 void rsi_sdio_rx_thread(struct rsi_common *common)
 {
 	struct rsi_hw *adapter = common->priv;
 	struct rsi_91x_sdiodev *sdev = adapter->rsi_dev;
-	struct sk_buff *skb;
 	int status;
-	bool done = false;
 
 	do {
 		status = rsi_wait_event(&sdev->rx_thread.event, 
@@ -88,35 +88,11 @@ void rsi_sdio_rx_thread(struct rsi_common *common)
 		if (status < 0)
 			break;
 
-		if (atomic_read(&sdev->rx_thread.thread_done))
-			break;
-
-		while (true) {
-			skb = skb_dequeue(&sdev->rx_q.head);
-			if (!skb)
-				break;
-			status = redpine_read_pkt(common, skb->data, skb->len);
-			if (status) {
-				redpine_dbg(ERR_ZONE, "Failed to read the packet\n");
-				dev_kfree_skb(skb);
-				return;
-			}
-			dev_kfree_skb(skb);
-			if (sdev->rx_q.num_rx_pkts > 0)
-				sdev->rx_q.num_rx_pkts--;
-			
-			if (atomic_read(&sdev->rx_thread.thread_done)) {
-				done = true;
-				break;
-			}
-		}
 		rsi_reset_event(&sdev->rx_thread.event);
-		if (done)
-			break;
-	} while (1);
+		rsi_rx_handler(adapter);
+	} while (!atomic_read(&sdev->rx_thread.thread_done));
 
 	redpine_dbg(INFO_ZONE, "%s: Terminated SDIO RX thread\n", __func__);
-	skb_queue_purge(&sdev->rx_q.head);
 	atomic_inc(&sdev->rx_thread.thread_done);
 	complete_and_exit(&sdev->rx_thread.completion, 0);
 }
@@ -138,10 +114,6 @@ static int rsi_process_pkt(struct rsi_common *common)
 	int status = 0;
 	u8 value = 0;
 	u8 protocol = 0, unaggr_pkt = 0;
-	struct sk_buff *skb;
-
-	if (dev->rx_q.num_rx_pkts >= RSI_SDIO_MAX_RX_PKTS)
-		return 0;
 
 #define COEX_PKT 0
 #define WLAN_PKT 3
@@ -179,26 +151,19 @@ static int rsi_process_pkt(struct rsi_common *common)
 		unaggr_pkt = 1;
 
 	rcv_pkt_len = (num_blks * 256);
-	
-	skb = dev_alloc_skb(rcv_pkt_len);
-	if (!skb) {
-		redpine_dbg(ERR_ZONE, "%s: Failed to allocate rx packet\n",
-			__func__);
-		return -ENOMEM;
-	}
-	skb_put(skb, rcv_pkt_len);
 
-	status = rsi_sdio_host_intf_read_pkt(adapter, skb->data, skb->len);
+	status = rsi_sdio_host_intf_read_pkt(adapter, dev->pktbuffer, rcv_pkt_len);
 	if (status) {
 		redpine_dbg(ERR_ZONE, "%s: Failed to read packet from card\n",
 			__func__);
-		dev_kfree_skb(skb);
 		return status;
 	}
-	skb_queue_tail(&dev->rx_q.head, skb);
-	dev->rx_q.num_rx_pkts++;
-	rsi_set_event(&dev->rx_thread.event);
 
+	status = redpine_read_pkt(common, dev->pktbuffer, rcv_pkt_len);
+	if (status) {
+		redpine_dbg(ERR_ZONE, "Failed to read the packet\n");
+		return status;
+	}
 	return 0;
 }
 
@@ -305,12 +270,12 @@ int rsi_read_intr_status_reg(struct rsi_hw *adapter)
 }
 
 /**
- * rsi_interrupt_handler() - This function read and process SDIO interrupts.
+ * rsi_rx_handler() - This function read and process SDIO interrupts.
  * @adapter: Pointer to the adapter structure.
  *
  * Return: None.
  */
-void rsi_interrupt_handler(struct rsi_hw *adapter)
+void rsi_rx_handler(struct rsi_hw *adapter)
 {
 	struct rsi_common *common = adapter->priv;
 	struct rsi_91x_sdiodev *dev =
