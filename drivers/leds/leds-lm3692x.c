@@ -368,8 +368,22 @@ static enum led_brightness lm3692x_max_brightness(struct lm3692x_led *led,
 
 	/* see p.12 of LM36922 data sheet for brightness formula */
 	if (led->brightness_ctrl & LM3692X_MAP_MODE_EXP) {
-		/*  228 =~ 1.0 / log2(1.003040572) */
-		max_code = ilog2(max_cur/50) * 228;
+		/*
+		 * Use a lookup table for common max_cur values
+		 * log2(max_cur/50)/math.log2(1.003040572)
+		 * underestimates too much otherwise
+		 */
+		switch (max_cur) {
+		case 20000:
+			max_code = 1973;
+			break;
+		case 25000:
+			max_code = 2047;
+			break;
+		default:
+			/*  228 =~ 1.0 / log2(1.003040572) */
+			max_code = ilog2(max_cur/50) * 228;
+		}
 	} else {
 		max_code = ((max_cur * 1000) - 37806) / 12195;
 	}
