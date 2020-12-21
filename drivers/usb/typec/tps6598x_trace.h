@@ -99,7 +99,7 @@
 		{ TPS_STATUS_POWER_SOURCE_VBUS,		"vbus" }, \
 		{ TPS_STATUS_POWER_SOURCE_VIN_3P3,	"vin-3p3" }, \
 		{ TPS_STATUS_POWER_SOURCE_DEAD_BAT,	"dead-battery" }, \
-		{ TPS_STATUS_POWER_SOURCE_VBUS,		"vbus" })
+		{ TPS_STATUS_POWER_SOURCE_UNKNOWN,	"unknown" })
 
 #define show_status_vbus_status(status) \
 	__print_symbolic(TPS_STATUS_VBUS_STATUS(status), \
