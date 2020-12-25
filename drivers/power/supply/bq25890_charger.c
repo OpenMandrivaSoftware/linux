@@ -762,34 +762,53 @@ static void bq25890_external_power_changed(struct power_supply *psy)
 {
 	struct bq25890_device *bq = power_supply_get_drvdata(psy);
 	bool supplied;
-	int max_current = 500; /* mA, save default */
+	int ret, max_current = 500; /* mA, save default */
+	struct power_supply *psy_supply;
+	union power_supply_propval val;
 
 	supplied = power_supply_am_i_supplied(bq->charger);
 	dev_info(bq->dev, "Upstream supply changed: %d.\n", supplied);
 
-	if (supplied) {
-		struct power_supply *psy_supply;
-		union power_supply_propval val;
+	psy_supply = power_supply_get_by_name(*bq->charger->supplied_from);
+	if (IS_ERR(psy_supply)) {
+		dev_err(bq->dev, "Failed to get upstream supply: %ld\n", PTR_ERR(psy_supply));
+		return;
+	}
 
-		psy_supply = power_supply_get_by_name(*bq->charger->supplied_from);
-		power_supply_get_property(psy_supply, POWER_SUPPLY_PROP_CURRENT_MAX, &val);
-		max_current = val.intval / 1000;
+	if (supplied) {
+		if (bq->otg_en) {
+			dev_info(bq->dev, "Disabling OTG_EN pin\n");
+			gpiod_set_value_cansleep(bq->otg_en, 0);
+		}
+		ret = bq25890_field_write(bq, F_OTG_CFG, 0);
+		if (ret < 0)
+			dev_err(bq->dev, "Failed to disable otg: %d\n", ret);
+
+		if (!power_supply_get_property(psy_supply, POWER_SUPPLY_PROP_CURRENT_MAX, &val))
+			max_current = val.intval / 1000;
+		else
+			dev_err(bq->dev, "Failed to get supply current\n");
+
 		/* Just as a safety net for now */
-		if (max_current <= 100 || max_current > 3000) {
-			dev_err(bq->dev, "Max_current out of range: %d", max_current);
+		if (max_current < 100 || max_current > 3000) {
+			dev_err(bq->dev, "Max_current out of range: %d\n", max_current);
 			max_current = 500;
 		}
+		dev_dbg(bq->dev, "Setting max current to %dmA\n", max_current);
+		ret = bq25890_field_write(bq, F_IILIM, (max_current-100)/50);
+		if (ret < 0)
+			dev_err(bq->dev, "Failed to set IILIM: %d\n", ret);
+	} else {
+		if (bq->otg_en) {
+			dev_info(bq->dev, "Enabling OTG_EN pin\n");
+			gpiod_set_value_cansleep(bq->otg_en, 1);
+		}
+		ret = bq25890_field_write(bq, F_OTG_CFG, 1);
+		if (ret < 0)
+			dev_err(bq->dev, "Failed to enable otg: %d\n", ret);
 	}
-	if (bq25890_field_write(bq, F_IILIM, (max_current-100)/50) < 0)
-		dev_err(bq->dev, "Failed to set IILIM");
 
-	if (!bq->otg_en)
-		return;
-
-	dev_info(bq->dev, "%sabling OTG_EN pin\n", supplied ? "dis" : "en");
-	gpiod_set_value_cansleep(bq->otg_en, !supplied);
-	if (bq25890_field_write(bq, F_CHG_CFG, supplied)  < 0)
-		dev_err(bq->dev, "Failed to set charging to %d", supplied);
+	power_supply_changed(bq->charger);
 }
 
 
