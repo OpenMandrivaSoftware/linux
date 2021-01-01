@@ -48,6 +48,8 @@
 #define TPS_TYPEC_3000mA 3000000
 #define TPS_USB_5V	 5000000
 
+#define CC_INT_MASK			TPS_REG_INT_STATUS_UPDATE
+
 /* TPS_REG_SYSTEM_CONF bits */
 #define TPS_SYSCONF_PORTINFO(c)		((c) & 7)
 
@@ -298,6 +300,46 @@ static void tps6598x_debugfs_exit(const struct tps6598x *tps) { }
 
 #endif
 
+static int tps6598x_mask_reg(struct tps6598x *tps, int reg, u64 mask, bool set)
+{
+	u64 val;
+	int ret;
+
+	ret = tps6598x_read64(tps, reg, &val);
+	if (ret < 0) {
+		dev_err(tps->dev, "Reading reg 0x%x mask failed %d", reg, ret);
+		return ret;
+	}
+	if (set)
+		val |= mask;
+	else
+		val &= ~mask;
+	ret = tps6598x_write64(tps, reg, val);
+	if (ret < 0) {
+		dev_err(tps->dev, "Writing reg 0x%x mask failed %d", reg, ret);
+		return ret;
+	}
+
+	dev_dbg(tps->dev, "register mask updated %llx %llx", val, mask);
+
+	return 0;
+}
+
+static int tps6598x_mask_cc_int(struct tps6598x *tps, bool disable)
+{
+	int ret;
+
+	ret = tps6598x_mask_reg(tps, TPS_REG_INT_MASK1, CC_INT_MASK, !disable);
+	ret |= tps6598x_mask_reg(tps, TPS_REG_INT_MASK2, CC_INT_MASK, !disable);
+
+	if (ret < 0) {
+		dev_err(tps->dev, "Writing interrupt mask failed %d", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
 static int tps6598x_connect(struct tps6598x *tps, u32 status)
 {
 	struct typec_partner_desc desc;
@@ -331,6 +373,8 @@ static int tps6598x_connect(struct tps6598x *tps, u32 status)
 
 	if (desc.identity)
 		typec_partner_set_identity(tps->partner);
+
+	tps6598x_mask_cc_int(tps, false);
 
 	power_supply_changed(tps->psy);
 
@@ -367,6 +411,7 @@ static void tps6598x_disconnect(struct tps6598x *tps, u32 status)
 
 	memset(&tps->terms, 0, sizeof(struct tps6598x_pdo));
 
+	tps6598x_mask_cc_int(tps, true);
 	power_supply_changed(tps->psy);
 }
 
@@ -546,6 +591,7 @@ static irqreturn_t tps6598x_interrupt(int irq, void *data)
 	u16 pwr_status;
 	bool psy_changed = false;
 	int ret;
+	u64 mask;
 
 	mutex_lock(&tps->lock);
 
@@ -608,6 +654,27 @@ static irqreturn_t tps6598x_interrupt(int irq, void *data)
 	if ((event1 | event2) & TPS_REG_INT_HARD_RESET) {
 		memset(&tps->terms, 0, sizeof(struct tps6598x_pdo));
 		psy_changed = true;
+	}
+
+	if ((event1 | event2) & TPS_REG_INT_STATUS_UPDATE) {
+		ret = tps6598x_read64(tps, TPS_REG_INT_MASK1, &mask);
+		if (ret < 0)
+			dev_err( tps->dev, "Reading interrupt mask failed");
+		dev_dbg(tps->dev, "Status update: %x %llx", status, mask);
+		if (!(mask & TPS_REG_INT_STATUS_UPDATE))
+			dev_err( tps->dev, "The interrupt is masked , how did it fire ?? %llx", mask);
+
+		if (!(status & TPS_STATUS_PLUG_PRESENT) ||
+		    TPS_STATUS_CONN_STATE(status) !=
+		    (TPS_STATUS_CONN_STATE_CONN_NO_R_A | TPS_STATUS_CONN_STATE_CONN_WITH_R_A)) {
+			/* the status update register can fire even when masked so try
+			   and mask it again */
+			ret = tps6598x_mask_cc_int(tps, true);
+			if (ret < 0)
+				dev_err( tps->dev, "Writing interrupt mask failed");
+			else
+				dev_dbg( tps->dev, "interrupt mask updated %llx", mask);
+		}
 	}
 
 err_clear_ints:
@@ -906,6 +973,8 @@ static int tps6598x_probe(struct i2c_client *client)
 		ret = tps6598x_connect(tps, status);
 		if (ret)
 			dev_err(&client->dev, "failed to register partner\n");
+	} else {
+		tps6598x_mask_cc_int(tps, true);
 	}
 
 	ret = devm_request_threaded_irq(&client->dev, client->irq, NULL,
