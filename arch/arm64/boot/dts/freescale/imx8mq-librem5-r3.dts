@@ -46,6 +46,10 @@
 	ti,termination-current = <144000>;  /* uA */
 };
 
+&buck3_reg {
+	regulator-always-on;
+};
+
 &iomuxc {
 	pinctrl_r3_camera_pwr: r3camerapwrgrp {
 		fsl,pins = <
