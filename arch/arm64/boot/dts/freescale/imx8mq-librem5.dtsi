@@ -457,6 +457,16 @@
 };
 
 &iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_hog>;
+
+	pinctrl_hog: hoggrp {
+		fsl,pins = <
+			/* CLKO2 for cameras on both CSI1 and CSI2 */
+			MX8MQ_IOMUXC_GPIO1_IO15_CCMSRCGPCMIX_CLKO2      0x1f
+		>;
+	};
+
 	pinctrl_audiopwr: audiopwrgrp {
 		fsl,pins = <
 			/* AUDIO_POWER_EN_3V3 */
@@ -496,13 +506,6 @@
 		>;
 	};
 
-	pinctrl_camera: cameragrp {
-		fsl,pins = <
-			/* CLKO2 cameras */
-			MX8MQ_IOMUXC_GPIO1_IO15_CCMSRCGPCMIX_CLKO2	0x1f
-		>;
-	};
-
 	pinctrl_camera_pwr: camerapwrgrp {
 		fsl,pins = <
 			/* CAMERA_PWR_EN_3V3 */
@@ -510,10 +513,15 @@
 		>;
 	};
 
-	pinctrl_csi: csigrp {
+	pinctrl_csi1: csi1grp {
 		fsl,pins = <
 			/* CSI1_NRST */
 			MX8MQ_IOMUXC_ENET_RXC_GPIO1_IO25	0x83
+		>;
+	};
+
+	pinctrl_csi2: csi2grp {
+		fsl,pins = <
 			/* CSI2_NRST */
 			MX8MQ_IOMUXC_ENET_RD0_GPIO1_IO26	0x83
 		>;
