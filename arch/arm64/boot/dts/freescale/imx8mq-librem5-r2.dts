@@ -24,6 +24,33 @@
 			"0",  "0",  "1";
 };
 
+&i2c4 {
+	/delete-node/ camera2@2d;
+	camera2@10 {
+		compatible = "samsung,s5k3l6xx";
+		reg = <0x10>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_csi2>;
+		clocks = <&clk IMX8MQ_CLK_CLKO2>;
+		clock-names = "mclk";
+		rstn-gpios = <&gpio1 26 GPIO_ACTIVE_LOW>;
+		//stdbyn-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
+		/* analog power 2,8V */
+		//vdda-supply = <&gpio1 0 GPIO_ACTIVE_LOW>;
+		/* VDDD digital power 1,05V */
+		//vddreg-supply
+		/* I/O power supply 1,8V */
+		vddio-supply = <&reg_camera_pwr_en>;
+		status = "okay";
+		port {
+			camera2_ep: endpoint {
+				data-lanes = <1 2 3 4>;
+				remote-endpoint = <&mipi2_sensor_ep>;
+			};
+		};
+	};
+};
+
 &proximity {
 	proximity-near-level = <120>;
 };
