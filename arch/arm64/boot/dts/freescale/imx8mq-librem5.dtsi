@@ -84,15 +84,8 @@
 			<&pinctrl_flash_pwr>,
 			<&pinctrl_wwan_pwr>, <&pinctrl_wifi_pwr>,
 			<&pinctrl_wwan>,
-			<&pinctrl_camera_pwr>,
 			<&pinctrl_bt>
 			;
-
-		camera-en {
-			label = "camera_en";
-			gpios = <&gpio1 0 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
-		};
 
 		chg-en {
 			label = "chg_en";
@@ -198,6 +191,17 @@
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
 		vin-supply = <&reg_audio_pwr_en>;
+	};
+
+	reg_camera_pwr_en: regulator-camera-pwr-en {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_camera_pwr>;
+		regulator-name = "CAMERA_PWR_EN";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&gpio1 0 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
 	};
 
 	reg_gnss: regulator-gnss {
