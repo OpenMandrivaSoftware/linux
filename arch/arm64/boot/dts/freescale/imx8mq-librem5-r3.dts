@@ -12,19 +12,24 @@
 	dogwood_leds {
 		compatible = "gpio-leds";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_r3_camera_pwr>, <&pinctrl_smc_boot>;
-
-		camera-pwr {
-			label = "camera_pwr";
-			gpios = <&gpio5 4 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
-		};
+		pinctrl-0 = <&pinctrl_smc_boot>;
 
 		smc-boot {
 			label = "smc_boot";
 			gpios = <&gpio5 29 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
 		};
+	};
+
+	reg_camera1_pwr_en: regulator-camera1-pwr-en {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_r3_camera_pwr>;
+		regulator-name = "CAMERA1_PWR_EN";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&gpio5 4 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
 	};
 };
 
@@ -48,6 +53,10 @@
 
 &buck3_reg {
 	regulator-always-on;
+};
+
+&camera_front {
+	vdd1-supply = <&reg_camera1_pwr_en>;
 };
 
 &iomuxc {
