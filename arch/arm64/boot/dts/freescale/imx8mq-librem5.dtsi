@@ -366,6 +366,30 @@
 	cpu-supply = <&buck2_reg>;
 };
 
+&csi1_bridge {
+	fsl,mipi-mode;
+	fsl,two-8bit-sensor-mode;
+	status = "okay";
+
+	port {
+		csi1_ep: endpoint {
+			remote-endpoint = <&csi1_mipi_ep>;
+		};
+	};
+};
+
+&csi2_bridge {
+	fsl,mipi-mode;
+	fsl,two-8bit-sensor-mode;
+	status = "okay";
+
+	port {
+		csi2_ep: endpoint {
+			remote-endpoint = <&csi2_mipi_ep>;
+		};
+	};
+};
+
 &ddrc {
 	operating-points-v2 = <&ddrc_opp_table>;
 
@@ -1339,6 +1363,48 @@
 
 &lcdif {
 	status = "okay";
+};
+
+&mipi_csi_1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		mipi1_sensor_ep: endpoint@1 {
+			reg = <1>;
+			remote-endpoint = <&camera1_ep>;
+			data-lanes = <1 2 3 4>;
+		};
+
+		csi1_mipi_ep: endpoint@2 {
+			reg = <2>;
+			remote-endpoint = <&csi1_ep>;
+		};
+	};
+};
+
+&mipi_csi_2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		mipi2_sensor_ep: endpoint@1 {
+			reg = <1>;
+			remote-endpoint = <&camera2_ep>;
+			data-lanes = <1 2 3 4>;
+		};
+
+		csi2_mipi_ep: endpoint@2 {
+			reg = <2>;
+			remote-endpoint = <&csi2_ep>;
+		};
+	};
 };
 
 &mipi_dsi {
