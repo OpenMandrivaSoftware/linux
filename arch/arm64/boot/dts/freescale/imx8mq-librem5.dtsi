@@ -1347,9 +1347,28 @@
 	};
 
 	/* Samsung S5K3L6XX - 13MP Rear-Facing Camera */
-	camera2@10 {
-		reg = <0x10>;
-		status = "disabled";
+	camera_back: camera2@2d {
+		compatible = "samsung,s5k3l6xx";
+		reg = <0x2d>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_csi2>;
+		clocks = <&clk IMX8MQ_CLK_CLKO2>;
+		clock-names = "mclk";
+		rstn-gpios = <&gpio1 26 GPIO_ACTIVE_LOW>;
+		//stdbyn-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
+		/* analog power 2,8V */
+		//vdda-supply = <&gpio1 0 GPIO_ACTIVE_LOW>;
+		/* VDDD digital power 1,05V */
+		//vddreg-supply
+		/* I/O power supply 1,8V */
+		vddio-supply = <&reg_camera_pwr_en>;
+		status = "okay";
+		port {
+			camera2_ep: endpoint {
+				data-lanes = <1 2 3 4>;
+				remote-endpoint = <&mipi2_sensor_ep>;
+			};
+		};
 	};
 
 	bat: fuel-gauge@36 {
