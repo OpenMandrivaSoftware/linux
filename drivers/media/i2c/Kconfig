@@ -738,6 +738,19 @@ config VIDEO_HI556
 	  To compile this driver as a module, choose M here: the
 	  module will be called hi556.
 
+config VIDEO_HI846
+	tristate "Hynix Hi-846 sensor support"
+	depends on I2C && VIDEO_V4L2
+	select MEDIA_CONTROLLER
+	select VIDEO_V4L2_SUBDEV_API
+	select V4L2_FWNODE
+	help
+	  This is a Video4Linux2 sensor driver for the Hynix
+	  Hi-846 camera.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called hi846.
+
 config VIDEO_IMX214
 	tristate "Sony IMX214 sensor support"
 	depends on GPIOLIB && I2C && VIDEO_V4L2
@@ -1258,6 +1271,16 @@ config VIDEO_S5K5BAF
 	select V4L2_FWNODE
 	help
 	  This is a V4L2 sensor driver for Samsung S5K5BAF 2M
+	  camera sensor with an embedded SoC image signal processor.
+
+config VIDEO_S5K3L6XX
+	tristate "Samsung S5K3L6XX sensor support"
+	depends on I2C && VIDEO_V4L2
+	select MEDIA_CONTROLLER
+	select VIDEO_V4L2_SUBDEV_API
+	select V4L2_FWNODE
+	help
+	  This is a V4L2 sensor driver for Samsung S5K3L6XX 13M
 	  camera sensor with an embedded SoC image signal processor.
 
 source "drivers/media/i2c/ccs/Kconfig"
