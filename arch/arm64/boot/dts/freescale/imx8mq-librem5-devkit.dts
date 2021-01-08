@@ -93,16 +93,6 @@
 			gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
 		};
-		csi_nrst {
-			label = "CSI_nRST";
-			gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
-			default-state = "on";
-		};
-		csi_pdwn {
-			label = "CSI_PDWN";
-			gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
-		};
 		spk_mute {
 			label = "SPK_MUTE";
 			gpios = <&gpio5 3 GPIO_ACTIVE_LOW>;
@@ -574,6 +564,33 @@
 		VDDA-supply = <&reg_3v3_p>;
 	};
 
+	ov5640_mipi@3c {
+		compatible = "ovti,ov5640_mipi";
+		//compatible = "ovti,ov5640"; // mainline driver
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_csi1>;
+		reg = <0x3c>;
+		status = "okay";
+		clocks = <&clk IMX8MQ_CLK_CLKO1>;
+		clock-names = "csi_mclk";
+		//clock-names = "xclk"; // mainline driver
+		assigned-clocks = <&clk IMX8MQ_CLK_CLKO1>;
+		assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_200M>;
+		assigned-clock-rates = <20000000>;
+		//powerdown-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+		//reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
+		csi_id = <0>;
+		pwn-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+		rst-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
+		mclk = <20000000>;
+		mclk_source = <0>;
+		port {
+			ov5640_mipi1_ep: endpoint {
+				remote-endpoint = <&mipi1_sensor_ep>;
+			};
+		};
+	};
+
 	touchscreen@5d {
 		compatible = "goodix,gt5688";
 		reg = <0x5d>;
@@ -922,6 +939,39 @@
 
 &lcdif {
 	status = "okay";
+};
+
+&csi1_bridge {
+	fsl,mipi-mode;
+	fsl,two-8bit-sensor-mode;
+	status = "okay";
+
+	port {
+		csi1_ep: endpoint {
+			remote-endpoint = <&csi1_mipi_ep>;
+		};
+	};
+};
+
+&mipi_csi_1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		mipi1_sensor_ep: endpoint@1 {
+			reg = <1>;
+			remote-endpoint = <&ov5640_mipi1_ep>;
+			data-lanes = <1 2>;
+		};
+
+		csi1_mipi_ep: endpoint@2 {
+			reg = <2>;
+			remote-endpoint = <&csi1_ep>;
+		};
+	};
 };
 
 &mipi_dsi {
