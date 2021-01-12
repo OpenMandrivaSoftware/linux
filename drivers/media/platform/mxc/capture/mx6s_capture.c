@@ -489,7 +489,7 @@ static void csi_enable_int(struct mx6s_csi_dev *csi_dev, int arg)
 {
 	unsigned long cr1 = __raw_readl(csi_dev->regbase + CSI_CSICR1);
 
-	dev_err(csi_dev->dev, "%s : starting\n", __func__);
+	dev_dbg(csi_dev->dev, "%s : starting\n", __func__);
 
 	cr1 |= BIT_SOF_INTEN;
 	cr1 |= BIT_RFF_OR_INT;
@@ -906,7 +906,7 @@ static int mx6s_start_streaming(struct vb2_queue *vq, unsigned int count)
 	unsigned long phys;
 	unsigned long flags;
 
-	dev_err(csi_dev->dev,"%s : starting.\n", __func__);
+	dev_dbg(csi_dev->dev,"%s : starting.\n", __func__);
 	if (count < 2)
 	{
 		dev_err(csi_dev->dev,"%s : ENOBUFS\n", __func__);
@@ -1459,7 +1459,7 @@ static int mx6s_vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 	struct mx6s_fmt *fmt;
 	int ret;
 
-	dev_err(csi_dev->dev, "Starting %s.", __func__);
+	dev_dbg(csi_dev->dev, "Starting %s.", __func__);
 
 	fmt = format_by_fourcc(f->fmt.pix.pixelformat);
 	if (!fmt) {
@@ -1505,7 +1505,7 @@ static int mx6s_vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 	csi_dev->mbus_code     = csi_dev->fmt->mbus_code;
 	csi_dev->pix           = f->fmt.pix;
 	csi_dev->type          = f->type;
-	dev_err(csi_dev->dev, "set to pixelformat '%4.6s' w=%d h=%d size=%d\n",
+	dev_dbg(csi_dev->dev, "set to pixelformat '%4.6s' w=%d h=%d size=%d\n",
 			(char *)&csi_dev->fmt->name, csi_dev->pix.width,
 			csi_dev->pix.height, csi_dev->pix.sizeimage);
 
@@ -1682,7 +1682,7 @@ static int mx6s_vidioc_s_parm(struct file *file, void *priv,
 	if (a->type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		return -EINVAL;
 
-	dev_err(csi_dev->dev, "Starting %s type=%d capturemode=%d\n", __func__,
+	dev_dbg(csi_dev->dev, "Starting %s type=%d capturemode=%d\n", __func__,
 		a->type,
 		a->parm.capture.capturemode);
 
@@ -1940,7 +1940,7 @@ static int mx6sx_register_subdevs(struct mx6s_csi_dev *csi_dev)
 		dev_err(csi_dev->dev,
 					"Error register async notifier regoster\n");
 	else
-		dev_err(csi_dev->dev, "register async notifier success\n");
+		dev_info(csi_dev->dev, "register async notifier success\n");
 
 	return ret;
 }
