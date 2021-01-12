@@ -1296,7 +1296,6 @@
 			camera1_ep: endpoint {
 				data-lanes = <1 2 3 4>;
 				remote-endpoint = <&mipi1_sensor_ep>;
-				link-frequencies = /bits/ 64 <437000000>;
 			};
 		};
 	};
