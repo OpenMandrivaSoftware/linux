@@ -592,6 +592,27 @@ static void csi_dmareq_rff_enable(struct mx6s_csi_dev *csi_dev)
 
 	dev_dbg(csi_dev->dev, "%s: starting\n", __func__);
 
+	if (!csi_dev->fmt) {
+		dev_dbg(csi_dev->dev, "%s: fmt not set. returning.\n", __func__);
+		return;
+	}
+
+	switch (csi_dev->fmt->pixelformat) {
+	case V4L2_PIX_FMT_UYVY:
+	case V4L2_PIX_FMT_YUYV:
+		pr_debug("mx6s: %s: UYVY/YUYV\n", __func__);
+		break;
+	case V4L2_PIX_FMT_SBGGR8:
+		pr_debug("mx6s: %s: RAW8 bayer\n", __func__);
+		/* Bayer Starting point GR/RG/BG/GB [20:19] */
+		/* BG */
+		cr2 |= 0x00100000;
+		break;
+	default:
+		pr_debug("mx6s: %s: fmt not handled\n", __func__);
+		break;
+	}
+
 	/* Burst Type of DMA Transfer from RxFIFO. INCR16 */
 	cr2 |= 0xC0000000;
 
