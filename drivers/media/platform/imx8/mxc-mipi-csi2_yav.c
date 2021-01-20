@@ -184,6 +184,8 @@ static int mxc_mipi_csi2_phy_gpr(struct mxc_mipi_csi2_dev *csi2dev)
 								hs_settle));
 	}
 
+	dev_dbg(dev, "%s: hs_settle: 0x%X\n", __func__, csi2dev->hs_settle);
+
 	return ret;
 }
 
@@ -311,7 +313,7 @@ static int mipi_csi2_s_stream(struct v4l2_subdev *sd, int enable)
 	struct v4l2_subdev *sensor_sd = csi2dev->sensor_sd;
 	int ret = 0;
 
-	dev_dbg(&csi2dev->pdev->dev, "%s: %d, csi2dev: 0x%x\n",
+	dev_dbg(&csi2dev->pdev->dev, "%s: %d, csi2dev flags: 0x%x\n",
 		__func__, enable, csi2dev->flags);
 
 	if (enable) {
@@ -377,7 +379,7 @@ static int mipi_csi2_get_fmt(struct v4l2_subdev *sd,
 	struct device *dev = &csi2dev->pdev->dev;
 	struct v4l2_subdev *sensor_sd = csi2dev->sensor_sd;
 
-	dev_err(dev, "%s : starting\n", __func__);
+	dev_dbg(dev, "%s : starting\n", __func__);
 
 	if (fmt->pad)
 		return -EINVAL;
@@ -393,7 +395,7 @@ static int mipi_csi2_set_fmt(struct v4l2_subdev *sd,
 	struct device *dev = &csi2dev->pdev->dev;
 	struct v4l2_subdev *sensor_sd = csi2dev->sensor_sd;
 
-	dev_err(dev, "set_fmt w=%d h=%d\n", fmt->format.width,
+	dev_dbg(dev, "%s: set_fmt w=%d h=%d\n", __func__, fmt->format.width,
 		fmt->format.height);
 
 	if (fmt->pad)
@@ -405,6 +407,9 @@ static int mipi_csi2_set_fmt(struct v4l2_subdev *sd,
 		csi2dev->hs_settle = rxhs_settle[0];
 	}
 	csi2dev->send_level = 64;
+
+	dev_dbg(dev, "%s: set send_level %d hs_settle 0x%X\n", __func__,
+		csi2dev->send_level, csi2dev->hs_settle);
 
 	return v4l2_subdev_call(sensor_sd, pad, set_fmt, NULL, fmt);
 }
