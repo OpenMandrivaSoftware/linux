@@ -768,6 +768,7 @@ static const u16 setstream[] = {
 
 static void s5k3l6_hw_set_config(struct s5k5baf *state) {
 	const struct s5k3l6_frame *frame_fmt = &s5k3l6_frames[state->frame_fmt_idx];
+	v4l2_err(&state->sd, "Setting frame format %d", state->frame_fmt_idx);
 	s5k3l6_submit_regs(state, frame_fmt->streamregs, frame_fmt->streamregcount);
 
 	// This may mess up PLL settings...
