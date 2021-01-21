@@ -936,7 +936,7 @@ static int s5k5baf_s_stream(struct v4l2_subdev *sd, int on)
 			goto out;
 		s5k3l6_hw_set_stream(state, 1);
 	} else {
-		s5k3l6_hw_set_stream(state, 0);;
+		s5k3l6_hw_set_stream(state, 0);
 		pm_runtime_mark_last_busy(&c->dev);
 		pm_runtime_put_autosuspend(&c->dev);
 	}
