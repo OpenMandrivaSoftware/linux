@@ -773,7 +773,7 @@ static void mx6s_csi_init(struct mx6s_csi_dev *csi_dev)
 	csi_clk_enable(csi_dev);
 	csihw_reset(csi_dev);
 	csi_init_interface(csi_dev);
-	csi_dmareq_rff_disable(csi_dev);
+	csi_dmareq_rff_enable(csi_dev);
 }
 
 static void mx6s_csi_deinit(struct mx6s_csi_dev *csi_dev)
