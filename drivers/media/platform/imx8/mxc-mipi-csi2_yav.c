@@ -52,56 +52,52 @@ static struct mxc_mipi_csi2_dev *sd_to_mxc_mipi_csi2_dev(struct v4l2_subdev
 	return container_of(sdev, struct mxc_mipi_csi2_dev, sd);
 }
 
-#ifdef debug
 static void mxc_mipi_csi2_reg_dump(struct mxc_mipi_csi2_dev *csi2dev)
 {
-	printk("MIPI CSI2 HC register dump, mipi csi%d\n", csi2dev->id);
-	printk("MIPI CSI2 HC num of lanes     0x100 = 0x%x\n",
+	struct device *dev = &csi2dev->pdev->dev;
+
+	dev_dbg(dev, "MIPI CSI2 HC register dump, mipi csi%d\n", csi2dev->id);
+	dev_dbg(dev, "MIPI CSI2 HC num of lanes     0x100 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x100));
-	printk("MIPI CSI2 HC dis lanes        0x104 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC dis lanes        0x104 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x104));
-	printk("MIPI CSI2 HC BIT ERR          0x108 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC BIT ERR          0x108 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x108));
-	printk("MIPI CSI2 HC IRQ STATUS       0x10C = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC IRQ STATUS       0x10C = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x10C));
-	printk("MIPI CSI2 HC IRQ MASK         0x110 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC IRQ MASK         0x110 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x110));
-	printk("MIPI CSI2 HC ULPS STATUS      0x114 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC ULPS STATUS      0x114 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x114));
-	printk("MIPI CSI2 HC DPHY ErrSotHS    0x118 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC DPHY ErrSotHS    0x118 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x118));
-	printk("MIPI CSI2 HC DPHY ErrSotSync  0x11c = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC DPHY ErrSotSync  0x11c = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x11c));
-	printk("MIPI CSI2 HC DPHY ErrEsc      0x120 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC DPHY ErrEsc      0x120 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x120));
-	printk("MIPI CSI2 HC DPHY ErrSyncEsc  0x124 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC DPHY ErrSyncEsc  0x124 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x124));
-	printk("MIPI CSI2 HC DPHY ErrControl  0x128 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC DPHY ErrControl  0x128 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x128));
-	printk("MIPI CSI2 HC DISABLE_PAYLOAD  0x12C = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC DISABLE_PAYLOAD  0x12C = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x12C));
-	printk("MIPI CSI2 HC DISABLE_PAYLOAD  0x130 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC DISABLE_PAYLOAD  0x130 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x130));
-	printk("MIPI CSI2 HC IGNORE_VC        0x180 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC IGNORE_VC        0x180 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x180));
-	printk("MIPI CSI2 HC VID_VC           0x184 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC VID_VC           0x184 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x184));
-	printk("MIPI CSI2 HC FIFO_SEND_LEVEL  0x188 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC FIFO_SEND_LEVEL  0x188 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x188));
-	printk("MIPI CSI2 HC VID_VSYNC        0x18C = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC VID_VSYNC        0x18C = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x18C));
-	printk("MIPI CSI2 HC VID_SYNC_FP      0x190 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC VID_SYNC_FP      0x190 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x190));
-	printk("MIPI CSI2 HC VID_HSYNC        0x194 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC VID_HSYNC        0x194 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x194));
-	printk("MIPI CSI2 HC VID_HSYNC_BP     0x198 = 0x%x\n",
+	dev_dbg(dev, "MIPI CSI2 HC VID_HSYNC_BP     0x198 = 0x%x\n",
 	       readl(csi2dev->base_regs + 0x198));
 }
-#else
-static void mxc_mipi_csi2_reg_dump(struct mxc_mipi_csi2_dev *csi2dev)
-{
-}
-#endif
 
 static int mxc_mipi_csi2_phy_reset(struct mxc_mipi_csi2_dev *csi2dev)
 {
