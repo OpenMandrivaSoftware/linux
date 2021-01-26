@@ -2252,7 +2252,7 @@ static const struct mx6s_csi_soc mx6sl_soc = {
 };
 static const struct mx6s_csi_soc mx8mq_soc = {
 	.rx_fifo_rst = true,
-	.baseaddr_switch = 0x80030,
+	.baseaddr_switch = 0x80000,
 };
 
 static const struct of_device_id mx6s_csi_dt_ids[] = {
