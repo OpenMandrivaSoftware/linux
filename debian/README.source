@@ -1,22 +1,153 @@
+This should help getting started with working on the Purism downstream
+kernel tree currently running by default on the Librem 5 devkit and phones.
+
+Imagine this kernel tree to be a downstream "development tree" for inclusion
+into the mainline Linux kernel. Ideally, the patchset it consists of
+will shrink over time and (other than minor things like Debian packaging)
+will go away at some point.
+
+We build only one kernel image that runs on the devkit and all revisions
+of the phone. Hardware differences are taken into account by using
+the correct devicetree binary (dtb). All needed ones are being built.
+
+Downloading the sources
+-----------------------
+Our kernel tree is hosted at https://source.puri.sm/Librem5/linux-next
+where you can clone it from. The default branch is called
+'pureos/amber-phone'.
+
+How to build the kernel
+-----------------------
 This package is maintained with git-buildpackage(1).
+It is recommended to build the package with pbuilder using:
+
+    gbp builpackage --git-pbuilder
+
+or
+
+    dpkg-buildpackage -uc -us -B --host-arch=arm64
+
+For information on how to set up a pbuilder environment see the
+git-pbuilder(1) manpage.
+
+- To build a kernel without the meta package use the package
+  name 'linux-next-librem5' in *debian/changelog*
+
+- To build the kernel meta package switch the source
+  package name in *debian/changelog* to 'linux-librem5'.
+  then run 'debian/rules debian/control' and commit the result.
+
+- To switch the kernel/ABI version change 'KREL' in
+  *debian/rules* then run 'debian/rules debian/control'
+  and commit the result.
+
+- To create tags use 'gbp tag'. Read on for how this is used in order
+  to create the kernel releases for the PureOS archives.
+
+How to install
+--------------
+
+    dpkg -i linux-image...
+
+How to report bugs
+------------------
+Please search https://source.puri.sm/Librem5/linux-next/-/issues for an
+issue that describes your problem and create a new one if it doesn't
+exist.
+
+How to submit patches
+---------------------
+Ideally, fork the kernel tree on Gitlab, work on a branch, push it to
+your forked kernel tree and create a Merge Request on Gitlab against the
+default branch. Changes are then being discussed and reviewed. If you
+can't for some reason do it this way, you are free to send patches to
+kernel@puri.sm via email too. Similar rules like upstream apply, see
+https://www.kernel.org/doc/html/latest/process/submitting-patches.html
+Also, kernel coding standards (checkpatch.pl, ...) apply and it is desired
+to actually submit patches upstream too.
+
+Release process
+---------------
+Changes that are merged into the default branch 'pureos/amber-phone'
+in general can be released (=tagged) at any point in time. In this case a
+new version of the 'linux-librem5' package gets created. In case no ABI change
+is to be expected (the usual case), only the versions' last digit
+is being incremented.
 
 The changelog is generated using "gbp dch" so if you submit any
 changes don't bother to add changelog entries but rather provide
 a nice git commit message that can then end up in the changelog.
 
-It is recommended to build the package with pbuilder using:
+    gbp dch --git-log=--ancestry-path --since=<latest existing tag name>
+        --ignore-branch --multimaint-merge --id-length=7
 
-    gbp builpackage --git-pbuilder
+If an upstream stable kernel release has been merged too, use the
+upstream version first though, and use '1' as the last digit again,
+see below.
 
-For information on how to set up a pbuilder environment see the
-git-pbuilder(1) manpage.
+Versioning
+----------
+The kernel image's Debian package name contains a version in order to be
+able to create an entirely new package when the ABI to userspace
+changes (should be avoided though) or we update to a new major version
+of the kernel, see below. That number (name) is defined in debian/rules, for
+example 'KREL=5.11.0-1-librem5'. After changing this, regenerate
+debian/control too by running 'debian/rules debian/control'.
 
-- To build the kernel meta package switch the source
-  package name in *debian/changelog* to 'linux-librem5'.
-  then run `debian/rules debian/control` and commit the result.
+The actual version of that Debian package is defined in debian/changelog.
+First, use the upstream version that the tree is based on, for example
+'5.11.0~rc4pureos0' for a tree based on v5.11-rc4 or
+'5.11.3pureos0' for a tree based on v5.11.3. When doing a release
+that doesn't include an update from upstream, then just increment the last
+digit: '5.11.3pureos1'.
 
-- To switch the kernel/ABI version change `KREL` in
-  *debian/rules* then run `debian/rules debian/control`
-  and commit the result.
+Update process
+--------------
+Since the goal is to have the needed changes in the mainline kernel tree,
+we need to update the downstream changes to the latest upstream tree
+regularly. stable tags from upstream
+https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/
+can be merged through a Merge Request as usual. For updating to a
+new major version tagged at
+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+things are currently a bit more complicated:
 
-- To create tags use `gbp tag`
+In an ideal world, an update from one Linux major version to the next
+would similarly be a merge and some semi-automated testing of all needed
+functionality. The world is not ideal yet though, so when a new
+major kernel version is tagged upstream (usually an "rc" tag already)
+we rebase our changes onto it, test as much as we reasonably can
+(see below) and tag a release of the 'linux-next-librem5' Debian package
+for wider testing. That new tree is being prepared (and rebased) on the
+'next/amber-phone' branch. It should have the same functionality
+as the default 'pureos/amber-phone' branch, only rebased
+(and cleaned up) onto a newer mainline release.
+
+Testing
+-------
+Automated tests are collected in the 'pytests' directory of the
+https://source.puri.sm/Librem5/librem5-devkit-tools repository. Install
+, 'sudo apt -y install librem5-check' and run them: 'sudo librem5-check'.
+If you can reproduce a bugfix or test a driver functionality without user
+interaction, please add a test to that repository.
+
+TODO properly collect some interactive tests:
+* phone calls
+* sms
+* usb-dp
+* charging
+* wifi
+* bt
+* sd-card PM
+* gpu/cpu PM
+
+PureOS distributions
+--------------------
+This kernel is released to the amber-phone PureOS distribution (based on
+Debian buster) and to the byzantium PureOS distribution (based on bullseye).
+As suggested by the default branch, changes are usually merged into
+pureos/amber-phone first. There is also the pureos/byzantium branch that
+can contain changes that depend on having the newer userspace environment.
+Other than that, the kernels are the same but the respective branches
+are of course used to release to the distributions.
+For amber-phone, append "~amberN" to the version number.
