@@ -367,7 +367,6 @@
 
 &csi2_bridge {
 	fsl,mipi-mode;
-	fsl,two-8bit-sensor-mode;
 	status = "okay";
 
 	port {
