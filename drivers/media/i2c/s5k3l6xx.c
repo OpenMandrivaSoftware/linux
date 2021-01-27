@@ -687,7 +687,7 @@ static void s5k5baf_i2c_write2(struct s5k5baf *state, u16 addr, u16 val)
 
 static void s5k3l6_submit_regs(struct s5k5baf *state, const u16 *regs, u16 regcount) {
        unsigned i;
-       for (i = 0; i < regcount; i++) {
+       for (i = 0; i < regcount; i+=3) {
 	       if (regs[i+2] == 2)
 		       s5k5baf_i2c_write2(state, regs[i], regs[i+1]);
 	       else
