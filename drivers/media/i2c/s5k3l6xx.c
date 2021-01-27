@@ -654,6 +654,11 @@ static void s5k5baf_i2c_write(struct s5k5baf *state, u16 addr, u8 val)
 		v4l2_err(c, "i2c_write: error during transfer (%d)\n", ret);
 		state->error = ret;
 	}
+	// Not sure if actually needed. So really debugging code at the moment.
+	int actual = s5k5baf_i2c_read(state, addr);
+	if (actual != val) {
+		v4l2_err(c, "i2c_write: value didn't stick. 0x%04x = 0x%02x != 0x%02x", addr, actual, val);
+	}
 }
 
 static void s5k5baf_i2c_write2(struct s5k5baf *state, u16 addr, u16 val)
