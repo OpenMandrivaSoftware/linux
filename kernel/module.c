@@ -2123,6 +2123,7 @@ static void module_enable_nx(const struct module *mod)
 static int module_enforce_rwx_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
 				       char *secstrings, struct module *mod)
 {
+#if !defined(__aarch64__) // https://lore.kernel.org/lkml/20200403171303.GK20760@hirez.programming.kicks-ass.net/, https://sourceware.org/bugzilla/show_bug.cgi?id=26378
 	const unsigned long shf_wx = SHF_WRITE|SHF_EXECINSTR;
 	int i;
 
@@ -2133,6 +2134,7 @@ static int module_enforce_rwx_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
 			return -ENOEXEC;
 		}
 	}
+#endif
 
 	return 0;
 }
