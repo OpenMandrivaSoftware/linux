@@ -144,12 +144,14 @@ void crypto_aegis128_init_neon(void *state, const void *key, const void *iv)
 	};
 	uint8x16_t k = vld1q_u8(key);
 	uint8x16_t kiv = k ^ vld1q_u8(iv);
+	const uint8x16_t c0 = k ^ vld1q_u8(const0);
+	const uint8x16_t c1 = k ^ vld1q_u8(const1);
 	struct aegis128_state st = {{
 		kiv,
 		vld1q_u8(const1),
 		vld1q_u8(const0),
-		k ^ vld1q_u8(const0),
-		k ^ vld1q_u8(const1),
+		c0,
+		c1,
 	}};
 	int i;
 
