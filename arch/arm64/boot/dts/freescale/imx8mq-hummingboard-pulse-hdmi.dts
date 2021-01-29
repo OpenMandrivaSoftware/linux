@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright 2020 Purism SPC
+ */
+
+/dts-v1/;
+
+#include "imx8mq-hummingboard-pulse.dts"
+
+/delete-node/ &dcss_dsi_out;
+/delete-node/ &mipi_dsi_dcss_in;
+&dcss {
+	status = "okay";
+
+	port@0 {
+		dcss_hdmi_out: endpoint {
+			remote-endpoint = <&hdmi_in>;
+		};
+	};
+};
+
+&hdmi {
+	compatible = "nxp,imx8mq-cdns-hdmi";
+	lane-mapping = <0xe4>;
+	status = "okay";
+	port@0 {
+		hdmi_in: endpoint {
+			remote-endpoint = <&dcss_hdmi_out>;
+		};
+	};
+};
