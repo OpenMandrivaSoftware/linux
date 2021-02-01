@@ -959,6 +959,17 @@ static int m41t80_probe(struct i2c_client *client,
 		return rc;
 	}
 
+	/* Make sure OF (osciallator failure) is  cleared */
+	rc = i2c_smbus_read_byte_data(client, M41T80_REG_FLAGS);
+
+	if (rc >= 0)
+		rc = i2c_smbus_write_byte_data(client, M41T80_REG_FLAGS,
+					       rc & ~M41T80_FLAGS_OF);
+	if (rc < 0) {
+		dev_err(&client->dev, "Can't clear OF bit\n");
+		return rc;
+	}
+
 #ifdef CONFIG_RTC_DRV_M41T80_WDT
 	if (m41t80_data->features & M41T80_FEATURE_HT) {
 		save_client = client;

@@ -37,6 +37,7 @@ Optional properties:
     the battery;
 - ti,ibatcomp-clamp-microvolt: integer, maximum charging voltage adjustment due
     to expected voltage drop on in-series resistor;
+- ti,auto_dpdm_disable: disable the auto_dpdm negotiation
 
 Example:
 

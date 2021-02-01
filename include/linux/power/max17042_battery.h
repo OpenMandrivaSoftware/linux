@@ -18,6 +18,11 @@
 #define MAX17042_DEFAULT_TEMP_MIN	(0)    /* For sys without temp sensor */
 #define MAX17042_DEFAULT_TEMP_MAX	(700)  /* 70 degrees Celcius */
 
+#define MAX17055_VCHG_4V2		0
+#define MAX17055_VCHG_4V3		1
+#define MAX17055_VCHG_BIT		BIT(10)
+#define MAX17055_REFRESH_BIT		BIT(15)
+
 /* Consider RepCap which is less then 10 units below FullCAP full */
 #define MAX17042_FULL_THRESHOLD		10
 
@@ -206,6 +211,7 @@ struct max17042_config_data {
 	u16	full_soc_thresh;	/* 0x13 */
 	u16	design_cap;	/* 0x18 */
 	u16	ichgt_term;	/* 0x1E */
+	u16	model_cfg;	/* 0xDB */
 
 	/* MG3 config */
 	u16	at_rate;	/* 0x04 */

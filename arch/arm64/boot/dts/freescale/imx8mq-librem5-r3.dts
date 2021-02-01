@@ -45,10 +45,12 @@
 			"0",  "0", "-1";
 };
 
+&bat {
+	maxim,battery-capacity = <3400000>; /* uAh */
+};
+
 &bq25895 {
-	ti,battery-regulation-voltage = <4200000>; /* uV */
 	ti,charge-current = <1500000>; /* uA */
-	ti,termination-current = <144000>;  /* uA */
 };
 
 &buck3_reg {

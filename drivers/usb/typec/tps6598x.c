@@ -6,8 +6,13 @@
  * Author: Heikki Krogerus <heikki.krogerus@linux.intel.com>
  */
 
+#include "tps6598x.h"
+
+#include <linux/debugfs.h>
 #include <linux/i2c.h>
 #include <linux/acpi.h>
+#include <linux/extcon.h>
+#include <linux/extcon-provider.h>
 #include <linux/module.h>
 #include <linux/power_supply.h>
 #include <linux/regmap.h>
@@ -15,9 +20,13 @@
 #include <linux/usb/typec.h>
 #include <linux/usb/role.h>
 
+#define CREATE_TRACE_POINTS
+#include "tps6598x_trace.h"
+
 /* Register offsets */
 #define TPS_REG_VID			0x00
 #define TPS_REG_MODE			0x03
+#define TPS_REG_CUSTOMER_USE		0x06
 #define TPS_REG_CMD1			0x08
 #define TPS_REG_DATA1			0x09
 #define TPS_REG_INT_EVENT1		0x14
@@ -29,18 +38,15 @@
 #define TPS_REG_STATUS			0x1a
 #define TPS_REG_SYSTEM_CONF		0x28
 #define TPS_REG_CTRL_CONF		0x29
+#define TPS_REG_ACTIVE_CONTRACT		0x34
 #define TPS_REG_POWER_STATUS		0x3f
 #define TPS_REG_RX_IDENTITY_SOP		0x48
+#define TPS_REG_DATA_STATUS		0x5f
 
-/* TPS_REG_INT_* bits */
-#define TPS_REG_INT_PLUG_EVENT		BIT(3)
-
-/* TPS_REG_STATUS bits */
-#define TPS_STATUS_PLUG_PRESENT		BIT(0)
-#define TPS_STATUS_ORIENTATION		BIT(4)
-#define TPS_STATUS_PORTROLE(s)		(!!((s) & BIT(5)))
-#define TPS_STATUS_DATAROLE(s)		(!!((s) & BIT(6)))
-#define TPS_STATUS_VCONN(s)		(!!((s) & BIT(7)))
+#define TPS_USB_500mA	  500000
+#define TPS_TYPEC_1500mA 1500000
+#define TPS_TYPEC_3000mA 3000000
+#define TPS_USB_5V	 5000000
 
 /* TPS_REG_SYSTEM_CONF bits */
 #define TPS_SYSCONF_PORTINFO(c)		((c) & 7)
@@ -54,11 +60,6 @@ enum {
 	TPS_PORTINFO_DRP_DFP_DRD,
 	TPS_PORTINFO_SOURCE,
 };
-
-/* TPS_REG_POWER_STATUS bits */
-#define TPS_POWER_STATUS_CONNECTION	BIT(0)
-#define TPS_POWER_STATUS_SOURCESINK	BIT(1)
-#define TPS_POWER_STATUS_PWROPMODE(p)	(((p) & GENMASK(3, 2)) >> 2)
 
 /* TPS_REG_RX_IDENTITY_SOP */
 struct tps6598x_rx_identity_reg {
@@ -103,11 +104,24 @@ struct tps6598x {
 	struct power_supply *psy;
 	struct power_supply_desc psy_desc;
 	enum power_supply_usb_type usb_type;
+
+	struct tps6598x_pdo terms;
+
+	u32 data_status;
+	u16 pwr_status;
+	bool dp;
+	struct extcon_dev *extcon;
+#ifdef CONFIG_DEBUG_FS
+	struct dentry *dev_dentry;
+	struct dentry *customer_user_dentry;
+#endif
 };
 
 static enum power_supply_property tps6598x_psy_props[] = {
 	POWER_SUPPLY_PROP_USB_TYPE,
 	POWER_SUPPLY_PROP_ONLINE,
+	POWER_SUPPLY_PROP_CURRENT_MAX,
+	POWER_SUPPLY_PROP_VOLTAGE_MAX,
 };
 
 static enum power_supply_usb_type tps6598x_psy_usb_types[] = {
@@ -228,21 +242,72 @@ static void tps6598x_set_data_role(struct tps6598x *tps,
 	typec_set_data_role(tps->port, role);
 }
 
+#ifdef CONFIG_DEBUG_FS
+static struct dentry *rootdir;
+
+static int tps6598x_debug_customer_use_show(struct seq_file *s, void *v)
+{
+	struct tps6598x *tps = (struct tps6598x *)s->private;
+	u64 mode64;
+	int ret;
+
+	mutex_lock(&tps->lock);
+
+	ret =  tps6598x_block_read(tps, TPS_REG_CUSTOMER_USE, &mode64, sizeof(mode64));
+	if (!ret)
+		seq_printf(s, "0x%016llx\n", mode64);
+
+	mutex_unlock(&tps->lock);
+
+	return 0;
+}
+DEFINE_SHOW_ATTRIBUTE(tps6598x_debug_customer_use);
+
+static void tps6598x_debugfs_init(struct tps6598x *tps)
+{
+	struct dentry *dentry;
+
+	if (!rootdir)
+		rootdir = debugfs_create_dir("tps6598x", NULL);
+
+	dentry = debugfs_create_dir(dev_name(tps->dev), rootdir);
+	if (IS_ERR(dentry))
+		return;
+	tps->dev_dentry = dentry;
+
+	dentry = debugfs_create_file("customer_use",
+				     S_IFREG | 0444, tps->dev_dentry,
+				     tps, &tps6598x_debug_customer_use_fops);
+	if (IS_ERR(dentry))
+		return;
+	tps->customer_user_dentry = dentry;
+}
+
+static void tps6598x_debugfs_exit(struct tps6598x *tps)
+{
+	debugfs_remove(tps->customer_user_dentry);
+	debugfs_remove(tps->dev_dentry);
+	debugfs_remove(rootdir);
+	rootdir = NULL;
+}
+
+#else
+
+static void tps6598x_debugfs_init(const struct tps6598x *tps) { }
+static void tps6598x_debugfs_exit(const struct tps6598x *tps) { }
+
+#endif
+
 static int tps6598x_connect(struct tps6598x *tps, u32 status)
 {
 	struct typec_partner_desc desc;
 	enum typec_pwr_opmode mode;
-	u16 pwr_status;
 	int ret;
 
 	if (tps->partner)
 		return 0;
 
-	ret = tps6598x_read16(tps, TPS_REG_POWER_STATUS, &pwr_status);
-	if (ret < 0)
-		return ret;
-
-	mode = TPS_POWER_STATUS_PWROPMODE(pwr_status);
+	mode = TPS_POWER_STATUS_PWROPMODE(tps->pwr_status);
 
 	desc.usb_pd = mode == TYPEC_PWR_MODE_PD;
 	desc.accessory = TYPEC_ACCESSORY_NONE; /* XXX: handle accessories */
@@ -256,9 +321,9 @@ static int tps6598x_connect(struct tps6598x *tps, u32 status)
 	}
 
 	typec_set_pwr_opmode(tps->port, mode);
-	typec_set_pwr_role(tps->port, TPS_STATUS_PORTROLE(status));
-	typec_set_vconn_role(tps->port, TPS_STATUS_VCONN(status));
-	tps6598x_set_data_role(tps, TPS_STATUS_DATAROLE(status), true);
+	typec_set_pwr_role(tps->port, TPS_STATUS_TO_TYPEC_PORTROLE(status));
+	typec_set_vconn_role(tps->port, TPS_STATUS_TO_TYPEC_VCONN(status));
+	tps6598x_set_data_role(tps, TPS_STATUS_TO_TYPEC_DATAROLE(status), true);
 
 	tps->partner = typec_register_partner(tps->port, &desc);
 	if (IS_ERR(tps->partner))
@@ -272,15 +337,36 @@ static int tps6598x_connect(struct tps6598x *tps, u32 status)
 	return 0;
 }
 
+static int
+tps6598x_update_data_status(struct tps6598x *tps, u32 status)
+{
+	bool dp;
+
+	tps6598x_set_data_role(tps, TPS_STATUS_TO_TYPEC_DATAROLE(status),
+			       !!(tps->data_status & TPS_DATA_STATUS_DATA_CONNECTION));
+	trace_tps6598x_data_status(tps->data_status);
+
+	dp = !!(tps->data_status & TPS_DATA_STATUS_DP_CONNECTION);
+	if (tps->dp != dp) {
+		tps->dp = dp;
+		extcon_set_state_sync(tps->extcon, EXTCON_DISP_DP, tps->dp);
+		extcon_sync(tps->extcon, EXTCON_DISP_DP);
+	}
+	return 0;
+}
+
 static void tps6598x_disconnect(struct tps6598x *tps, u32 status)
 {
 	if (!IS_ERR(tps->partner))
 		typec_unregister_partner(tps->partner);
 	tps->partner = NULL;
 	typec_set_pwr_opmode(tps->port, TYPEC_PWR_MODE_USB);
-	typec_set_pwr_role(tps->port, TPS_STATUS_PORTROLE(status));
-	typec_set_vconn_role(tps->port, TPS_STATUS_VCONN(status));
-	tps6598x_set_data_role(tps, TPS_STATUS_DATAROLE(status), false);
+	typec_set_pwr_role(tps->port, TPS_STATUS_TO_TYPEC_PORTROLE(status));
+	typec_set_vconn_role(tps->port, TPS_STATUS_TO_TYPEC_VCONN(status));
+	tps6598x_set_data_role(tps, TPS_STATUS_TO_TYPEC_DATAROLE(status), false);
+
+	memset(&tps->terms, 0, sizeof(struct tps6598x_pdo));
+
 	power_supply_changed(tps->psy);
 }
 
@@ -364,12 +450,10 @@ static int tps6598x_dr_set(struct typec_port *port, enum typec_data_role role)
 	if (ret)
 		goto out_unlock;
 
-	if (role != TPS_STATUS_DATAROLE(status)) {
+	if (role != TPS_STATUS_TO_TYPEC_DATAROLE(status)) {
 		ret = -EPROTO;
 		goto out_unlock;
 	}
-
-	tps6598x_set_data_role(tps, role, true);
 
 out_unlock:
 	mutex_unlock(&tps->lock);
@@ -394,7 +478,7 @@ static int tps6598x_pr_set(struct typec_port *port, enum typec_role role)
 	if (ret)
 		goto out_unlock;
 
-	if (role != TPS_STATUS_PORTROLE(status)) {
+	if (role != TPS_STATUS_TO_TYPEC_PORTROLE(status)) {
 		ret = -EPROTO;
 		goto out_unlock;
 	}
@@ -412,12 +496,55 @@ static const struct typec_operations tps6598x_ops = {
 	.pr_set = tps6598x_pr_set,
 };
 
+static int tps6598x_get_active_pd_contract(struct tps6598x *tps)
+{
+	u64 contract;
+	int type;
+	int max_power;
+	int ret = 0;
+
+	ret = tps6598x_block_read(tps, TPS_REG_ACTIVE_CONTRACT, &contract, 6);
+	if (ret)
+		return ret;
+
+	contract &= 0xFFFFFFFFFFFF;
+	type = TPS_PDO_CONTRACT_TYPE(contract);
+	memset(&tps->terms, 0, sizeof(struct tps6598x_pdo));
+
+	/* If there's no PD it decodes to all 0 */
+	switch (type) {
+	case TPS_PDO_CONTRACT_FIXED:
+		tps->terms.max_voltage = TPS_PDO_FIXED_CONTRACT_VOLTAGE(contract);
+		tps->terms.max_current = TPS_PDO_FIXED_CONTRACT_MAX_CURRENT(contract);
+		break;
+	case TPS_PDO_CONTRACT_BATTERY:
+		tps->terms.max_voltage = TPS_PDO_BAT_CONTRACT_MAX_VOLTAGE(contract);
+		max_power = TPS_PDO_BAT_CONTRACT_MAX_POWER(contract);
+		tps->terms.max_current = 1000 * 1000 * max_power / tps->terms.max_voltage;
+		break;
+	case TPS_PDO_CONTRACT_VARIABLE:
+		tps->terms.max_voltage = TPS_PDO_VAR_CONTRACT_MAX_VOLTAGE(contract);
+		tps->terms.max_current = TPS_PDO_VAR_CONTRACT_MAX_CURRENT(contract);
+		break;
+	default:
+		dev_warn(tps->dev, "Unknown contract type: %d\n", type);
+		return -EINVAL;
+	}
+
+	tps->terms.pdo = contract;
+	trace_tps6598x_pdo(&tps->terms);
+
+	return 0;
+}
+
 static irqreturn_t tps6598x_interrupt(int irq, void *data)
 {
 	struct tps6598x *tps = data;
 	u64 event1;
 	u64 event2;
-	u32 status;
+	u32 status, data_status;
+	u16 pwr_status;
+	bool psy_changed = false;
 	int ret;
 
 	mutex_lock(&tps->lock);
@@ -428,11 +555,42 @@ static irqreturn_t tps6598x_interrupt(int irq, void *data)
 		dev_err(tps->dev, "%s: failed to read events\n", __func__);
 		goto err_unlock;
 	}
+	trace_tps6598x_irq(event1, event2);
 
 	ret = tps6598x_read32(tps, TPS_REG_STATUS, &status);
 	if (ret) {
 		dev_err(tps->dev, "%s: failed to read status\n", __func__);
 		goto err_clear_ints;
+	}
+	trace_tps6598x_status(status);
+
+	if ((event1 | event2) & TPS_REG_INT_POWER_STATUS_UPDATE) {
+		ret = tps6598x_read16(tps, TPS_REG_POWER_STATUS, &pwr_status);
+		if (ret < 0) {
+			dev_err(tps->dev, "failed to read power status: %d\n", ret);
+			goto err_clear_ints;
+		}
+		tps->pwr_status = pwr_status;
+		psy_changed = true;
+		trace_tps6598x_power_status(pwr_status);
+	}
+
+	if ((event1 | event2) & TPS_REG_INT_DATA_STATUS_UPDATE) {
+		ret = tps6598x_read32(tps, TPS_REG_DATA_STATUS, &data_status);
+		if (ret < 0) {
+			dev_err(tps->dev, "failed to read data status: %d\n", ret);
+			goto err_clear_ints;
+		}
+		tps->data_status = data_status;
+		tps6598x_update_data_status(tps, status);
+	}
+
+	if ((event1 | event2) & TPS_REG_INT_NEW_CONTRACT_AS_CONSUMER) {
+		if (tps6598x_get_active_pd_contract(tps) < 0) {
+			dev_err(tps->dev, "failed to read pd contract: %d\n", ret);
+			goto err_clear_ints;
+		}
+		psy_changed = true;
 	}
 
 	/* Handle plug insert or removal */
@@ -447,12 +605,20 @@ static irqreturn_t tps6598x_interrupt(int irq, void *data)
 		}
 	}
 
+	if ((event1 | event2) & TPS_REG_INT_HARD_RESET) {
+		memset(&tps->terms, 0, sizeof(struct tps6598x_pdo));
+		psy_changed = true;
+	}
+
 err_clear_ints:
 	tps6598x_write64(tps, TPS_REG_INT_CLEAR1, event1);
 	tps6598x_write64(tps, TPS_REG_INT_CLEAR2, event2);
 
 err_unlock:
 	mutex_unlock(&tps->lock);
+
+	if (psy_changed)
+		power_supply_changed(tps->psy);
 
 	return IRQ_HANDLED;
 }
@@ -492,18 +658,54 @@ static const struct regmap_config tps6598x_regmap_config = {
 static int tps6598x_psy_get_online(struct tps6598x *tps,
 				   union power_supply_propval *val)
 {
-	int ret;
-	u16 pwr_status;
-
-	ret = tps6598x_read16(tps, TPS_REG_POWER_STATUS, &pwr_status);
-	if (ret < 0)
-		return ret;
-
-	if ((pwr_status & TPS_POWER_STATUS_CONNECTION) &&
-	    (pwr_status & TPS_POWER_STATUS_SOURCESINK)) {
+	if (TPS_POWER_STATUS_CONNECTION(tps->pwr_status) &&
+	    TPS_POWER_STATUS_SOURCESINK(tps->pwr_status)) {
 		val->intval = 1;
 	} else {
 		val->intval = 0;
+	}
+
+	return 0;
+}
+
+static int tps6598x_psy_get_max_current(struct tps6598x *tps,
+					union power_supply_propval *val)
+{
+	enum typec_pwr_opmode mode;
+
+	mode = TPS_POWER_STATUS_PWROPMODE(tps->pwr_status);
+	switch (mode) {
+	case TYPEC_PWR_MODE_1_5A:
+		val->intval = TPS_TYPEC_1500mA;
+		break;
+	case TYPEC_PWR_MODE_3_0A:
+		val->intval = TPS_TYPEC_3000mA;
+		break;
+	case TYPEC_PWR_MODE_PD:
+		val->intval = tps->terms.max_current ?: TPS_USB_500mA;
+		break;
+	default:
+	case TYPEC_PWR_MODE_USB:
+		val->intval = TPS_USB_500mA;
+	}
+	return 0;
+}
+
+static int tps6598x_psy_get_max_voltage(struct tps6598x *tps,
+					union power_supply_propval *val)
+{
+	enum typec_pwr_opmode mode;
+
+	mode = TPS_POWER_STATUS_PWROPMODE(tps->pwr_status);
+	switch (mode) {
+	case TYPEC_PWR_MODE_PD:
+		val->intval = tps->terms.max_voltage ?: TPS_USB_5V;
+		break;
+	default:
+	case TYPEC_PWR_MODE_1_5A:
+	case TYPEC_PWR_MODE_3_0A:
+	case TYPEC_PWR_MODE_USB:
+		val->intval = TPS_USB_5V;
 	}
 	return 0;
 }
@@ -513,21 +715,23 @@ static int tps6598x_psy_get_prop(struct power_supply *psy,
 				 union power_supply_propval *val)
 {
 	struct tps6598x *tps = power_supply_get_drvdata(psy);
-	u16 pwr_status;
 	int ret = 0;
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_USB_TYPE:
-		ret = tps6598x_read16(tps, TPS_REG_POWER_STATUS, &pwr_status);
-		if (ret < 0)
-			return ret;
-		if (TPS_POWER_STATUS_PWROPMODE(pwr_status) == TYPEC_PWR_MODE_PD)
+		if (TPS_POWER_STATUS_PWROPMODE(tps->pwr_status) == TYPEC_PWR_MODE_PD)
 			val->intval = POWER_SUPPLY_USB_TYPE_PD;
 		else
 			val->intval = POWER_SUPPLY_USB_TYPE_C;
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
 		ret = tps6598x_psy_get_online(tps, val);
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		ret = tps6598x_psy_get_max_current(tps, val);
+		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		ret = tps6598x_psy_get_max_voltage(tps, val);
 		break;
 	default:
 		ret = -EINVAL;
@@ -565,6 +769,11 @@ static int devm_tps6598_psy_register(struct tps6598x *tps)
 					       &psy_cfg);
 	return PTR_ERR_OR_ZERO(tps->psy);
 }
+
+static const unsigned int tps6598x_extcon_cable[] = {
+	EXTCON_DISP_DP,
+	EXTCON_NONE,
+};
 
 static int tps6598x_probe(struct i2c_client *client)
 {
@@ -609,6 +818,7 @@ static int tps6598x_probe(struct i2c_client *client)
 	ret = tps6598x_read32(tps, TPS_REG_STATUS, &status);
 	if (ret < 0)
 		return ret;
+	trace_tps6598x_status(status);
 
 	ret = tps6598x_read32(tps, TPS_REG_SYSTEM_CONF, &conf);
 	if (ret < 0)
@@ -670,7 +880,29 @@ static int tps6598x_probe(struct i2c_client *client)
 	}
 	fwnode_handle_put(fwnode);
 
+	tps->extcon = devm_extcon_dev_allocate(tps->dev, tps6598x_extcon_cable);
+	if (IS_ERR(tps->extcon)) {
+		dev_err(tps->dev, "failed to allocate memory for extcon\n");
+		ret = PTR_ERR(tps->extcon);
+		goto err_role_put;
+	}
+
+	/* Register extcon device */
+	ret = devm_extcon_dev_register(tps->dev, tps->extcon);
+	if (ret) {
+		dev_err(tps->dev, "failed to register extcon device: %d\n", ret);
+		goto err_role_put;
+	}
+
+	/* set initial state */
+	extcon_set_state_sync(tps->extcon, EXTCON_DISP_DP, false);
+
 	if (status & TPS_STATUS_PLUG_PRESENT) {
+		ret = tps6598x_read16(tps, TPS_REG_POWER_STATUS, &tps->pwr_status);
+		if (ret < 0) {
+			dev_err(tps->dev, "failed to read power status: %d\n", ret);
+			goto err_role_put;
+		}
 		ret = tps6598x_connect(tps, status);
 		if (ret)
 			dev_err(&client->dev, "failed to register partner\n");
@@ -687,6 +919,7 @@ static int tps6598x_probe(struct i2c_client *client)
 	}
 
 	i2c_set_clientdata(client, tps);
+	tps6598x_debugfs_init(tps);
 
 	return 0;
 
@@ -702,6 +935,7 @@ static int tps6598x_remove(struct i2c_client *client)
 {
 	struct tps6598x *tps = i2c_get_clientdata(client);
 
+	tps6598x_debugfs_exit(tps);
 	tps6598x_disconnect(tps, 0);
 	typec_unregister_port(tps->port);
 	usb_role_switch_put(tps->role_sw);

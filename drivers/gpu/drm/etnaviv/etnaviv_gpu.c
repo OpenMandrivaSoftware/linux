@@ -1815,7 +1815,7 @@ static int etnaviv_gpu_platform_probe(struct platform_device *pdev)
 	 * yet been performed to determine an appropriate value.
 	 */
 	pm_runtime_use_autosuspend(gpu->dev);
-	pm_runtime_set_autosuspend_delay(gpu->dev, 200);
+	pm_runtime_set_autosuspend_delay(gpu->dev, 50);
 	pm_runtime_enable(gpu->dev);
 
 	err = component_add(&pdev->dev, &gpu_ops);

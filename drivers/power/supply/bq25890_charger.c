@@ -14,6 +14,7 @@
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include <linux/usb/phy.h>
+#include <linux/regulator/consumer.h>
 
 #include <linux/acpi.h>
 #include <linux/of.h>
@@ -82,6 +83,9 @@ struct bq25890_init_data {
 	u8 boosti;	/* boost current limit		*/
 	u8 boostf;	/* boost frequency		*/
 	u8 ilim_en;	/* enable ILIM pin		*/
+	u8 auto_dpdm_en;	/* enable auto_dpdm - enabled is the default */
+	u8 force_vindpm;/* force vinmin threshold       */
+	u8 vindpm;	/* vinmin threshold             */
 	u8 treg;	/* thermal regulation threshold */
 	u8 rbatcomp;	/* IBAT sense resistor value    */
 	u8 vclamp;	/* IBAT compensation voltage limit */
@@ -113,7 +117,12 @@ struct bq25890_device {
 	struct bq25890_init_data init_data;
 	struct bq25890_state state;
 
+	/* ocv capacity table */
+	struct power_supply_battery_ocv_table *cap_table;
+	int table_len;
+
 	struct mutex lock; /* protect state data */
+	struct gpio_desc *otg_en;
 };
 
 static const struct regmap_range bq25890_readonly_reg_ranges[] = {
@@ -262,6 +271,8 @@ enum bq25890_table_ids {
 	TBL_SYSVMIN,
 	TBL_VBATCOMP,
 	TBL_RBATCOMP,
+	TBL_FORCE_VINDPM,
+	TBL_VINDPM,
 
 	/* lookup tables */
 	TBL_TREG,
@@ -305,6 +316,8 @@ static const union {
 	[TBL_SYSVMIN] = { .rt = {3000000, 3700000, 100000} },	 /* uV */
 	[TBL_VBATCOMP] ={ .rt = {0,        224000, 32000} },	 /* uV */
 	[TBL_RBATCOMP] ={ .rt = {0,        140000, 20000} },	 /* uOhm */
+	[TBL_FORCE_VINDPM] = { .rt = {0,	1,	1} },	 /* on/off */
+	[TBL_VINDPM] =	{ .rt = {2600000, 15300000, 100000} },	 /* uV */
 
 	/* lookup tables */
 	[TBL_TREG] =	{ .lt = {bq25890_treg_tbl, BQ25890_TREG_TBL_SIZE} },
@@ -404,7 +417,7 @@ static int bq25890_power_supply_get_property(struct power_supply *psy,
 	struct bq25890_device *bq = power_supply_get_drvdata(psy);
 	struct bq25890_state state;
 	bool do_adc_conv;
-	int ret;
+	int ret, ocv;
 
 	mutex_lock(&bq->lock);
 	/* update state in case we lost an interrupt */
@@ -528,6 +541,21 @@ static int bq25890_power_supply_get_property(struct power_supply *psy,
 		val->intval = ret * -50000;
 		break;
 
+	case POWER_SUPPLY_PROP_CAPACITY:
+		if (!bq->cap_table)
+			return -ENODEV;
+
+		ret = bq25890_field_read(bq, F_SYSV); /* read measured value */
+		if (ret < 0)
+			return ret;
+
+		/* converted_val = 2.304V + ADC_val * 20mV (table 10.3.15) */
+		ocv = 2304000 + ret * 20000;
+		val->intval = power_supply_ocv2cap_simple(bq->cap_table,
+							  bq->table_len, ocv);
+		dev_info(bq->dev, "Capacity for %d is %d%%", ocv, val->intval);
+		break;
+
 	default:
 		return -EINVAL;
 	}
@@ -581,11 +609,14 @@ static irqreturn_t __bq25890_handle_irq(struct bq25890_device *bq)
 
 	if (!new_state.online && bq->state.online) {	    /* power removed */
 		/* disable ADC */
-		ret = bq25890_field_write(bq, F_CONV_START, 0);
+		ret = bq25890_field_write(bq, F_CONV_RATE, 0);
 		if (ret < 0)
 			goto error;
 	} else if (new_state.online && !bq->state.online) { /* power inserted */
 		/* enable ADC, to have control of charge current/voltage */
+		ret = bq25890_field_write(bq, F_CONV_RATE, 1);
+		if (ret < 0)
+			goto error;
 		ret = bq25890_field_write(bq, F_CONV_START, 1);
 		if (ret < 0)
 			goto error;
@@ -657,6 +688,9 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 		{F_TREG,	 bq->init_data.treg},
 		{F_BATCMP,	 bq->init_data.rbatcomp},
 		{F_VCLAMP,	 bq->init_data.vclamp},
+		{F_AUTO_DPDM_EN, bq->init_data.auto_dpdm_en},
+		{F_FORCE_VINDPM, bq->init_data.force_vindpm},
+		{F_VINDPM,	 bq->init_data.vindpm},
 	};
 
 	ret = bq25890_chip_reset(bq);
@@ -688,6 +722,11 @@ static int bq25890_hw_init(struct bq25890_device *bq)
 		dev_dbg(bq->dev, "Config ADC failed %d\n", ret);
 		return ret;
 	}
+	ret = bq25890_field_write(bq, F_CONV_START, 1);
+	if (ret < 0) {
+		dev_dbg(bq->dev, "Config ADC failed %d\n", ret);
+		return ret;
+	}
 
 	ret = bq25890_get_chip_state(bq, &bq->state);
 	if (ret < 0) {
@@ -713,11 +752,67 @@ static const enum power_supply_property bq25890_power_supply_props[] = {
 	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
+	POWER_SUPPLY_PROP_CAPACITY,
 };
 
 static char *bq25890_charger_supplied_to[] = {
 	"main-battery",
 };
+
+
+static void bq25890_external_power_changed(struct power_supply *psy)
+{
+	struct bq25890_device *bq = power_supply_get_drvdata(psy);
+	bool supplied;
+	int ret, max_current = 500; /* mA, save default */
+	struct power_supply *psy_supply;
+	union power_supply_propval val;
+
+	supplied = power_supply_am_i_supplied(bq->charger);
+	dev_info(bq->dev, "Upstream supply changed: %d.\n", supplied);
+
+	psy_supply = power_supply_get_by_name(*bq->charger->supplied_from);
+	if (IS_ERR(psy_supply)) {
+		dev_err(bq->dev, "Failed to get upstream supply: %ld\n", PTR_ERR(psy_supply));
+		return;
+	}
+
+	if (supplied) {
+		if (bq->otg_en) {
+			dev_info(bq->dev, "Disabling OTG_EN pin\n");
+			gpiod_set_value_cansleep(bq->otg_en, 0);
+		}
+		ret = bq25890_field_write(bq, F_OTG_CFG, 0);
+		if (ret < 0)
+			dev_err(bq->dev, "Failed to disable otg: %d\n", ret);
+
+		if (!power_supply_get_property(psy_supply, POWER_SUPPLY_PROP_CURRENT_MAX, &val))
+			max_current = val.intval / 1000;
+		else
+			dev_err(bq->dev, "Failed to get supply current\n");
+
+		/* Just as a safety net for now */
+		if (max_current < 100 || max_current > 3000) {
+			dev_err(bq->dev, "Max_current out of range: %d\n", max_current);
+			max_current = 500;
+		}
+		dev_dbg(bq->dev, "Setting max current to %dmA\n", max_current);
+		ret = bq25890_field_write(bq, F_IILIM, (max_current-100)/50);
+		if (ret < 0)
+			dev_err(bq->dev, "Failed to set IILIM: %d\n", ret);
+	} else {
+		if (bq->otg_en) {
+			dev_info(bq->dev, "Enabling OTG_EN pin\n");
+			gpiod_set_value_cansleep(bq->otg_en, 1);
+		}
+		ret = bq25890_field_write(bq, F_OTG_CFG, 1);
+		if (ret < 0)
+			dev_err(bq->dev, "Failed to enable otg: %d\n", ret);
+	}
+
+	power_supply_changed(bq->charger);
+}
+
 
 static const struct power_supply_desc bq25890_power_supply_desc = {
 	.name = "bq25890-charger",
@@ -725,6 +820,7 @@ static const struct power_supply_desc bq25890_power_supply_desc = {
 	.properties = bq25890_power_supply_props,
 	.num_properties = ARRAY_SIZE(bq25890_power_supply_props),
 	.get_property = bq25890_power_supply_get_property,
+	.external_power_changed	= bq25890_external_power_changed,
 };
 
 static int bq25890_power_supply_init(struct bq25890_device *bq)
@@ -733,6 +829,7 @@ static int bq25890_power_supply_init(struct bq25890_device *bq)
 
 	psy_cfg.supplied_to = bq25890_charger_supplied_to;
 	psy_cfg.num_supplicants = ARRAY_SIZE(bq25890_charger_supplied_to);
+	psy_cfg.of_node = bq->dev->of_node;
 
 	bq->charger = power_supply_register(bq->dev, &bq25890_power_supply_desc,
 					    &psy_cfg);
@@ -870,6 +967,8 @@ static int bq25890_fw_read_u32_props(struct bq25890_device *bq)
 		{"ti,thermal-regulation-threshold", true, TBL_TREG, &init->treg},
 		{"ti,ibatcomp-micro-ohms", true, TBL_RBATCOMP, &init->rbatcomp},
 		{"ti,ibatcomp-clamp-microvolt", true, TBL_VBATCOMP, &init->vclamp},
+		{"ti,use-vinmin-threshold", true, TBL_FORCE_VINDPM, &init->force_vindpm},
+		{"ti,vinmin-threshold", true, TBL_VINDPM, &init->vindpm},
 	};
 
 	/* initialize data for optional properties */
@@ -907,7 +1006,38 @@ static int bq25890_fw_probe(struct bq25890_device *bq)
 
 	init->ilim_en = device_property_read_bool(bq->dev, "ti,use-ilim-pin");
 	init->boostf = device_property_read_bool(bq->dev, "ti,boost-low-freq");
+	/* use the inverse so that we don't change the default behaviour */
+	init->auto_dpdm_en = !device_property_read_bool(bq->dev, "ti,auto_dpdm_disable");
 
+	return 0;
+}
+
+static int bq25890_battery_init(struct bq25890_device *bq)
+{
+	struct power_supply_battery_ocv_table *table;
+	struct power_supply_battery_info info = {};
+	int ret;
+
+	/* battery information is optional */
+	ret = power_supply_get_battery_info(bq->charger, &info);
+	if (ret < 0) {
+		dev_info(bq->dev, "No battery found: %d", ret);
+		return 0;
+	}
+
+	/* We use a single OCV table at 20 C */
+	table = power_supply_find_ocv2cap_table(&info, 20, &bq->table_len);
+	if (!table)
+		return -EINVAL;
+
+	bq->cap_table = devm_kmemdup(bq->dev, table,
+				     bq->table_len * sizeof(*table),
+				     GFP_KERNEL);
+	if (!bq->cap_table) {
+		power_supply_put_battery_info(bq->charger, &info);
+		return -ENOMEM;
+	}
+	power_supply_put_battery_info(bq->charger, &info);
 	return 0;
 }
 
@@ -984,6 +1114,13 @@ static int bq25890_probe(struct i2c_client *client,
 		bq->usb_nb.notifier_call = bq25890_usb_notifier;
 		usb_register_notifier(bq->usb_phy, &bq->usb_nb);
 	}
+	bq->otg_en = devm_gpiod_get_optional(&client->dev, "otg", GPIOD_OUT_LOW);
+	if (IS_ERR(bq->otg_en))
+		return PTR_ERR(bq->otg_en);
+	else if (bq->otg_en) {
+		dev_info(dev, "Got otg gpio hack");
+	} else
+		dev_info(dev, "No otg gpio found");
 
 	ret = devm_request_threaded_irq(dev, client->irq, NULL,
 					bq25890_irq_handler_thread,
@@ -998,8 +1135,16 @@ static int bq25890_probe(struct i2c_client *client,
 		goto irq_fail;
 	}
 
+	ret = bq25890_battery_init(bq);
+	if (ret < 0) {
+		dev_err(dev, "Failed get battery information\n");
+		goto battery_fail;
+	}
+
 	return 0;
 
+battery_fail:
+	power_supply_unregister(bq->charger);
 irq_fail:
 	if (!IS_ERR_OR_NULL(bq->usb_phy))
 		usb_unregister_notifier(bq->usb_phy, &bq->usb_nb);
