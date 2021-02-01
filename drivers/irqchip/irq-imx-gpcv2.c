@@ -3,11 +3,19 @@
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  */
 
+#include <linux/arm-smccc.h>
+#include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
+#include <linux/mfd/syscon.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/regmap.h>
 #include <linux/slab.h>
 #include <linux/irqchip.h>
 #include <linux/syscore_ops.h>
+#include <linux/smp.h>
+
+#define IMX_SIP_GPC		0xC2000005
+#define IMX_SIP_GPC_CORE_WAKE	0x00
 
 #define IMR_NUM			4
 #define GPC_MAX_IRQS            (IMR_NUM * 32)
@@ -31,6 +39,24 @@ static struct gpcv2_irqchip_data *imx_gpcv2_instance;
 static void __iomem *gpcv2_idx_to_reg(struct gpcv2_irqchip_data *cd, int i)
 {
 	return cd->gpc_base + cd->cpu2wakeup + i * 4;
+}
+
+static void __iomem *gpcv2_idx_to_reg_cpu(struct gpcv2_irqchip_data *cd,
+					int i, int cpu)
+{
+	u32 offset =  GPC_IMR1_CORE0;
+	switch(cpu) {
+	case 1:
+		offset = GPC_IMR1_CORE1;
+		break;
+	case 2:
+		offset = GPC_IMR1_CORE2;
+		break;
+	case 3:
+		offset = GPC_IMR1_CORE3;
+		break;
+	}
+	return cd->gpc_base + offset + i * 4;
 }
 
 static int gpcv2_wakeup_source_save(void)
@@ -69,6 +95,39 @@ static struct syscore_ops imx_gpcv2_syscore_ops = {
 	.suspend	= gpcv2_wakeup_source_save,
 	.resume		= gpcv2_wakeup_source_restore,
 };
+
+#ifdef CONFIG_ARM64
+static void (*__gic_v3_smp_cross_call)(const struct cpumask *, unsigned int);
+
+static void imx_gpcv2_raise_softirq(const struct cpumask *mask,
+					  unsigned int irq)
+{
+	struct arm_smccc_res res;
+
+	/* call the hijacked smp cross call handler */
+	__gic_v3_smp_cross_call(mask, irq);
+
+	/* now call into EL3 and take care of the wakeup */
+	arm_smccc_smc(IMX_SIP_GPC, IMX_SIP_GPC_CORE_WAKE,
+			*cpumask_bits(mask), 0, 0, 0, 0, 0, &res);
+}
+
+static void imx_gpcv2_wake_request_fixup(void)
+{
+	struct regmap *iomux_gpr;
+
+	/* hijack the already registered smp cross call handler */
+	__gic_v3_smp_cross_call = __smp_cross_call;
+
+	/* register our workaround handler for smp cross call */
+	set_smp_cross_call(imx_gpcv2_raise_softirq);
+
+	iomux_gpr = syscon_regmap_lookup_by_compatible("fsl,imx6q-iomuxc-gpr");
+	if (!IS_ERR(iomux_gpr))
+		regmap_update_bits(iomux_gpr, IOMUXC_GPR1, IMX6Q_GPR1_GINT,
+					IMX6Q_GPR1_GINT);
+}
+#endif
 
 static int imx_gpcv2_irq_set_wake(struct irq_data *d, unsigned int on)
 {
@@ -124,6 +183,28 @@ static void imx_gpcv2_irq_mask(struct irq_data *d)
 	irq_chip_mask_parent(d);
 }
 
+static int imx_gpcv2_irq_set_affinity(struct irq_data *d,
+				 const struct cpumask *dest, bool force)
+{
+	struct gpcv2_irqchip_data *cd = d->chip_data;
+	void __iomem *reg;
+	u32 val;
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		raw_spin_lock(&cd->rlock);
+		reg = gpcv2_idx_to_reg_cpu(cd, d->hwirq / 32, cpu);
+		val = readl_relaxed(reg);
+		val |= BIT(d->hwirq % 32);
+		if (cpumask_test_cpu(cpu, dest))
+			val &= ~BIT(d->hwirq % 32);
+		writel_relaxed(val, reg);
+		raw_spin_unlock(&cd->rlock);
+	}
+
+	return irq_chip_set_affinity_parent(d, dest, force);
+}
+
 static struct irq_chip gpcv2_irqchip_data_chip = {
 	.name			= "GPCv2",
 	.irq_eoi		= irq_chip_eoi_parent,
@@ -133,7 +214,7 @@ static struct irq_chip gpcv2_irqchip_data_chip = {
 	.irq_retrigger		= irq_chip_retrigger_hierarchy,
 	.irq_set_type		= irq_chip_set_type_parent,
 #ifdef CONFIG_SMP
-	.irq_set_affinity	= irq_chip_set_affinity_parent,
+	.irq_set_affinity	= imx_gpcv2_irq_set_affinity,
 #endif
 };
 
@@ -266,6 +347,11 @@ static int __init imx_gpcv2_irqchip_init(struct device_node *node,
 		}
 		cd->wakeup_sources[i] = ~0;
 	}
+
+#ifdef CONFIG_ARM64
+	if (of_property_read_bool(node, "broken-wake-request-signals"))
+		imx_gpcv2_wake_request_fixup();
+#endif
 
 	/* Let CORE0 as the default CPU to wake up by GPC */
 	cd->cpu2wakeup = GPC_IMR1_CORE0;
