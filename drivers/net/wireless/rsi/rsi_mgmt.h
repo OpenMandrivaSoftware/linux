@@ -598,7 +598,14 @@ struct rsi_config_vals {
 	u8 driver_mode;
 	u8 region_code;
 	u8 antenna_sel_val;
-	u8 reserved2[16];
+	u16 dev_peer_dist;
+	u16 dev_bt_feature_bitmap;
+	u16 uart_dbg;
+	u16 features_9116;
+	u16 dev_ble_roles;
+	u16 bt_bdr;
+	u16 dev_anchor_point_gap;
+	u8 reserved2[2];
 } __packed;
 
 /* Packet info flags */
