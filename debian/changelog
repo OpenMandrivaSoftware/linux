@@ -1,3 +1,17 @@
+linux-next-librem5 (5.11.0~rc6+librem5.1) amber-phone; urgency=medium
+
+  [ Angus Ainslie ]
+  * arm64: dts: librem5: protect some partitions of the nor-flash
+
+  [ Guido Günther ]
+  * arm64: dts: librem5: Add interconnect name for DCSS
+
+  [ Martin Kepplinger ]
+  * rebase the l5 tree onto v5.11-rc6
+  * some camera "base" updates
+
+ -- Martin Kepplinger <martin.kepplinger@puri.sm>  Mon, 01 Feb 2021 10:15:08 +0100
+
 linux-next-librem5 (5.11.0~rc5+librem5.2) amber-phone; urgency=medium
 
   [ Martin Kepplinger ]
