@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/display/bridge/mhdp.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Cadence MHDP Encoder
+
+maintainers:
+  - Sandor Yu <Sandoryu@nxp.com>
+
+description: |
+  The MHDP transmitter is a Cadence HD Display TX controller IP
+  with a companion PHY IP.
+  The MHDP supports one or more of the protocols,
+  such as HDMI(1.4 & 2.0), DisplayPort(1.2).
+  switching between the two modes (HDMI and DisplayPort)
+  requires reloading the appropriate FW
+
+  These DT bindings follow the Cadence MHDP TX bindings defined in
+  Documentation/devicetree/bindings/display/bridge/cdns,mhdp.yaml with the
+  following device-specific properties.
+
+Properties:
+  compatible:
+    enum:
+      - nxp,imx8mq-cdns-hdmi
+      - nxp,imx8mq-cdns-dp
+
+  reg: See cdns,mhdp.yaml.
+
+  interrupts: See cdns,mhdp.yaml.
+
+  interrupt-names: See cdns,mhdp.yaml.
+
+  ports: See cdns,mhdp.yaml.
+
+Required:
+  - compatible
+  - reg
+  - interrupts
+  - interrupt-names
+  - ports
+
+Example:
+  - |
+    mhdp: mhdp@32c00000 {
+      compatible = "nxp,imx8mq-cdns-hdmi";
+      reg = <0x32c00000 0x100000>;
+      interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>,
+                   <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
+      interrupt-names = "plug_in", "plug_out";
+
+      ports {
+        mhdp_in: endpoint {
+          remote-endpoint = <&dcss_out>;
+        };
+      };
+    };
