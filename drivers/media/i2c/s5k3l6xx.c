@@ -327,7 +327,7 @@ static const u16 sensor_3l6_setfile_A_4128x3096_30fps[] = {
        0x3C38, 0x0028, 0x02,
        0x393E, 0x4000, 0x02,
 	// the following not present in set B (otherwise identical)
-       0x3C1E, 0x0100, 0x02, // system pll pd (what does it mean?)
+       0x3C1E, 0x0100, 0x02, // system pll pd (what does it mean? power down?)
        0x0100, 0x0100, 0x02, // start streaming
        0x3C1E, 0x0000, 0x02,
 };
