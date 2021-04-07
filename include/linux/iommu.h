@@ -777,6 +777,8 @@ static inline void iommu_dirty_bitmap_record(struct iommu_dirty_bitmap *dirty,
 extern struct iommu_group *pci_device_group(struct device *dev);
 /* Generic device grouping function */
 extern struct iommu_group *generic_device_group(struct device *dev);
+extern void rk_iommu_mask_irq(struct device *dev);
+extern void rk_iommu_unmask_irq(struct device *dev);
 /* FSL-MC device grouping function */
 struct iommu_group *fsl_mc_device_group(struct device *dev);
 extern struct iommu_group *generic_single_device_group(struct device *dev);
@@ -1253,6 +1255,14 @@ static inline ioasid_t iommu_alloc_global_pasid(struct device *dev)
 }
 
 static inline void iommu_free_global_pasid(ioasid_t pasid) {}
+
+static inline void rk_iommu_mask_irq(struct device *dev)
+{
+}
+
+static inline void rk_iommu_unmask_irq(struct device *dev)
+{
+}
 #endif /* CONFIG_IOMMU_API */
 
 /**
