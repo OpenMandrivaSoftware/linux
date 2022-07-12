@@ -1617,13 +1617,13 @@ static int dw_hdmi_qp_setup(struct dw_hdmi_qp *hdmi,
 				drm_scdc_readb(hdmi->ddc, SCDC_SINK_VERSION, &bytes);
 				drm_scdc_writeb(hdmi->ddc, SCDC_SOURCE_VERSION,
 						min_t(u8, bytes, SCDC_MIN_SOURCE_VERSION));
-				drm_scdc_set_high_tmds_clock_ratio(hdmi->ddc, 1);
-				drm_scdc_set_scrambling(hdmi->ddc, 1);
+				drm_scdc_set_high_tmds_clock_ratio((struct drm_connector *)connector, 1);
+				drm_scdc_set_scrambling((struct drm_connector *)connector, 1);
 				hdmi_writel(hdmi, 1, SCRAMB_CONFIG0);
 			} else {
 				if (dw_hdmi_support_scdc(hdmi, &connector->display_info)) {
-					drm_scdc_set_high_tmds_clock_ratio(hdmi->ddc, 0);
-					drm_scdc_set_scrambling(hdmi->ddc, 0);
+					drm_scdc_set_high_tmds_clock_ratio((struct drm_connector *)connector, 0);
+					drm_scdc_set_scrambling((struct drm_connector *)connector, 0);
 				}
 				hdmi_writel(hdmi, 0, SCRAMB_CONFIG0);
 			}
@@ -2059,8 +2059,8 @@ static int dw_hdmi_qp_bridge_attach(struct drm_bridge *bridge,
 
 	drm_connector_helper_add(connector, &dw_hdmi_connector_helper_funcs);
 
-	drm_connector_init(bridge->dev, connector, &dw_hdmi_connector_funcs,
-			   DRM_MODE_CONNECTOR_HDMIA);
+	drm_connector_init_with_ddc(bridge->dev, connector, &dw_hdmi_connector_funcs,
+				    DRM_MODE_CONNECTOR_HDMIA, hdmi->ddc);
 
 	drm_connector_attach_encoder(connector, encoder);
 	dw_hdmi_attach_properties(hdmi);
