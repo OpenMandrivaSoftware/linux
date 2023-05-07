@@ -1087,6 +1087,7 @@ static int mtk_dpi_probe(struct platform_device *pdev)
 static void mtk_dpi_remove(struct platform_device *pdev)
 {
 	component_del(&pdev->dev, &mtk_dpi_component_ops);
+	drm_bridge_remove(&dpi->bridge);
 }
 
 static const struct of_device_id mtk_dpi_of_ids[] = {
