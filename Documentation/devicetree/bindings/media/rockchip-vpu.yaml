@@ -68,6 +68,9 @@ properties:
   iommus:
     maxItems: 1
 
+  resets:
+    maxItems: 4
+
 required:
   - compatible
   - reg
