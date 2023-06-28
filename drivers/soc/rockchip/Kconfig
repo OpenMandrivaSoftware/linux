@@ -34,6 +34,11 @@ config ROCKCHIP_PM_DOMAINS
 
 	  If unsure, say N.
 
+config ROCKCHIP_REGULATOR_COUPLER
+	bool "MediaTek SoC Regulator Coupler" if COMPILE_TEST
+	default ARCH_ROCKCHIP
+	depends on REGULATOR
+
 config ROCKCHIP_DTPM
 	tristate "Rockchip DTPM hierarchy"
 	depends on DTPM && m
