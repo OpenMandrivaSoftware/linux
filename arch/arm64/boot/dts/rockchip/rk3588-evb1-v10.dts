@@ -364,6 +364,7 @@
 	rx_delay = <0x00>;
 	tx_delay = <0x43>;
 	status = "okay";
+	mac-address = [ fe 46 f2 84 84 fe ];
 };
 
 &gpu {
