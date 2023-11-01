@@ -133,6 +133,49 @@ static const struct vop2_video_port_data rk3568_vop_video_ports[] = {
 	},
 };
 
+static const struct vop2_video_port_data rk3588_vop_video_ports[] = {
+	{
+		.id = 0,
+		// .splice_vp_id = 1,
+		// .lut_dma_rid = 1,
+		.feature = VOP_FEATURE_OUTPUT_10BIT,
+		.gamma_lut_len = 1024,
+		.cubic_lut_len = 9 * 9 * 9,
+		// .dclk_max = 600000000,
+		.max_output = { 7680, 4320 },
+		.pre_scan_max_dly = { 76, 65, 65, 54 },
+		.offset = 0xc00,
+	}, {
+		.id = 1,
+		// .lut_dma_rid = 14,
+		.feature = VOP_FEATURE_OUTPUT_10BIT,
+		.gamma_lut_len = 1024,
+		.cubic_lut_len = 9 * 9 * 9,
+		// .dclk_max = 600000000,
+		.max_output = { 4096, 2304 },
+		.pre_scan_max_dly = { 76, 65, 65, 54 },
+		.offset = 0xd00,
+	}, {
+		.id = 2,
+		// .lut_dma_rid = 14,
+		.feature = VOP_FEATURE_OUTPUT_10BIT,
+		.gamma_lut_len = 1024,
+		.cubic_lut_len = 17 * 17 * 17,
+		// .dclk_max = 600000000,
+		.max_output = { 4096, 2304 },
+		.pre_scan_max_dly = { 52, 52, 52, 52 },
+		.offset = 0xe00,
+	}, {
+		.id = 3,
+		// .lut_dma_rid = 14,
+		.gamma_lut_len = 1024,
+		// .dclk_max = 200000000,
+		.max_output = { 2048, 1536 },
+		.pre_scan_max_dly = { 52, 52, 52, 52 },
+		.offset = 0xf00,
+	},
+};
+
 /*
  * rk3568 vop with 2 cluster, 2 esmart win, 2 smart win.
  * Every cluster can work as 4K win or split into two win.
@@ -236,6 +279,174 @@ static const struct vop2_win_data rk3568_vop_win_data[] = {
 	},
 };
 
+/*
+ * rk3588 vop with 4 cluster, 4 esmart win.
+ * Every cluster can work as 4K win or split into two win.
+ * All win in cluster support AFBCD.
+ *
+ * Every esmart win and smart win support 4 Multi-region.
+ *
+ * Scale filter mode:
+ *
+ * * Cluster:  bicubic for horizontal scale up, others use bilinear
+ * * ESmart:
+ *    * nearest-neighbor/bilinear/bicubic for scale up
+ *    * nearest-neighbor/bilinear/average for scale down
+ *
+ * AXI Read ID assignment:
+ * Two AXI bus:
+ * AXI0 is a read/write bus with a higher performance.
+ * AXI1 is a read only bus.
+ *
+ * Every window on a AXI bus must assigned two unique
+ * read id(yrgb_id/uv_id, valid id are 0x1~0xe).
+ *
+ * AXI0:
+ * Cluster0/1, Esmart0/1, WriteBack
+ *
+ * AXI 1:
+ * Cluster2/3, Esmart2/3
+ */
+static const struct vop2_win_data rk3588_vop_win_data[] = {
+	{
+		.name = "Cluster0-win0",
+		.phys_id = ROCKCHIP_VOP2_CLUSTER0,
+		//[CC:] .splice_win_id = ROCKCHIP_VOP2_CLUSTER1,
+		.base = 0x1000,
+		.formats = formats_cluster,
+		.nformats = ARRAY_SIZE(formats_cluster),
+		.format_modifiers = format_modifiers_afbc,
+		.layer_sel_id = 0,
+		.supported_rotations = DRM_MODE_ROTATE_90 | DRM_MODE_ROTATE_270 |
+					DRM_MODE_REFLECT_X | DRM_MODE_REFLECT_Y,
+		.type = DRM_PLANE_TYPE_OVERLAY,
+		// .pd_id = VOP2_PD_CLUSTER0,
+		// .axi_id = 0,
+		// .axi_yrgb_id = 2,
+		// .axi_uv_id = 3,
+		.max_upscale_factor = 4,
+		.max_downscale_factor = 4,
+		.dly = { 4, 26, 29 },
+		//[CC:] WIN_FEATURE_SPLICE_LEFT
+		.feature = WIN_FEATURE_AFBDC | WIN_FEATURE_CLUSTER,
+	}, {
+		.name = "Cluster1-win0",
+		.phys_id = ROCKCHIP_VOP2_CLUSTER1,
+		.base = 0x1200,
+		.formats = formats_cluster,
+		.nformats = ARRAY_SIZE(formats_cluster),
+		.format_modifiers = format_modifiers_afbc,
+		.layer_sel_id = 1,
+		.supported_rotations = DRM_MODE_ROTATE_90 | DRM_MODE_ROTATE_270 |
+					DRM_MODE_REFLECT_X | DRM_MODE_REFLECT_Y,
+		.type = DRM_PLANE_TYPE_OVERLAY,
+		// .pd_id = VOP2_PD_CLUSTER1,
+		// .axi_id = 0,
+		// .axi_yrgb_id = 6,
+		// .axi_uv_id = 7,
+		.max_upscale_factor = 4,
+		.max_downscale_factor = 4,
+		.dly = { 4, 26, 29 },
+		.feature = WIN_FEATURE_AFBDC | WIN_FEATURE_CLUSTER,
+	}, {
+		.name = "Cluster2-win0",
+		.phys_id = ROCKCHIP_VOP2_CLUSTER2,
+		// [CC:] .splice_win_id = ROCKCHIP_VOP2_CLUSTER3,
+		.base = 0x1400,
+		.formats = formats_cluster,
+		.nformats = ARRAY_SIZE(formats_cluster),
+		.format_modifiers = format_modifiers_afbc,
+		.layer_sel_id = 4,
+		.supported_rotations = DRM_MODE_ROTATE_90 | DRM_MODE_ROTATE_270 |
+					DRM_MODE_REFLECT_X | DRM_MODE_REFLECT_Y,
+		.type = DRM_PLANE_TYPE_OVERLAY,
+		// .pd_id = VOP2_PD_CLUSTER2,
+		// .axi_id = 1,
+		// .axi_yrgb_id = 2,
+		// .axi_uv_id = 3,
+		.max_upscale_factor = 4,
+		.max_downscale_factor = 4,
+		.dly = { 4, 26, 29 },
+		//[CC:] WIN_FEATURE_SPLICE_LEFT
+		.feature = WIN_FEATURE_AFBDC | WIN_FEATURE_CLUSTER,
+	}, {
+		.name = "Cluster3-win0",
+		.phys_id = ROCKCHIP_VOP2_CLUSTER3,
+		.base = 0x1600,
+		.formats = formats_cluster,
+		.nformats = ARRAY_SIZE(formats_cluster),
+		.format_modifiers = format_modifiers_afbc,
+		.layer_sel_id = 5,
+		.supported_rotations = DRM_MODE_ROTATE_90 | DRM_MODE_ROTATE_270 |
+					DRM_MODE_REFLECT_X | DRM_MODE_REFLECT_Y,
+		.type = DRM_PLANE_TYPE_OVERLAY,
+		// .pd_id = VOP2_PD_CLUSTER3,
+		// .axi_id = 1,
+		// .axi_yrgb_id = 6,
+		// .axi_uv_id = 7,
+		.max_upscale_factor = 4,
+		.max_downscale_factor = 4,
+		.dly = { 4, 26, 29 },
+		.feature = WIN_FEATURE_AFBDC | WIN_FEATURE_CLUSTER,
+	}, {
+		.name = "Esmart0-win0",
+		.phys_id = ROCKCHIP_VOP2_ESMART0,
+		// [CC:] .splice_win_id = ROCKCHIP_VOP2_ESMART1,
+		.formats = formats_rk356x_esmart,
+		.nformats = ARRAY_SIZE(formats_rk356x_esmart),
+		.format_modifiers = format_modifiers,
+		.base = 0x1800,
+		.layer_sel_id = 2,
+		.supported_rotations = DRM_MODE_REFLECT_Y,
+		.type = DRM_PLANE_TYPE_PRIMARY,
+		// [CC:] .pd_id missing in downstream code
+		// .axi_id = 0,
+		// .axi_yrgb_id = 0x0a,
+		// .axi_uv_id = 0x0b,
+		.max_upscale_factor = 8,
+		.max_downscale_factor = 8,
+		.dly = { 23, 45, 48 },
+		// .feature = WIN_FEATURE_SPLICE_LEFT | WIN_FEATURE_MULTI_AREA,
+	}, {
+		.name = "Esmart2-win0",
+		.phys_id = ROCKCHIP_VOP2_ESMART2,
+		// [CC:] .splice_win_id = ROCKCHIP_VOP2_ESMART3,
+		.formats = formats_rk356x_esmart,
+		.nformats = ARRAY_SIZE(formats_rk356x_esmart),
+		.format_modifiers = format_modifiers,
+		.base = 0x1c00,
+		.layer_sel_id = 6,
+		.supported_rotations = DRM_MODE_REFLECT_Y,
+		.type = DRM_PLANE_TYPE_PRIMARY,
+		// .pd_id = VOP2_PD_ESMART,
+		// .axi_id = 1,
+		// .axi_yrgb_id = 0x0a,
+		// .axi_uv_id = 0x0b,
+		.max_upscale_factor = 8,
+		.max_downscale_factor = 8,
+		.dly = { 23, 45, 48 },
+		// .feature = WIN_FEATURE_SPLICE_LEFT | WIN_FEATURE_MULTI_AREA,
+	}, {
+		.name = "Esmart1-win0",
+		.phys_id = ROCKCHIP_VOP2_ESMART1,
+		.formats = formats_rk356x_esmart,
+		.nformats = ARRAY_SIZE(formats_rk356x_esmart),
+		.format_modifiers = format_modifiers,
+		.base = 0x1a00,
+		.layer_sel_id = 3,
+		.supported_rotations = DRM_MODE_REFLECT_Y,
+		.type = DRM_PLANE_TYPE_PRIMARY,
+		// .pd_id = VOP2_PD_ESMART,
+		// .axi_id = 0,
+		// .axi_yrgb_id = 0x0c,
+		// .axi_uv_id = 0x0d,
+		.max_upscale_factor = 8,
+		.max_downscale_factor = 8,
+		.dly = { 23, 45, 48 },
+		// .feature = WIN_FEATURE_MULTI_AREA,
+	},
+};
+
 static const struct vop2_data rk3566_vop = {
 	.nr_vps = 3,
 	.max_input = { 4096, 2304 },
@@ -248,12 +459,25 @@ static const struct vop2_data rk3566_vop = {
 
 static const struct vop2_data rk3568_vop = {
 	.nr_vps = 3,
-	.max_input = { 4096, 2304 },
-	.max_output = { 4096, 2304 },
+	.max_input = { 4096, 4320 },
+	.max_output = { 4096, 4320 },
 	.vp = rk3568_vop_video_ports,
 	.win = rk3568_vop_win_data,
 	.win_size = ARRAY_SIZE(rk3568_vop_win_data),
 	.soc_id = 3568,
+};
+
+static const struct vop2_data rk3588_vop = {
+	// .feature = VOP_FEATURE_SPLICE,
+	.nr_vps = 4,
+	.max_input = { 4096, 2304 },
+	.max_output = { 4096, 2304 },
+	.vp = rk3588_vop_video_ports,
+	.win = rk3588_vop_win_data,
+	.win_size = ARRAY_SIZE(rk3588_vop_win_data),
+	// .conn = rk3588_conn_if_data,
+	// .nr_conns = ARRAY_SIZE(rk3588_conn_if_data),
+	.soc_id = 3588,
 };
 
 static const struct of_device_id vop2_dt_match[] = {
@@ -263,6 +487,9 @@ static const struct of_device_id vop2_dt_match[] = {
 	}, {
 		.compatible = "rockchip,rk3568-vop",
 		.data = &rk3568_vop,
+	}, {
+		.compatible = "rockchip,rk3588-vop",
+		.data = &rk3588_vop,
 	}, {
 	},
 };

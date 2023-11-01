@@ -3,6 +3,7 @@
  * Copyright © 2021 Intel Corporation
  */
 
+#include "linux/export.h"
 #include <drm/drm_displayid.h>
 #include <drm/drm_edid.h>
 #include <drm/drm_print.h>
@@ -79,6 +80,7 @@ void displayid_iter_edid_begin(const struct drm_edid *drm_edid,
 
 	iter->drm_edid = drm_edid;
 }
+EXPORT_SYMBOL_GPL(displayid_iter_edid_begin);
 
 static const struct displayid_block *
 displayid_iter_block(const struct displayid_iter *iter)
@@ -154,11 +156,13 @@ __displayid_iter_next(struct displayid_iter *iter)
 			return block;
 	}
 }
+EXPORT_SYMBOL_GPL(__displayid_iter_next);
 
 void displayid_iter_end(struct displayid_iter *iter)
 {
 	memset(iter, 0, sizeof(*iter));
 }
+EXPORT_SYMBOL_GPL(displayid_iter_end);
 
 /* DisplayID Structure Version/Revision from the Base Section. */
 u8 displayid_version(const struct displayid_iter *iter)
