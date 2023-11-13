@@ -1237,6 +1237,15 @@
 		#reset-cells = <1>;
 	};
 
+	hclk_vo1: hclk_vo1@fd7c08ec {
+		compatible = "rockchip,rk3588-clock-gate-link";
+		reg = <0 0xfd7c08ec 0 0x10>;
+		clock-names = "link";
+		clocks = <&cru HCLK_VO1USB_TOP_ROOT>;
+		#power-domain-cells = <1>;
+		#clock-cells = <0>;
+	};
+
 	i2c0: i2c@fd880000 {
 		compatible = "rockchip,rk3588-i2c", "rockchip,rk3399-i2c";
 		reg = <0x0 0xfd880000 0x0 0x1000>;
