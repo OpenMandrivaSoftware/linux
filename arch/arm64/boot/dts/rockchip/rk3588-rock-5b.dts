@@ -254,6 +254,7 @@
 
 &hdmi0 {
 	status = "okay";
+	cec-enable = "true";
 };
 
 &hdmi0_in_vp0 {
