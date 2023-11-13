@@ -54,7 +54,7 @@
 		compatible = "rockchip_headset";
 		headset_gpio = <&gpio1 RK_PB7 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&hp_det>;
+		pinctrl-0 = <&hp_detect>;
 		io-channels = <&saradc 3>;
 	};
 
@@ -511,6 +511,12 @@
 };
 
 &pinctrl {
+	hdmirx {
+		hdmirx_det: hdmirx-det {
+			rockchip,pins = <1 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
 	hym8563 {
 		hym8563_int: hym8563-int {
 			rockchip,pins = <0 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
