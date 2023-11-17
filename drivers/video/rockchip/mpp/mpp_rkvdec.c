@@ -1432,7 +1432,6 @@ static int rkvdec_3036_set_grf(struct mpp_dev *mpp)
 	int grf_changed;
 	struct mpp_dev *loop = NULL, *n;
 	struct mpp_taskqueue *queue = mpp->queue;
-	bool pd_is_on;
 
 	grf_changed = mpp_grf_is_changed(mpp->grf_info);
 	if (grf_changed) {
@@ -1441,9 +1440,6 @@ static int rkvdec_3036_set_grf(struct mpp_dev *mpp)
 		 * in this case, devices share the queue also share the same pd&clk,
 		 * so use mpp->dev's pd to control all the process is okay
 		 */
-		pd_is_on = rockchip_pmu_pd_is_on(mpp->dev);
-		if (!pd_is_on)
-			rockchip_pmu_pd_on(mpp->dev);
 		mpp->hw_ops->clk_on(mpp);
 
 		list_for_each_entry_safe(loop, n, &queue->dev_list, queue_link) {
@@ -1465,8 +1461,6 @@ static int rkvdec_3036_set_grf(struct mpp_dev *mpp)
 		set_bit(mpp->var->device_type, &queue->dev_active_flags);
 
 		mpp->hw_ops->clk_off(mpp);
-		if (!pd_is_on)
-			rockchip_pmu_pd_off(mpp->dev);
 	}
 
 
