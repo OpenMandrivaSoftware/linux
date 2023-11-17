@@ -74,6 +74,7 @@ properties:
       - description: AXI bus interface unit reset line
       - description: APB reset line
       - description: APB bus interface unit reset line
+    maxItems: 4
 
 required:
   - compatible
