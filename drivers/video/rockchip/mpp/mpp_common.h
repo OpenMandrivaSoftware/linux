@@ -38,6 +38,7 @@
 #define MPP_FLAGS_SCL_FD_NO_TRANS	(0x00000008)
 #define MPP_FLAGS_REG_NO_OFFSET		(0x00000010)
 #define MPP_FLAGS_SECURE_MODE		(0x00010000)
+#define MPP_PSCI_SIP_VPU_RESET      0x8200000c
 
 /* grf mask for get value */
 #define MPP_GRF_VAL_MASK		(0xFFFF)

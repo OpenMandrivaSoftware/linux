@@ -7,6 +7,7 @@
  *	Ding Wei, leo.ding@rock-chips.com
  *
  */
+#include <linux/arm-smccc.h>
 #include <linux/pm_runtime.h>
 
 #include "mpp_debug.h"
@@ -1128,9 +1129,10 @@ static int rkvdec2_sip_reset(struct mpp_dev *mpp)
 	mpp_debug_enter();
 
 	if (IS_REACHABLE(CONFIG_ROCKCHIP_SIP)) {
+	    struct arm_smccc_res res;
 		/* sip reset */
 		rockchip_dmcfreq_lock();
-		sip_smc_vpu_reset(0, 0, 0);
+		arm_smccc_smc(MPP_PSCI_SIP_VPU_RESET, 0, 0, 0, 0, 0, 0, 0, &res);
 		rockchip_dmcfreq_unlock();
 	} else {
 		rkvdec2_reset(mpp);

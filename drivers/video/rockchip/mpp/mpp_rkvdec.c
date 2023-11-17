@@ -9,6 +9,7 @@
  *
  */
 #include <asm/cacheflush.h>
+#include <linux/arm-smccc.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/devfreq.h>
@@ -25,7 +26,6 @@
 #include <linux/thermal.h>
 #include <linux/notifier.h>
 #include <linux/proc_fs.h>
-#include <linux/rockchip/rockchip_sip.h>
 #include <linux/regulator/consumer.h>
 
 #include <soc/rockchip/pm_domains.h>
@@ -1616,9 +1616,10 @@ static int rkvdec_sip_reset(struct mpp_dev *mpp)
 	if (IS_REACHABLE(CONFIG_ROCKCHIP_SIP)) {
 		/* The reset flow in arm trustzone firmware */
 		struct rkvdec_dev *dec = to_rkvdec_dev(mpp);
+		struct arm_smccc_res res;
 
 		mutex_lock(&dec->sip_reset_lock);
-		sip_smc_vpu_reset(0, 0, 0);
+		arm_smccc_smc(MPP_PSCI_SIP_VPU_RESET, 0, 0, 0, 0, 0, 0, 0, &res);
 		mutex_unlock(&dec->sip_reset_lock);
 
 		return 0;

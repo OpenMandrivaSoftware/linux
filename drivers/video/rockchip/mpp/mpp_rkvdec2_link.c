@@ -7,6 +7,7 @@
  */
 
 #include <linux/delay.h>
+#include <linux/arm-smccc.h>
 #include <linux/interrupt.h>
 #include <linux/pm_runtime.h>
 #include <linux/slab.h>
@@ -1575,9 +1576,10 @@ static int rkvdec2_soft_ccu_reset(struct mpp_taskqueue *queue,
 			mpp_err("bus busy\n");
 
 		if (IS_REACHABLE(CONFIG_ROCKCHIP_SIP)) {
+		    struct arm_smccc_res res;
 			/* sip reset */
 			rockchip_dmcfreq_lock();
-			sip_smc_vpu_reset(i, 0, 0);
+		    arm_smccc_smc(i, 0, 0, 0, 0, 0, 0, 0, &res);
 			rockchip_dmcfreq_unlock();
 		} else {
 			rkvdec2_reset(mpp);
@@ -2140,7 +2142,8 @@ static int rkvdec2_hard_ccu_reset(struct mpp_taskqueue *queue, struct rkvdec2_cc
 		}
 #if IS_ENABLED(CONFIG_ROCKCHIP_SIP)
 		rockchip_dmcfreq_lock();
-		sip_smc_vpu_reset(i, 0, 0);
+        struct arm_smccc_res res;
+		arm_smccc_smc(i, 0, 0, 0, 0, 0, 0, 0, &res);
 		rockchip_dmcfreq_unlock();
 #else
 		rkvdec2_reset(mpp);

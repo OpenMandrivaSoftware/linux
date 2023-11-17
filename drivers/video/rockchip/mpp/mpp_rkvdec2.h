@@ -20,7 +20,6 @@
 #include <linux/notifier.h>
 #include <linux/proc_fs.h>
 #include <linux/nospec.h>
-#include <linux/rockchip/rockchip_sip.h>
 #include <linux/regulator/consumer.h>
 
 #include <soc/rockchip/pm_domains.h>
