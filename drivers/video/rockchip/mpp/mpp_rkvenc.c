@@ -28,9 +28,9 @@
 #include <linux/workqueue.h>
 #include <soc/rockchip/pm_domains.h>
 #include <soc/rockchip/rockchip_iommu.h>
-#include <soc/rockchip/rockchip_ipa.h>
+//#include <soc/rockchip/rockchip_ipa.h>
 #include <soc/rockchip/rockchip_opp_select.h>
-#include <soc/rockchip/rockchip_system_monitor.h>
+//#include <soc/rockchip/rockchip_system_monitor.h>
 
 #ifdef CONFIG_PM_DEVFREQ
 #include "../../../devfreq/governor.h"
@@ -951,12 +951,6 @@ static struct devfreq_governor devfreq_venc_ondemand = {
 	.event_handler = devfreq_venc_ondemand_handler,
 };
 
-static struct monitor_dev_profile enc_mdevp = {
-	.type = MONITOR_TYPE_DEV,
-	.low_temp_adjust = rockchip_monitor_dev_low_temp_adjust,
-	.high_temp_adjust = rockchip_monitor_dev_high_temp_adjust,
-};
-
 static int __maybe_unused rv1126_get_soc_info(struct device *dev,
 					      struct device_node *np,
 					      int *bin, int *process)
@@ -1049,14 +1043,6 @@ static int rkvenc_devfreq_init(struct mpp_dev *mpp)
 
 	devfreq_register_opp_notifier(mpp->dev, enc->devfreq);
 
-	enc_mdevp.data = enc->devfreq;
-	enc_mdevp.opp_info = opp_info;
-	enc->mdev_info = rockchip_system_monitor_register(mpp->dev, &enc_mdevp);
-	if (IS_ERR(enc->mdev_info)) {
-		dev_dbg(mpp->dev, "without system monitor\n");
-		enc->mdev_info = NULL;
-	}
-
 	return 0;
 
 devfreq_err:
@@ -1071,8 +1057,6 @@ static int rkvenc_devfreq_remove(struct mpp_dev *mpp)
 {
 	struct rkvenc_dev *enc = to_rkvenc_dev(mpp);
 
-	if (enc->mdev_info)
-		rockchip_system_monitor_unregister(enc->mdev_info);
 	if (enc->devfreq)
 		devfreq_unregister_opp_notifier(mpp->dev, enc->devfreq);
 	devfreq_remove_governor(&devfreq_venc_ondemand);

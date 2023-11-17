@@ -28,9 +28,7 @@
 #include <linux/nospec.h>
 #include <linux/workqueue.h>
 #include <soc/rockchip/pm_domains.h>
-#include <soc/rockchip/rockchip_ipa.h>
 #include <soc/rockchip/rockchip_opp_select.h>
-#include <soc/rockchip/rockchip_system_monitor.h>
 #include <soc/rockchip/rockchip_iommu.h>
 
 #include "mpp_debug.h"
@@ -1767,11 +1765,6 @@ static const struct of_device_id rockchip_rkvenc_of_match[] = {
 	{},
 };
 
-static struct monitor_dev_profile venc_mdevp = {
-	.type = MONITOR_TYPE_DEV,
-	.check_rate_volt = rockchip_monitor_check_rate_volt,
-};
-
 static int rkvenc_devfreq_init(struct mpp_dev *mpp)
 {
 	struct rkvenc_dev *enc = to_rkvenc_dev(mpp);
@@ -1789,23 +1782,12 @@ static int rkvenc_devfreq_init(struct mpp_dev *mpp)
 		dev_err(dev, "failed to init_opp_table\n");
 		return ret;
 	}
-	venc_mdevp.opp_info = opp_info;
-	enc->mdev_info = rockchip_system_monitor_register(dev, &venc_mdevp);
-	if (IS_ERR(enc->mdev_info)) {
-		dev_dbg(dev, "without system monitor\n");
-		enc->mdev_info = NULL;
-	}
 
 	return ret;
 }
 
 static int rkvenc_devfreq_remove(struct mpp_dev *mpp)
 {
-	struct rkvenc_dev *enc = to_rkvenc_dev(mpp);
-
-	if (enc->mdev_info)
-		rockchip_system_monitor_unregister(enc->mdev_info);
-
 	return 0;
 }
 #endif

@@ -813,12 +813,6 @@ static struct devfreq_governor devfreq_vdec2_ondemand = {
 	.event_handler = devfreq_vdec2_ondemand_handler,
 };
 
-static struct monitor_dev_profile vdec2_mdevp = {
-	.type = MONITOR_TYPE_DEV,
-	.low_temp_adjust = rockchip_monitor_dev_low_temp_adjust,
-	.high_temp_adjust = rockchip_monitor_dev_high_temp_adjust,
-};
-
 static int rkvdec2_devfreq_init(struct mpp_dev *mpp)
 {
 	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
@@ -868,14 +862,6 @@ static int rkvdec2_devfreq_init(struct mpp_dev *mpp)
 
 	devfreq_register_opp_notifier(mpp->dev, dec->devfreq);
 
-	vdec2_mdevp.data = dec->devfreq;
-	vdec2_mdevp.opp_info = opp_info;
-	dec->mdev_info = rockchip_system_monitor_register(mpp->dev, &vdec2_mdevp);
-	if (IS_ERR(dec->mdev_info)) {
-		dev_dbg(mpp->dev, "without system monitor\n");
-		dec->mdev_info = NULL;
-	}
-
 	return 0;
 
 devfreq_err:
@@ -890,8 +876,6 @@ static int rkvdec2_devfreq_remove(struct mpp_dev *mpp)
 {
 	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
 
-	if (dec->mdev_info)
-		rockchip_system_monitor_unregister(dec->mdev_info);
 	if (dec->devfreq)
 		devfreq_unregister_opp_notifier(mpp->dev, dec->devfreq);
 	devfreq_remove_governor(&devfreq_vdec2_ondemand);
