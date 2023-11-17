@@ -1115,9 +1115,7 @@ static int rkvdec2_sip_reset(struct mpp_dev *mpp)
 	if (IS_REACHABLE(CONFIG_ROCKCHIP_SIP)) {
 	    struct arm_smccc_res res;
 		/* sip reset */
-		rockchip_dmcfreq_lock();
 		arm_smccc_smc(MPP_PSCI_SIP_VPU_RESET, 0, 0, 0, 0, 0, 0, 0, &res);
-		rockchip_dmcfreq_unlock();
 	} else {
 		rkvdec2_reset(mpp);
 	}
