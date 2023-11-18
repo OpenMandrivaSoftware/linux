@@ -23,7 +23,6 @@
 #include <linux/regulator/consumer.h>
 
 #include <soc/rockchip/pm_domains.h>
-#include <soc/rockchip/rockchip_opp_select.h>
 #include <soc/rockchip/rockchip_sip.h>
 
 #include "mpp_debug.h"
@@ -188,16 +187,6 @@ struct rkvdec2_dev {
 	struct reset_control *rst_core;
 	struct reset_control *rst_cabac;
 	struct reset_control *rst_hevc_cabac;
-
-#ifdef CONFIG_PM_DEVFREQ
-	struct regulator *vdd;
-	struct devfreq *devfreq;
-	unsigned long volt;
-	unsigned long core_rate_hz;
-	unsigned long core_last_rate_hz;
-	struct monitor_dev_info *mdev_info;
-	struct rockchip_opp_info opp_info;
-#endif
 
 	/* internal rcb-memory */
 	u32 sram_size;

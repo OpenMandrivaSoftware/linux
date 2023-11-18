@@ -19,13 +19,8 @@
 #include "hack/mpp_rkvdec2_hack_rk3568.c"
 
 //#include <soc/rockchip/rockchip_dmc.h>
-#include <soc/rockchip/rockchip_opp_select.h>
 //#include <soc/rockchip/rockchip_system_monitor.h>
 #include <soc/rockchip/rockchip_iommu.h>
-
-#ifdef CONFIG_PM_DEVFREQ
-#include "../drivers/devfreq/governor.h"
-#endif
 
 /*
  * hardware information
@@ -705,204 +700,6 @@ static inline int rkvdec2_procfs_init(struct mpp_dev *mpp)
 }
 #endif
 
-#ifdef CONFIG_PM_DEVFREQ
-static int rkvdec2_devfreq_target(struct device *dev,
-				  unsigned long *freq, u32 flags)
-{
-	struct dev_pm_opp *opp;
-	unsigned long target_volt, target_freq;
-	int ret = 0;
-
-	struct rkvdec2_dev *dec = dev_get_drvdata(dev);
-	struct devfreq *devfreq = dec->devfreq;
-	struct devfreq_dev_status *stat = &devfreq->last_status;
-	unsigned long old_clk_rate = stat->current_frequency;
-
-	opp = devfreq_recommended_opp(dev, freq, flags);
-	if (IS_ERR(opp)) {
-		dev_err(dev, "Failed to find opp for %lu Hz\n", *freq);
-		return PTR_ERR(opp);
-	}
-	target_freq = dev_pm_opp_get_freq(opp);
-	target_volt = dev_pm_opp_get_voltage(opp);
-	dev_pm_opp_put(opp);
-
-	if (old_clk_rate == target_freq) {
-		dec->core_last_rate_hz = target_freq;
-		if (dec->volt == target_volt)
-			return ret;
-		ret = regulator_set_voltage(dec->vdd, target_volt, INT_MAX);
-		if (ret) {
-			dev_err(dev, "Cannot set voltage %lu uV\n",
-				target_volt);
-			return ret;
-		}
-		dec->volt = target_volt;
-		return 0;
-	}
-
-	if (old_clk_rate < target_freq) {
-		ret = regulator_set_voltage(dec->vdd, target_volt, INT_MAX);
-		if (ret) {
-			dev_err(dev, "set voltage %lu uV\n", target_volt);
-			return ret;
-		}
-	}
-
-	dev_dbg(dev, "%lu-->%lu\n", old_clk_rate, target_freq);
-	clk_set_rate(dec->core_clk_info.clk, target_freq);
-	stat->current_frequency = target_freq;
-	dec->core_last_rate_hz = target_freq;
-
-	if (old_clk_rate > target_freq) {
-		ret = regulator_set_voltage(dec->vdd, target_volt, INT_MAX);
-		if (ret) {
-			dev_err(dev, "set vol %lu uV\n", target_volt);
-			return ret;
-		}
-	}
-	dec->volt = target_volt;
-
-	return ret;
-}
-
-static int rkvdec2_devfreq_get_dev_status(struct device *dev,
-					  struct devfreq_dev_status *stat)
-{
-	return 0;
-}
-
-static int rkvdec2_devfreq_get_cur_freq(struct device *dev,
-					unsigned long *freq)
-{
-	struct rkvdec2_dev *dec = dev_get_drvdata(dev);
-
-	*freq = dec->core_last_rate_hz;
-
-	return 0;
-}
-
-static struct devfreq_dev_profile rkvdec2_devfreq_profile = {
-	.target	= rkvdec2_devfreq_target,
-	.get_dev_status	= rkvdec2_devfreq_get_dev_status,
-	.get_cur_freq = rkvdec2_devfreq_get_cur_freq,
-	.is_cooling_device = true,
-};
-
-static int devfreq_vdec2_ondemand_func(struct devfreq *df, unsigned long *freq)
-{
-	struct rkvdec2_dev *dec = df->data;
-
-	if (dec)
-		*freq = dec->core_rate_hz;
-	else
-		*freq = df->previous_freq;
-
-	return 0;
-}
-
-static int devfreq_vdec2_ondemand_handler(struct devfreq *devfreq,
-					  unsigned int event, void *data)
-{
-	return 0;
-}
-
-static struct devfreq_governor devfreq_vdec2_ondemand = {
-	.name = "vdec2_ondemand",
-	.get_target_freq = devfreq_vdec2_ondemand_func,
-	.event_handler = devfreq_vdec2_ondemand_handler,
-};
-
-static int rkvdec2_devfreq_init(struct mpp_dev *mpp)
-{
-	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
-	struct clk *clk_core = dec->core_clk_info.clk;
-	struct rockchip_opp_info *opp_info = &dec->opp_info;
-	int ret = 0;
-
-	if (!clk_core)
-		return 0;
-
-	dec->vdd = devm_regulator_get_optional(mpp->dev, "vdec");
-	if (IS_ERR_OR_NULL(dec->vdd)) {
-		if (PTR_ERR(dec->vdd) == -EPROBE_DEFER) {
-			dev_warn(mpp->dev, "vdec regulator not ready, retry\n");
-
-			return -EPROBE_DEFER;
-		}
-		dev_info(mpp->dev, "no regulator, devfreq is disabled\n");
-
-		return 0;
-	}
-
-	ret = rockchip_init_opp_table(mpp->dev, opp_info, NULL, "vdec");
-	if (ret) {
-		dev_err(mpp->dev, "failed to init_opp_table\n");
-		return ret;
-	}
-
-	ret = devfreq_add_governor(&devfreq_vdec2_ondemand);
-	if (ret) {
-		dev_err(mpp->dev, "failed to add vdec2_ondemand governor\n");
-		goto governor_err;
-	}
-
-	rkvdec2_devfreq_profile.initial_freq = clk_get_rate(clk_core);
-
-	dec->devfreq = devm_devfreq_add_device(mpp->dev,
-					       &rkvdec2_devfreq_profile,
-					       "vdec2_ondemand", (void *)dec);
-	if (IS_ERR(dec->devfreq)) {
-		ret = PTR_ERR(dec->devfreq);
-		dec->devfreq = NULL;
-		goto devfreq_err;
-	}
-	dec->devfreq->last_status.total_time = 1;
-	dec->devfreq->last_status.busy_time = 1;
-
-	devfreq_register_opp_notifier(mpp->dev, dec->devfreq);
-
-	return 0;
-
-devfreq_err:
-	devfreq_remove_governor(&devfreq_vdec2_ondemand);
-governor_err:
-	dev_pm_opp_of_remove_table(mpp->dev);
-
-	return ret;
-}
-
-static int rkvdec2_devfreq_remove(struct mpp_dev *mpp)
-{
-	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
-
-	if (dec->devfreq)
-		devfreq_unregister_opp_notifier(mpp->dev, dec->devfreq);
-	devfreq_remove_governor(&devfreq_vdec2_ondemand);
-	rockchip_uninit_opp_table(mpp->dev, &dec->opp_info);
-
-	return 0;
-}
-
-void mpp_devfreq_set_core_rate(struct mpp_dev *mpp, enum MPP_CLOCK_MODE mode)
-{
-	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
-
-	if (dec->devfreq) {
-		unsigned long core_rate_hz;
-
-		mutex_lock(&dec->devfreq->lock);
-		core_rate_hz = mpp_get_clk_info_rate_hz(&dec->core_clk_info, mode);
-		if (dec->core_rate_hz != core_rate_hz) {
-			dec->core_rate_hz = core_rate_hz;
-			update_devfreq(dec->devfreq);
-		}
-		mutex_unlock(&dec->devfreq->lock);
-	}
-
-	mpp_clk_set_rate(&dec->core_clk_info, mode);
-}
-#else
 static inline int rkvdec2_devfreq_init(struct mpp_dev *mpp)
 {
 	return 0;
@@ -919,7 +716,6 @@ void mpp_devfreq_set_core_rate(struct mpp_dev *mpp, enum MPP_CLOCK_MODE mode)
 
 	mpp_clk_set_rate(&dec->core_clk_info, mode);
 }
-#endif
 
 static int rkvdec2_init(struct mpp_dev *mpp)
 {
