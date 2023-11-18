@@ -9,7 +9,6 @@
 
 #include <asm/cacheflush.h>
 #include <linux/delay.h>
-#include <linux/devfreq.h>
 #include <linux/devfreq_cooling.h>
 #include <linux/iopoll.h>
 #include <linux/interrupt.h>
@@ -28,7 +27,6 @@
 #include <linux/nospec.h>
 #include <linux/workqueue.h>
 #include <soc/rockchip/pm_domains.h>
-#include <soc/rockchip/rockchip_opp_select.h>
 #include <soc/rockchip/rockchip_iommu.h>
 
 #include "mpp_debug.h"
@@ -291,10 +289,6 @@ struct rkvenc_dev {
 
 	u32 bs_overflow;
 
-#ifdef CONFIG_PM_DEVFREQ
-	struct rockchip_opp_info opp_info;
-	struct monitor_dev_info *mdev_info;
-#endif
 };
 
 struct rkvenc_ccu {
@@ -1730,68 +1724,6 @@ static inline int rkvenc_procfs_ccu_init(struct mpp_dev *mpp)
 }
 #endif
 
-#ifdef CONFIG_PM_DEVFREQ
-static int rk3588_venc_set_read_margin(struct device *dev,
-				       struct rockchip_opp_info *opp_info,
-				       u32 rm)
-{
-	if (!opp_info->grf || !opp_info->volt_rm_tbl)
-		return 0;
-
-	if (rm == opp_info->current_rm || rm == UINT_MAX)
-		return 0;
-
-	dev_dbg(dev, "set rm to %d\n", rm);
-
-	regmap_write(opp_info->grf, 0x214, 0x001c0000 | (rm << 2));
-	regmap_write(opp_info->grf, 0x218, 0x001c0000 | (rm << 2));
-	regmap_write(opp_info->grf, 0x220, 0x003c0000 | (rm << 2));
-	regmap_write(opp_info->grf, 0x224, 0x003c0000 | (rm << 2));
-
-	opp_info->current_rm = rm;
-
-	return 0;
-}
-
-static const struct rockchip_opp_data rk3588_venc_opp_data = {
-	.set_read_margin = rk3588_venc_set_read_margin,
-};
-
-static const struct of_device_id rockchip_rkvenc_of_match[] = {
-	{
-		.compatible = "rockchip,rk3588",
-		.data = (void *)&rk3588_venc_opp_data,
-	},
-	{},
-};
-
-static int rkvenc_devfreq_init(struct mpp_dev *mpp)
-{
-	struct rkvenc_dev *enc = to_rkvenc_dev(mpp);
-	struct clk *clk_core = enc->core_clk_info.clk;
-	struct device *dev = mpp->dev;
-	struct rockchip_opp_info *opp_info = &enc->opp_info;
-	int ret = 0;
-
-	if (!clk_core)
-		return 0;
-
-	rockchip_get_opp_data(rockchip_rkvenc_of_match, opp_info);
-	ret = rockchip_init_opp_table(dev, opp_info, "clk_core", "venc");
-	if (ret) {
-		dev_err(dev, "failed to init_opp_table\n");
-		return ret;
-	}
-
-	return ret;
-}
-
-static int rkvenc_devfreq_remove(struct mpp_dev *mpp)
-{
-	return 0;
-}
-#endif
-
 static int rkvenc_init(struct mpp_dev *mpp)
 {
 	struct rkvenc_dev *enc = to_rkvenc_dev(mpp);
@@ -1828,21 +1760,11 @@ static int rkvenc_init(struct mpp_dev *mpp)
 	if (!enc->rst_core)
 		mpp_err("No core reset resource define\n");
 
-#ifdef CONFIG_PM_DEVFREQ
-	ret = rkvenc_devfreq_init(mpp);
-	if (ret)
-		mpp_err("failed to add venc devfreq\n");
-#endif
-
 	return 0;
 }
 
 static int rkvenc_exit(struct mpp_dev *mpp)
 {
-#ifdef CONFIG_PM_DEVFREQ
-	rkvenc_devfreq_remove(mpp);
-#endif
-
 	return 0;
 }
 
