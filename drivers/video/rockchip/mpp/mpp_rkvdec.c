@@ -12,7 +12,6 @@
 #include <linux/arm-smccc.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
-#include <linux/devfreq.h>
 #include <linux/gfp.h>
 #include <linux/interrupt.h>
 #include <linux/iopoll.h>
@@ -30,7 +29,6 @@
 
 #include <soc/rockchip/pm_domains.h>
 #include <soc/rockchip/rockchip_sip.h>
-#include <soc/rockchip/rockchip_opp_select.h>
 
 #include "mpp_debug.h"
 #include "mpp_common.h"
@@ -176,20 +174,6 @@ struct rkvdec_dev {
 
 	unsigned long aux_iova;
 	struct page *aux_page;
-#ifdef CONFIG_PM_DEVFREQ
-	struct regulator *vdd;
-	struct devfreq *devfreq;
-	struct devfreq *parent_devfreq;
-	struct notifier_block devfreq_nb;
-	struct rockchip_opp_info opp_info;
-	/* set clk lock */
-	struct mutex set_clk_lock;
-	unsigned int thermal_div;
-	unsigned long volt;
-	unsigned long devf_aclk_rate_hz;
-	unsigned long devf_core_rate_hz;
-	unsigned long devf_cabac_rate_hz;
-#endif
 	/* record last infos */
 	u32 last_fmt;
 	bool had_reset;
@@ -253,189 +237,6 @@ static struct mpp_trans_info rkvdec_v1_trans[] = {
 		.table = trans_tbl_vp9d,
 	},
 };
-
-#ifdef CONFIG_PM_DEVFREQ
-static int rkvdec_devf_set_clk(struct rkvdec_dev *dec,
-			       unsigned long aclk_rate_hz,
-			       unsigned long core_rate_hz,
-			       unsigned long cabac_rate_hz,
-			       unsigned int event)
-{
-	struct clk *aclk = dec->aclk_info.clk;
-	struct clk *clk_core = dec->core_clk_info.clk;
-	struct clk *clk_cabac = dec->cabac_clk_info.clk;
-
-	mutex_lock(&dec->set_clk_lock);
-
-	switch (event) {
-	case EVENT_POWER_ON:
-		clk_set_rate(aclk, dec->devf_aclk_rate_hz);
-		clk_set_rate(clk_core, dec->devf_core_rate_hz);
-		clk_set_rate(clk_cabac, dec->devf_cabac_rate_hz);
-		dec->thermal_div = 0;
-		break;
-	case EVENT_POWER_OFF:
-		clk_set_rate(aclk, aclk_rate_hz);
-		clk_set_rate(clk_core, core_rate_hz);
-		clk_set_rate(clk_cabac, cabac_rate_hz);
-		dec->thermal_div = 0;
-		break;
-	case EVENT_ADJUST:
-		if (!dec->thermal_div) {
-			clk_set_rate(aclk, aclk_rate_hz);
-			clk_set_rate(clk_core, core_rate_hz);
-			clk_set_rate(clk_cabac, cabac_rate_hz);
-		} else {
-			clk_set_rate(aclk,
-				     aclk_rate_hz / dec->thermal_div);
-			clk_set_rate(clk_core,
-				     core_rate_hz / dec->thermal_div);
-			clk_set_rate(clk_cabac,
-				     cabac_rate_hz / dec->thermal_div);
-		}
-		dec->devf_aclk_rate_hz = aclk_rate_hz;
-		dec->devf_core_rate_hz = core_rate_hz;
-		dec->devf_cabac_rate_hz = cabac_rate_hz;
-		break;
-	case EVENT_THERMAL:
-		dec->thermal_div = dec->devf_aclk_rate_hz / aclk_rate_hz;
-		if (dec->thermal_div > 4)
-			dec->thermal_div = 4;
-		if (dec->thermal_div) {
-			clk_set_rate(aclk,
-				     dec->devf_aclk_rate_hz / dec->thermal_div);
-			clk_set_rate(clk_core,
-				     dec->devf_core_rate_hz / dec->thermal_div);
-			clk_set_rate(clk_cabac,
-				     dec->devf_cabac_rate_hz / dec->thermal_div);
-		}
-		break;
-	}
-
-	mutex_unlock(&dec->set_clk_lock);
-
-	return 0;
-}
-
-static int devfreq_target(struct device *dev,
-			  unsigned long *freq, u32 flags)
-{
-	int ret = 0;
-	unsigned int clk_event;
-	struct dev_pm_opp *opp;
-	unsigned long target_volt, target_freq;
-	unsigned long aclk_rate_hz, core_rate_hz, cabac_rate_hz;
-
-	struct rkvdec_dev *dec = dev_get_drvdata(dev);
-	struct devfreq *devfreq = dec->devfreq;
-	struct devfreq_dev_status *stat = &devfreq->last_status;
-	unsigned long old_clk_rate = stat->current_frequency;
-
-	opp = devfreq_recommended_opp(dev, freq, flags);
-	if (IS_ERR(opp)) {
-		dev_err(dev, "Failed to find opp for %lu Hz\n", *freq);
-		return PTR_ERR(opp);
-	}
-	target_freq = dev_pm_opp_get_freq(opp);
-	target_volt = dev_pm_opp_get_voltage(opp);
-	dev_pm_opp_put(opp);
-
-	if (target_freq < *freq) {
-		clk_event = EVENT_THERMAL;
-		aclk_rate_hz = target_freq;
-		core_rate_hz = target_freq;
-		cabac_rate_hz = target_freq;
-	} else {
-		clk_event = stat->busy_time ? EVENT_POWER_ON : EVENT_POWER_OFF;
-		aclk_rate_hz = dec->devf_aclk_rate_hz;
-		core_rate_hz = dec->devf_core_rate_hz;
-		cabac_rate_hz = dec->devf_cabac_rate_hz;
-	}
-
-	if (old_clk_rate == target_freq) {
-		if (dec->volt == target_volt)
-			return ret;
-		ret = regulator_set_voltage(dec->vdd, target_volt, INT_MAX);
-		if (ret) {
-			dev_err(dev, "Cannot set voltage %lu uV\n",
-				target_volt);
-			return ret;
-		}
-		dec->volt = target_volt;
-		return 0;
-	}
-
-	if (old_clk_rate < target_freq) {
-		ret = regulator_set_voltage(dec->vdd, target_volt, INT_MAX);
-		if (ret) {
-			dev_err(dev, "set voltage %lu uV\n", target_volt);
-			return ret;
-		}
-	}
-
-	dev_dbg(dev, "%lu-->%lu\n", old_clk_rate, target_freq);
-	rkvdec_devf_set_clk(dec, aclk_rate_hz, core_rate_hz, cabac_rate_hz, clk_event);
-	stat->current_frequency = target_freq;
-
-	if (old_clk_rate > target_freq) {
-		ret = regulator_set_voltage(dec->vdd, target_volt, INT_MAX);
-		if (ret) {
-			dev_err(dev, "set vol %lu uV\n", target_volt);
-			return ret;
-		}
-	}
-	dec->volt = target_volt;
-
-	return ret;
-}
-
-static int devfreq_get_cur_freq(struct device *dev,
-				unsigned long *freq)
-{
-	struct rkvdec_dev *dec = dev_get_drvdata(dev);
-
-	*freq = clk_get_rate(dec->aclk_info.clk);
-
-	return 0;
-}
-
-static int devfreq_get_dev_status(struct device *dev,
-				  struct devfreq_dev_status *stat)
-{
-	struct rkvdec_dev *dec = dev_get_drvdata(dev);
-	struct devfreq *devfreq = dec->devfreq;
-
-	memcpy(stat, &devfreq->last_status, sizeof(*stat));
-
-	return 0;
-}
-
-static struct devfreq_dev_profile devfreq_profile = {
-	.target	= devfreq_target,
-	.get_cur_freq = devfreq_get_cur_freq,
-	.get_dev_status	= devfreq_get_dev_status,
-	.is_cooling_device = true,
-};
-
-static int devfreq_notifier_call(struct notifier_block *nb,
-				 unsigned long event,
-				 void *data)
-{
-	struct rkvdec_dev *dec = container_of(nb,
-					      struct rkvdec_dev,
-					      devfreq_nb);
-
-	if (!dec)
-		return NOTIFY_OK;
-
-	if (event == DEVFREQ_PRECHANGE)
-		mutex_lock(&dec->sip_reset_lock);
-	else if (event == DEVFREQ_POSTCHANGE)
-		mutex_unlock(&dec->sip_reset_lock);
-
-	return NOTIFY_OK;
-}
-#endif
 
 /*
  * NOTE: rkvdec/rkhevc put scaling list address in pps buffer hardware will read
@@ -1219,76 +1020,6 @@ static int rkvdec_3328_iommu_hdl(struct iommu_domain *iommu,
 
 	return ret;
 }
-
-#ifdef CONFIG_PM_DEVFREQ
-static int rkvdec_devfreq_remove(struct mpp_dev *mpp)
-{
-	struct rkvdec_dev *dec = to_rkvdec_dev(mpp);
-
-	devfreq_unregister_opp_notifier(mpp->dev, dec->devfreq);
-	rockchip_uninit_opp_table(mpp->dev, &dec->opp_info);
-
-	return 0;
-}
-
-static int rkvdec_devfreq_init(struct mpp_dev *mpp)
-{
-	int ret = 0;
-	struct devfreq_dev_status *stat;
-	struct rkvdec_dev *dec = to_rkvdec_dev(mpp);
-
-	mutex_init(&dec->set_clk_lock);
-	dec->parent_devfreq = devfreq_get_devfreq_by_phandle(mpp->dev, "rkvdec_devfreq", 0);
-	if (IS_ERR_OR_NULL(dec->parent_devfreq)) {
-		if (PTR_ERR(dec->parent_devfreq) == -EPROBE_DEFER) {
-			dev_warn(mpp->dev, "parent devfreq is not ready, retry\n");
-
-			return -EPROBE_DEFER;
-		}
-	} else {
-		dec->devfreq_nb.notifier_call = devfreq_notifier_call;
-		devm_devfreq_register_notifier(mpp->dev,
-					       dec->parent_devfreq,
-					       &dec->devfreq_nb,
-					       DEVFREQ_TRANSITION_NOTIFIER);
-	}
-
-	dec->vdd = devm_regulator_get_optional(mpp->dev, "vcodec");
-	if (IS_ERR_OR_NULL(dec->vdd)) {
-		if (PTR_ERR(dec->vdd) == -EPROBE_DEFER) {
-			dev_warn(mpp->dev, "vcodec regulator not ready, retry\n");
-
-			return -EPROBE_DEFER;
-		}
-		dev_warn(mpp->dev, "no regulator for vcodec\n");
-
-		return 0;
-	}
-
-	ret = rockchip_init_opp_table(mpp->dev, &dec->opp_info, NULL, "vcodec");
-	if (ret) {
-		dev_err(mpp->dev, "Failed to init_opp_table\n");
-		return ret;
-	}
-	dec->devfreq = devm_devfreq_add_device(mpp->dev, &devfreq_profile,
-					       "userspace", NULL);
-	if (IS_ERR(dec->devfreq)) {
-		ret = PTR_ERR(dec->devfreq);
-		return ret;
-	}
-
-	stat = &dec->devfreq->last_status;
-	stat->current_frequency = clk_get_rate(dec->aclk_info.clk);
-
-	ret = devfreq_register_opp_notifier(mpp->dev, dec->devfreq);
-	if (ret < 0) {
-		dev_err(mpp->dev, "failed to register opp notifier\n");
-		return ret;
-	}
-
-	return 0;
-}
-#else
 static inline int rkvdec_devfreq_remove(struct mpp_dev *mpp)
 {
 	return 0;
@@ -1298,7 +1029,6 @@ static inline int rkvdec_devfreq_init(struct mpp_dev *mpp)
 {
 	return 0;
 }
-#endif
 
 static int rkvdec_3328_init(struct mpp_dev *mpp)
 {
@@ -1506,29 +1236,9 @@ static int rkvdec_3328_set_freq(struct mpp_dev *mpp,
 	struct rkvdec_dev *dec = to_rkvdec_dev(mpp);
 	struct rkvdec_task *task =  to_rkvdec_task(mpp_task);
 
-#ifdef CONFIG_PM_DEVFREQ
-	if (dec->devfreq) {
-		struct devfreq_dev_status *stat;
-		unsigned long aclk_rate_hz, core_rate_hz, cabac_rate_hz;
-
-		stat = &dec->devfreq->last_status;
-		stat->busy_time = 1;
-		stat->total_time = 1;
-		aclk_rate_hz = mpp_get_clk_info_rate_hz(&dec->aclk_info,
-							task->clk_mode);
-		core_rate_hz = mpp_get_clk_info_rate_hz(&dec->core_clk_info,
-							task->clk_mode);
-		cabac_rate_hz = mpp_get_clk_info_rate_hz(&dec->cabac_clk_info,
-							 task->clk_mode);
-		rkvdec_devf_set_clk(dec, aclk_rate_hz,
-				    core_rate_hz, cabac_rate_hz,
-				    EVENT_ADJUST);
-	}
-#else
 	mpp_clk_set_rate(&dec->aclk_info, task->clk_mode);
 	mpp_clk_set_rate(&dec->core_clk_info, task->clk_mode);
 	mpp_clk_set_rate(&dec->cabac_clk_info, task->clk_mode);
-#endif
 
 	return 0;
 }
@@ -1549,29 +1259,9 @@ static int rkvdec_3328_reduce_freq(struct mpp_dev *mpp)
 {
 	struct rkvdec_dev *dec = to_rkvdec_dev(mpp);
 
-#ifdef CONFIG_PM_DEVFREQ
-	if (dec->devfreq) {
-		struct devfreq_dev_status *stat;
-		unsigned long aclk_rate_hz, core_rate_hz, cabac_rate_hz;
-
-		stat = &dec->devfreq->last_status;
-		stat->busy_time = 0;
-		stat->total_time = 1;
-		aclk_rate_hz = mpp_get_clk_info_rate_hz(&dec->aclk_info,
-							CLK_MODE_REDUCE);
-		core_rate_hz = mpp_get_clk_info_rate_hz(&dec->core_clk_info,
-							CLK_MODE_REDUCE);
-		cabac_rate_hz = mpp_get_clk_info_rate_hz(&dec->cabac_clk_info,
-							 CLK_MODE_REDUCE);
-		rkvdec_devf_set_clk(dec, aclk_rate_hz,
-				    core_rate_hz, cabac_rate_hz,
-				    EVENT_ADJUST);
-	}
-#else
 	mpp_clk_set_rate(&dec->aclk_info, CLK_MODE_REDUCE);
 	mpp_clk_set_rate(&dec->core_clk_info, CLK_MODE_REDUCE);
 	mpp_clk_set_rate(&dec->cabac_clk_info, CLK_MODE_REDUCE);
-#endif
 
 	return 0;
 }
