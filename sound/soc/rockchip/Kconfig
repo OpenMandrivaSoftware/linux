@@ -67,7 +67,7 @@ config SND_SOC_ROCKCHIP_RT5645
 
 config SND_SOC_ROCKCHIP_HDMI
 	tristate "ASoC support for Rockchip HDMI audio"
-	depends on SND_SOC_ROCKCHIP && CLKDEV_LOOKUP
+	depends on SND_SOC_ROCKCHIP
 	select SND_SOC_HDMI_CODEC
 	help
 	  Say Y or M here if you want to add support for SoC audio on Rockchip

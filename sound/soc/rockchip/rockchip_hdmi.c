@@ -87,7 +87,7 @@ static int rk_dailink_init(struct snd_soc_pcm_runtime *rtd)
 	if (ret < 0)
 		return ret;
 
-	ret = snd_soc_card_jack_new(rtd->card,
+	ret = snd_soc_card_jack_new_pins(rtd->card,
 				    rk_data->hdmi_jack_pin.pin,
 				    rk_data->hdmi_jack_pin.mask,
 				    &rk_data->hdmi_jack,
@@ -145,8 +145,8 @@ static unsigned int rk_hdmi_parse_daifmt(struct device_node *node,
 	struct device_node *framemaster = NULL;
 	unsigned int daifmt;
 
-	daifmt = snd_soc_of_parse_daifmt(node, prefix,
-					 &bitclkmaster, &framemaster);
+	daifmt = snd_soc_daifmt_parse_format(node, NULL);
+	snd_soc_daifmt_parse_clock_provider_as_phandle(node, NULL, &bitclkmaster, &framemaster);
 	daifmt &= ~SND_SOC_DAIFMT_MASTER_MASK;
 
 	if (!bitclkmaster || cpu == bitclkmaster)
